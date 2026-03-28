@@ -771,6 +771,51 @@ body {
   height: auto;
 }
 
+.map-hint {
+  margin: 6px 0 14px;
+  text-align: center;
+  font-size: 10px;
+  color: var(--cream-faint);
+}
+
+.map-detail-card {
+  background: var(--wood-light);
+  border-radius: 12px;
+  border: 1px solid var(--wood-mid);
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+
+.map-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.map-detail-name {
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.map-detail-area {
+  font-size: 11px;
+  color: var(--cream-dark);
+}
+
+.map-detail-rarity {
+  font-size: 11px;
+  color: var(--cream-dark);
+  margin-left: auto;
+}
+
+.map-detail-desc {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--cream-dark);
+  line-height: 1.5;
+}
+
 .stats-grid {
   grid-template-columns: repeat(3, 1fr);
 }
