@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 
 import { ShareModal } from "@/components/share/ShareModal";
@@ -41,6 +40,7 @@ export function ZukanScreen() {
     <>
       <NorenBanner label="まぐろ図鑑" />
       <Card glow>
+        <p className="progress-label">コンプリート進捗</p>
         <div className="progress-big">{progress}%</div>
         <div className="progress-bar-wrap">
           <div className="progress-bar-fill" style={{ width: `${progress}%` }} />
@@ -77,14 +77,6 @@ export function ZukanScreen() {
         })}
       </div>
 
-      <Card>
-        <p className="helper-text">
-          図鑑を見ながら部位名を覚えたら、まぐろクイズで理解度を確認できます。
-        </p>
-        <Link className="button-outline inline-button" href="/quiz">
-          まぐろクイズへ
-        </Link>
-      </Card>
       <ShareModal onClose={() => setSharePayload(null)} open={Boolean(sharePayload)} payload={sharePayload} />
     </>
   );

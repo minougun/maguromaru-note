@@ -80,7 +80,7 @@ export function TunaMap({ collectedPartIds }: TunaMapProps) {
             const isSelected = selectedPartId === r.id;
             const fill = eaten ? part.color : "transparent";
             const fillOpacity = eaten ? (isSelected ? 0.6 : 0.4) : 0;
-            const stroke = eaten ? part.color : "rgba(200,200,200,0.5)";
+            const stroke = eaten ? part.color : "rgba(0,0,0,0.6)";
             const strokeDasharray = eaten ? "none" : "4 4";
             const strokeWidth = isSelected ? 3 : 2;
             const filterAttr = eaten ? "url(#glowF)" : undefined;
