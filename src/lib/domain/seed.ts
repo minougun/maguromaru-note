@@ -11,7 +11,7 @@ export const seededParts: Part[] = [
   { id: "hoho", name: "ほほ肉", area: "頭部", rarity: 3, description: "肉のような弾力と濃厚な旨味", color: "#d94444", sort_order: 5 },
   { id: "kama", name: "カマ", area: "胸部", rarity: 2, description: "脂がのった希少部位", color: "#f07070", sort_order: 6 },
   { id: "haramo", name: "ハラモ", area: "腹部", rarity: 2, description: "腹の大トロに近い部分", color: "#e06060", sort_order: 7 },
-  { id: "senaka", name: "背トロ", area: "背部", rarity: 2, description: "赤身に近い上品な脂", color: "#d35050", sort_order: 8 },
+  { id: "senaka", name: "背とろ", area: "背部", rarity: 2, description: "赤身に近い上品な脂", color: "#d35050", sort_order: 8 },
 ];
 
 export const seededMenuItems: MenuItem[] = [

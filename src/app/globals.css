@@ -92,16 +92,16 @@ body {
 
 .header-title {
   margin: 0;
-  font-size: 17px;
+  font-size: 22px;
   font-weight: 900;
-  letter-spacing: 2px;
+  letter-spacing: 3px;
 }
 
 .header-subtitle {
-  margin: 2px 0 0;
+  margin: 3px 0 0;
   color: var(--cream-faint);
-  font-size: 10px;
-  letter-spacing: 0.5px;
+  font-size: 11px;
+  letter-spacing: 1px;
 }
 
 .accent-line {

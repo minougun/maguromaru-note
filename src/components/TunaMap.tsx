@@ -24,7 +24,7 @@ const MAP_REGIONS: MapRegionDef[] = [
   { id: "kama", type: "ellipse", cx: 155, cy: 285, rx: 28, ry: 18 },
   { id: "chutoro", type: "ellipse", cx: 310, cy: 100, rx: 70, ry: 24 },
   { id: "akami", type: "ellipse", cx: 360, cy: 190, rx: 75, ry: 35 },
-  { id: "otoro", type: "ellipse", cx: 265, cy: 278, rx: 40, ry: 20 },
+  { id: "otoro", type: "ellipse", cx: 265, cy: 278, rx: 40, ry: 20, showLabel: { lx: 265, ly: 320 } },
   { id: "senaka", type: "ellipse", cx: 440, cy: 105, rx: 36, ry: 22, showLabel: { lx: 440, ly: 58 } },
   { id: "haramo", type: "ellipse", cx: 390, cy: 278, rx: 55, ry: 22, showLabel: { lx: 390, ly: 322 } },
 ];
