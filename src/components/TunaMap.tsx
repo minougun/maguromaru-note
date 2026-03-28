@@ -15,15 +15,25 @@ interface MapRegionDef {
   ly: number;
 }
 
+// Positions matched to tuna-map.jpg illustration
+// Image is left(head) → right(tail), viewBox 603x370
 const MAP_REGIONS: MapRegionDef[] = [
-  { id: "noten", type: "circle", cx: 85, cy: 80, r: 28, lx: 85, ly: 28 },
-  { id: "hoho", type: "circle", cx: 105, cy: 190, r: 24, lx: 105, ly: 238 },
-  { id: "kama", type: "ellipse", cx: 190, cy: 205, rx: 35, ry: 24, lx: 190, ly: 252 },
-  { id: "akami", type: "ellipse", cx: 310, cy: 105, rx: 58, ry: 26, lx: 310, ly: 56 },
-  { id: "chutoro", type: "ellipse", cx: 300, cy: 175, rx: 52, ry: 22, lx: 370, ly: 175 },
-  { id: "otoro", type: "ellipse", cx: 305, cy: 240, rx: 52, ry: 22, lx: 305, ly: 285 },
-  { id: "senaka", type: "ellipse", cx: 420, cy: 112, rx: 42, ry: 24, lx: 420, ly: 65 },
-  { id: "haramo", type: "ellipse", cx: 415, cy: 237, rx: 44, ry: 22, lx: 415, ly: 282 },
+  // 脳天: top of head
+  { id: "noten", type: "circle", cx: 148, cy: 82, r: 22, lx: 148, ly: 36 },
+  // ほほ肉: cheek, middle of head
+  { id: "hoho", type: "ellipse", cx: 130, cy: 195, rx: 26, ry: 20, lx: 70, ly: 220 },
+  // カマ: below head, jaw/gill area
+  { id: "kama", type: "ellipse", cx: 155, cy: 285, rx: 28, ry: 18, lx: 95, ly: 310 },
+  // 中トロ: upper back (dorsal), spans wide
+  { id: "chutoro", type: "ellipse", cx: 310, cy: 100, rx: 70, ry: 24, lx: 310, ly: 52 },
+  // 赤身: large central body
+  { id: "akami", type: "ellipse", cx: 360, cy: 190, rx: 75, ry: 35, lx: 360, ly: 190 },
+  // 大トロ: lower front belly
+  { id: "otoro", type: "ellipse", cx: 265, cy: 278, rx: 40, ry: 20, lx: 265, ly: 320 },
+  // 背トロ: upper back, rear portion
+  { id: "senaka", type: "ellipse", cx: 440, cy: 105, rx: 36, ry: 22, lx: 440, ly: 58 },
+  // ハラモ: lower belly, middle-rear
+  { id: "haramo", type: "ellipse", cx: 390, cy: 278, rx: 55, ry: 22, lx: 390, ly: 322 },
 ];
 
 const partsById = new Map(seededParts.map((p) => [p.id, p]));
@@ -54,16 +64,24 @@ export function TunaMap({ collectedPartIds }: TunaMapProps) {
 
         <rect width="603" height="370" fill="url(#bgGrad)" />
 
-        {/* silhouette placeholder */}
-        <text x="301" y="340" textAnchor="middle" fontSize="11" fill="#555" fontFamily="Noto Sans JP, sans-serif">
-          🐟 まぐろ部位マップ
-        </text>
+        {/* tuna illustration background */}
+        <image
+          href="/tuna-map.jpg"
+          width="603"
+          height="370"
+          preserveAspectRatio="xMidYMid slice"
+          opacity="0.85"
+        />
 
         {/* leader lines */}
         <g fill="none" stroke="var(--cream-faint, #c4a878)" strokeWidth="1.2" opacity="0.7">
-          {MAP_REGIONS.map((r) => (
-            <line key={`line-${r.id}`} x1={r.lx} y1={r.ly + 8} x2={r.cx} y2={r.cy} />
-          ))}
+          {MAP_REGIONS.map((r) => {
+            // Skip line for akami (label is centered on the region itself)
+            if (r.id === "akami") return null;
+            return (
+              <line key={`line-${r.id}`} x1={r.lx} y1={r.ly + 8} x2={r.cx} y2={r.cy} />
+            );
+          })}
         </g>
 
         {/* regions and labels */}
@@ -72,14 +90,18 @@ export function TunaMap({ collectedPartIds }: TunaMapProps) {
           if (!part) return null;
           const eaten = collected.has(r.id);
           const fill = eaten ? part.color : "transparent";
-          const fillOpacity = eaten ? 0.45 : 0;
-          const stroke = eaten ? part.color : "#888";
+          const fillOpacity = eaten ? 0.4 : 0;
+          const stroke = eaten ? part.color : "rgba(200,200,200,0.5)";
           const strokeDasharray = eaten ? "none" : "4 4";
           const filterAttr = eaten ? "url(#glowF)" : undefined;
 
-          const labelBg = eaten ? part.color : "#666";
-          const labelBgOpacity = eaten ? 0.95 : 0.5;
+          const labelBg = eaten ? part.color : "rgba(80,80,80,0.7)";
+          const labelBgOpacity = eaten ? 0.9 : 0.6;
           const labelTextFill = eaten ? "#0d0805" : "#ccc";
+
+          // Label pill width based on text length
+          const pillWidth = part.name.length <= 2 ? 56 : 72;
+          const pillX = r.lx - pillWidth / 2;
 
           return (
             <g key={r.id}>
@@ -110,15 +132,15 @@ export function TunaMap({ collectedPartIds }: TunaMapProps) {
                 />
               )}
               <rect
-                x={r.lx - 38}
-                y={r.ly - 14}
+                x={pillX}
+                y={r.ly - 12}
                 rx="10"
                 ry="10"
-                width="76"
-                height="22"
+                width={pillWidth}
+                height="20"
                 fill={labelBg}
                 fillOpacity={labelBgOpacity}
-                stroke={eaten ? part.color : "#888"}
+                stroke={eaten ? part.color : "rgba(150,150,150,0.4)"}
                 strokeWidth="1"
               />
               <text
