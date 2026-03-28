@@ -2,40 +2,65 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 
-import { ensureAnonymousSupabaseSession } from "@/lib/supabase/browser";
+import {
+  ensureAnonymousSupabaseSession,
+  getSupabaseBrowserClient,
+  waitForSupabaseAccessToken,
+} from "@/lib/supabase/browser";
 
 interface AuthContextValue {
   ready: boolean;
   usingSupabase: boolean;
   error: string | null;
+  accessToken: string | null;
 }
+
+const SUPABASE_CONFIGURED = Boolean(
+  process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+);
 
 const AuthContext = createContext<AuthContextValue>({
   ready: false,
-  usingSupabase: false,
+  usingSupabase: SUPABASE_CONFIGURED,
   error: null,
+  accessToken: null,
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthContextValue>({
     ready: false,
-    usingSupabase: Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
+    usingSupabase: SUPABASE_CONFIGURED,
     error: null,
+    accessToken: null,
   });
 
   useEffect(() => {
     let cancelled = false;
+    const client = getSupabaseBrowserClient();
 
     async function bootstrap() {
+      if (!SUPABASE_CONFIGURED) {
+        setState({ ready: true, usingSupabase: false, error: null, accessToken: null });
+        return;
+      }
+
       try {
         const result = await ensureAnonymousSupabaseSession();
+        const accessToken =
+          result.accessToken ??
+          (result.authenticated ? await waitForSupabaseAccessToken() : null);
+
         if (cancelled) {
           return;
         }
+
         setState({
           ready: true,
-          usingSupabase: result.authenticated,
-          error: null,
+          usingSupabase: true,
+          error: !accessToken
+            ? "認証セッションの確立に失敗しました。再読み込みしてください。"
+            : null,
+          accessToken,
         });
       } catch (error) {
         if (cancelled) {
@@ -43,15 +68,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         setState({
           ready: true,
-          usingSupabase: false,
+          usingSupabase: true,
           error: error instanceof Error ? error.message : "認証初期化に失敗しました。",
+          accessToken: null,
         });
       }
     }
 
-    bootstrap();
+    void bootstrap();
+
+    const {
+      data: { subscription },
+    } =
+      client?.auth.onAuthStateChange((_event, session) => {
+        if (cancelled) {
+          return;
+        }
+
+        if (!session?.access_token) {
+          return;
+        }
+
+        setState((current) => ({
+          ...current,
+          ready: true,
+          usingSupabase: true,
+          error: null,
+          accessToken: session.access_token,
+        }));
+      }) ?? { data: { subscription: { unsubscribe() {} } } };
+
     return () => {
       cancelled = true;
+      subscription.unsubscribe();
     };
   }, []);
 

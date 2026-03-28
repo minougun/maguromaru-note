@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 import { useAuthState } from "@/components/providers/AuthProvider";
 import type { AppSnapshot } from "@/lib/domain/types";
-import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { buildSupabaseAuthHeaders } from "@/lib/supabase/browser";
 
 export function useAppSnapshot() {
   const auth = useAuthState();
@@ -18,12 +18,23 @@ export function useAppSnapshot() {
       return;
     }
 
+    if (auth.usingSupabase && !auth.accessToken) {
+      if (auth.error) {
+        setLoading(false);
+      }
+      return;
+    }
+
     let cancelled = false;
 
     async function loadSnapshot() {
       setLoading(true);
       setError(null);
-      const response = await fetch("/api/app-snapshot", { cache: "no-store" });
+
+      const response = await fetch("/api/app-snapshot", {
+        cache: "no-store",
+        headers: buildSupabaseAuthHeaders(auth.accessToken),
+      });
       if (cancelled) {
         return;
       }
@@ -44,33 +55,7 @@ export function useAppSnapshot() {
     return () => {
       cancelled = true;
     };
-  }, [auth.ready, refreshToken]);
-
-  useEffect(() => {
-    if (!auth.ready) {
-      return;
-    }
-
-    const client = getSupabaseBrowserClient();
-    if (!client) {
-      return;
-    }
-
-    const channel = client
-      .channel("menu-status-feed")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "menu_status" },
-        () => {
-          setRefreshToken((current) => current + 1);
-        },
-      )
-      .subscribe();
-
-    return () => {
-      void client.removeChannel(channel);
-    };
-  }, [auth.ready]);
+  }, [auth.accessToken, auth.error, auth.ready, auth.usingSupabase, refreshToken]);
 
   function refresh() {
     setRefreshToken((current) => current + 1);
