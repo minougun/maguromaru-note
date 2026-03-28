@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 603 370" fill="none">
+  <rect width="603" height="370" fill="#1a0e08"/>
+  <path d="M74 196c24-63 93-108 174-120 76-11 171 2 245 43 24 13 48 31 74 58-21 2-37 16-48 33-11 17-17 40-16 61-29-22-57-35-88-43-35-9-73-8-113 1-40 10-84 29-129 56-24 14-57 12-78-5-20-16-31-45-21-84Z" fill="#2a1a10" stroke="#c4a878" stroke-width="8"/>
+  <path d="M492 155c17-20 44-29 70-21-18 17-24 38-24 59 0 21 7 42 21 60-25 8-52 0-70-19l-17-17" fill="#3a2218" stroke="#c4a878" stroke-width="8"/>
+  <circle cx="100" cy="169" r="11" fill="#c4a878"/>
+  <path d="M80 185c9 7 23 7 32 0" stroke="#c4a878" stroke-width="6" stroke-linecap="round"/>
+  <text x="302" y="320" fill="#c4a878" font-family="Noto Sans JP, sans-serif" font-size="24" font-weight="700" text-anchor="middle">
+    tuna.jpg 後日差し替え
+  </text>
+</svg>

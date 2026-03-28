@@ -1,0 +1,34 @@
+{
+  "session_id": "6951d871-b62f-4e14-a434-e8b3616a5122",
+  "parent_session_id": null,
+  "state": "initialized",
+  "state_version": 1,
+  "started_at": "2026-03-28T00:58:28Z",
+  "updated_at": "2026-03-28T00:58:28Z",
+  "resume_token": "039dc176-3787-4b42-9572-91ff2ff041c6",
+  "event_seq": 1,
+  "last_event_id": "event-000001",
+  "fork_count": 0,
+  "orchestration": {
+    "max_state_retries": 3,
+    "retry_backoff_seconds": 10
+  },
+  "cwd": "/mnt/c/Users/minou/maguromaru-note",
+  "project_name": "maguromaru-note",
+  "prompt_seq": 1,
+  "git": {
+    "branch": "(no git)",
+    "uncommitted_changes": 0,
+    "last_commit": "none"
+  },
+  "plans": {
+    "exists": false,
+    "last_modified": 0,
+    "wip_tasks": 0,
+    "todo_tasks": 0,
+    "pending_tasks": 0,
+    "completed_tasks": 0
+  },
+  "changes_this_session": [],
+  "intent": "literal"
+}
