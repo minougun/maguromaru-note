@@ -1,13 +1,17 @@
 create extension if not exists pgcrypto;
 
-create table if not exists public.profiles (
-  id uuid primary key references auth.users(id) on delete cascade,
-  display_name text,
-  avatar_url text,
-  created_at timestamptz not null default timezone('utc', now())
-);
+drop view if exists public.user_collected_parts;
+drop table if exists public.quiz_stats cascade;
+drop table if exists public.visit_log_parts cascade;
+drop table if exists public.visit_logs cascade;
+drop table if exists public.store_status cascade;
+drop table if exists public.menu_items cascade;
+drop table if exists public.parts cascade;
+drop table if exists public.menu_status cascade;
+drop table if exists public.titles cascade;
+drop table if exists public.profiles cascade;
 
-create table if not exists public.parts (
+create table public.parts (
   id text primary key,
   name text not null,
   area text not null,
@@ -17,221 +21,168 @@ create table if not exists public.parts (
   sort_order integer not null unique check (sort_order > 0)
 );
 
-create table if not exists public.visit_logs (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references public.profiles(id) on delete cascade,
-  visited_at date not null,
-  photo_url text,
-  memo text,
-  created_at timestamptz not null default timezone('utc', now()),
-  constraint visit_logs_memo_length check (memo is null or char_length(memo) <= 120)
-);
-
-create table if not exists public.visit_log_parts (
-  id uuid primary key default gen_random_uuid(),
-  visit_log_id uuid not null references public.visit_logs(id) on delete cascade,
-  part_id text not null references public.parts(id) on delete restrict,
-  constraint visit_log_parts_unique unique (visit_log_id, part_id)
-);
-
-create table if not exists public.titles (
-  id text primary key,
-  name text not null,
-  icon text not null,
-  required_visits integer not null check (required_visits > 0),
-  sort_order integer not null unique check (sort_order > 0)
-);
-
-create table if not exists public.menu_items (
+create table public.menu_items (
   id text primary key,
   name text not null,
   price integer not null check (price > 0),
   sort_order integer not null unique check (sort_order > 0)
 );
 
-create table if not exists public.menu_status (
+create table public.visit_logs (
   id uuid primary key default gen_random_uuid(),
-  menu_item_id text not null unique references public.menu_items(id) on delete cascade,
-  status text not null check (status in ('available', 'few', 'soldout')),
-  updated_at timestamptz not null default timezone('utc', now()),
-  updated_by uuid not null references public.profiles(id) on delete restrict
+  user_id uuid not null references auth.users(id) on delete cascade,
+  menu_item_id text not null references public.menu_items(id),
+  visited_at date not null default current_date,
+  memo text,
+  photo_url text,
+  created_at timestamptz not null default timezone('utc', now()),
+  constraint visit_logs_memo_length check (memo is null or char_length(memo) <= 120)
 );
 
-create or replace function public.handle_new_user()
-returns trigger
-language plpgsql
-security definer
-set search_path = public
-as $$
-begin
-  insert into public.profiles (id, display_name, avatar_url)
-  values (
-    new.id,
-    coalesce(new.raw_user_meta_data ->> 'display_name', '匿名のまぐろ好き'),
-    new.raw_user_meta_data ->> 'avatar_url'
-  )
-  on conflict (id) do nothing;
+create table public.visit_log_parts (
+  id uuid primary key default gen_random_uuid(),
+  visit_log_id uuid not null references public.visit_logs(id) on delete cascade,
+  part_id text not null references public.parts(id) on delete restrict,
+  constraint visit_log_parts_unique unique (visit_log_id, part_id)
+);
 
-  return new;
-end;
-$$;
+create table public.store_status (
+  id integer primary key default 1 check (id = 1),
+  recommendation text not null default '',
+  status text not null default 'open' check (status in ('open', 'busy', 'closing_soon', 'closed')),
+  status_note text not null default '',
+  weather_comment text not null default '',
+  updated_at timestamptz not null default timezone('utc', now()),
+  constraint store_status_recommendation_length check (char_length(recommendation) <= 280),
+  constraint store_status_note_length check (char_length(status_note) <= 120),
+  constraint store_status_weather_comment_length check (char_length(weather_comment) <= 120)
+);
 
-drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created
-after insert on auth.users
-for each row execute procedure public.handle_new_user();
+create table public.quiz_stats (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  total_correct_answers integer not null default 0 check (total_correct_answers >= 0),
+  total_answered_questions integer not null default 0 check (total_answered_questions >= 0),
+  quizzes_completed integer not null default 0 check (quizzes_completed >= 0),
+  best_score integer not null default 0 check (best_score >= 0),
+  best_question_count integer not null default 0 check (best_question_count >= 0),
+  updated_at timestamptz not null default timezone('utc', now()),
+  constraint quiz_stats_score_range check (best_score <= best_question_count),
+  constraint quiz_stats_total_range check (total_correct_answers <= total_answered_questions)
+);
 
-create or replace function public.is_staff()
-returns boolean
-language sql
-stable
-as $$
-  select coalesce((auth.jwt() -> 'app_metadata' ->> 'role') = 'staff', false);
-$$;
-
-alter table public.profiles enable row level security;
 alter table public.parts enable row level security;
+alter table public.menu_items enable row level security;
 alter table public.visit_logs enable row level security;
 alter table public.visit_log_parts enable row level security;
-alter table public.titles enable row level security;
-alter table public.menu_items enable row level security;
-alter table public.menu_status enable row level security;
+alter table public.store_status enable row level security;
+alter table public.quiz_stats enable row level security;
 
-drop policy if exists "profiles_select_own" on public.profiles;
-create policy "profiles_select_own"
-on public.profiles
-for select
-to authenticated
-using (auth.uid() = id);
+alter table public.parts force row level security;
+alter table public.menu_items force row level security;
+alter table public.visit_logs force row level security;
+alter table public.visit_log_parts force row level security;
+alter table public.store_status force row level security;
+alter table public.quiz_stats force row level security;
 
-drop policy if exists "profiles_insert_own" on public.profiles;
-create policy "profiles_insert_own"
-on public.profiles
-for insert
-to authenticated
-with check (auth.uid() = id);
+revoke all on public.parts from anon, authenticated;
+revoke all on public.menu_items from anon, authenticated;
+revoke all on public.visit_logs from anon, authenticated;
+revoke all on public.visit_log_parts from anon, authenticated;
+revoke all on public.store_status from anon, authenticated;
+revoke all on public.quiz_stats from anon, authenticated;
 
-drop policy if exists "profiles_update_own" on public.profiles;
-create policy "profiles_update_own"
-on public.profiles
-for update
-to authenticated
-using (auth.uid() = id)
-with check (auth.uid() = id);
+grant select on public.parts to authenticated;
+grant select on public.menu_items to authenticated;
+grant select, insert, delete on public.visit_logs to authenticated;
+grant select, insert on public.visit_log_parts to authenticated;
+grant select on public.store_status to authenticated;
+grant select, insert, update on public.quiz_stats to authenticated;
 
-drop policy if exists "parts_read_all" on public.parts;
-create policy "parts_read_all"
+grant all on public.parts to service_role;
+grant all on public.menu_items to service_role;
+grant all on public.visit_logs to service_role;
+grant all on public.visit_log_parts to service_role;
+grant all on public.store_status to service_role;
+grant all on public.quiz_stats to service_role;
+
+create policy "parts_read"
 on public.parts
 for select
 to authenticated
 using (true);
 
-drop policy if exists "titles_read_all" on public.titles;
-create policy "titles_read_all"
-on public.titles
-for select
-to authenticated
-using (true);
-
-drop policy if exists "menu_items_read_all" on public.menu_items;
-create policy "menu_items_read_all"
+create policy "menu_read"
 on public.menu_items
 for select
 to authenticated
 using (true);
 
-drop policy if exists "visit_logs_select_own" on public.visit_logs;
-create policy "visit_logs_select_own"
+create policy "own_logs_select"
 on public.visit_logs
 for select
 to authenticated
 using (auth.uid() = user_id);
 
-drop policy if exists "visit_logs_insert_own" on public.visit_logs;
-create policy "visit_logs_insert_own"
+create policy "own_logs_insert"
 on public.visit_logs
 for insert
 to authenticated
 with check (auth.uid() = user_id);
 
-drop policy if exists "visit_logs_update_own" on public.visit_logs;
-create policy "visit_logs_update_own"
-on public.visit_logs
-for update
-to authenticated
-using (auth.uid() = user_id)
-with check (auth.uid() = user_id);
-
-drop policy if exists "visit_logs_delete_own" on public.visit_logs;
-create policy "visit_logs_delete_own"
+create policy "own_logs_delete"
 on public.visit_logs
 for delete
 to authenticated
 using (auth.uid() = user_id);
 
-drop policy if exists "visit_log_parts_select_own" on public.visit_log_parts;
-create policy "visit_log_parts_select_own"
+create policy "own_parts_select"
 on public.visit_log_parts
 for select
 to authenticated
 using (
-  exists (
-    select 1
+  visit_log_id in (
+    select id
     from public.visit_logs
-    where public.visit_logs.id = visit_log_parts.visit_log_id
-      and public.visit_logs.user_id = auth.uid()
+    where user_id = auth.uid()
   )
 );
 
-drop policy if exists "visit_log_parts_insert_own" on public.visit_log_parts;
-create policy "visit_log_parts_insert_own"
+create policy "own_parts_insert"
 on public.visit_log_parts
 for insert
 to authenticated
 with check (
-  exists (
-    select 1
+  visit_log_id in (
+    select id
     from public.visit_logs
-    where public.visit_logs.id = visit_log_parts.visit_log_id
-      and public.visit_logs.user_id = auth.uid()
+    where user_id = auth.uid()
   )
 );
 
-drop policy if exists "visit_log_parts_delete_own" on public.visit_log_parts;
-create policy "visit_log_parts_delete_own"
-on public.visit_log_parts
-for delete
-to authenticated
-using (
-  exists (
-    select 1
-    from public.visit_logs
-    where public.visit_logs.id = visit_log_parts.visit_log_id
-      and public.visit_logs.user_id = auth.uid()
-  )
-);
-
-drop policy if exists "menu_status_read_all" on public.menu_status;
-create policy "menu_status_read_all"
-on public.menu_status
+create policy "status_read"
+on public.store_status
 for select
 to authenticated
 using (true);
 
-drop policy if exists "menu_status_staff_insert" on public.menu_status;
-create policy "menu_status_staff_insert"
-on public.menu_status
+create policy "quiz_stats_select_own"
+on public.quiz_stats
+for select
+to authenticated
+using (auth.uid() = user_id);
+
+create policy "quiz_stats_insert_own"
+on public.quiz_stats
 for insert
 to authenticated
-with check (public.is_staff() and auth.uid() = updated_by);
+with check (auth.uid() = user_id);
 
-drop policy if exists "menu_status_staff_update" on public.menu_status;
-create policy "menu_status_staff_update"
-on public.menu_status
+create policy "quiz_stats_update_own"
+on public.quiz_stats
 for update
 to authenticated
-using (public.is_staff())
-with check (public.is_staff() and auth.uid() = updated_by);
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
 
 insert into public.parts (id, name, area, rarity, description, color, sort_order)
 values
@@ -242,84 +193,58 @@ values
   ('hoho', 'ほほ肉', '頭部', 3, '肉のような弾力と濃厚な旨味', '#d94444', 5),
   ('kama', 'カマ', '胸部', 2, '脂がのった希少部位', '#f07070', 6),
   ('haramo', 'ハラモ', '腹部', 2, '腹の大トロに近い部分', '#e06060', 7),
-  ('senaka', '背トロ', '背部', 2, '赤身に近い上品な脂', '#d35050', 8)
-on conflict (id) do update
-set
-  name = excluded.name,
-  area = excluded.area,
-  rarity = excluded.rarity,
-  description = excluded.description,
-  color = excluded.color,
-  sort_order = excluded.sort_order;
-
-insert into public.titles (id, name, icon, required_visits, sort_order)
-values
-  ('beginner', 'まぐろ入門者', '🐟', 1, 1),
-  ('akami_fan', '赤身の理解者', '🎣', 3, 2),
-  ('chutoro', '中トロ通', '🍣', 5, 3),
-  ('hunter', '希少部位ハンター', '🏆', 10, 4),
-  ('master', '一頭理解者', '👑', 20, 5)
-on conflict (id) do update
-set
-  name = excluded.name,
-  icon = excluded.icon,
-  required_visits = excluded.required_visits,
-  sort_order = excluded.sort_order;
+  ('senaka', '背トロ', '背部', 2, '赤身に近い上品な脂', '#d35050', 8);
 
 insert into public.menu_items (id, name, price, sort_order)
 values
   ('maguro_don', 'まぐろ丼', 2000, 1),
   ('maguro_don_mini', 'まぐろ丼ミニ', 1500, 2),
   ('tokujo_don', '特上まぐろ丼（大トロ入り）', 3000, 3),
-  ('tokujo_don_mini', '特上まぐろ丼ミニ', 2500, 4)
-on conflict (id) do update
-set
-  name = excluded.name,
-  price = excluded.price,
-  sort_order = excluded.sort_order;
+  ('tokujo_don_mini', '特上まぐろ丼ミニ', 2500, 4);
+
+insert into public.store_status (id, recommendation, status, status_note, weather_comment)
+values (1, '', 'open', '', '')
+on conflict (id) do nothing;
+
+create view public.user_collected_parts as
+select distinct
+  vlp.part_id,
+  vl.user_id
+from public.visit_log_parts vlp
+join public.visit_logs vl on vl.id = vlp.visit_log_id;
 
 insert into storage.buckets (id, name, public)
 values ('don-photos', 'don-photos', true)
 on conflict (id) do update
 set public = excluded.public;
 
-drop policy if exists "don_photos_read_all" on storage.objects;
-create policy "don_photos_read_all"
-on storage.objects
-for select
-to authenticated
-using (bucket_id = 'don-photos');
-
-drop policy if exists "don_photos_write_own" on storage.objects;
-create policy "don_photos_write_own"
+create policy "don_photos_owner_insert"
 on storage.objects
 for insert
 to authenticated
 with check (
   bucket_id = 'don-photos'
-  and (storage.foldername(name))[1] = auth.uid()::text
+  and auth.uid()::text = (storage.foldername(name))[1]
 );
 
-drop policy if exists "don_photos_update_own" on storage.objects;
-create policy "don_photos_update_own"
+create policy "don_photos_owner_update"
 on storage.objects
 for update
 to authenticated
 using (
   bucket_id = 'don-photos'
-  and (storage.foldername(name))[1] = auth.uid()::text
+  and auth.uid()::text = (storage.foldername(name))[1]
 )
 with check (
   bucket_id = 'don-photos'
-  and (storage.foldername(name))[1] = auth.uid()::text
+  and auth.uid()::text = (storage.foldername(name))[1]
 );
 
-drop policy if exists "don_photos_delete_own" on storage.objects;
-create policy "don_photos_delete_own"
+create policy "don_photos_owner_delete"
 on storage.objects
 for delete
 to authenticated
 using (
   bucket_id = 'don-photos'
-  and (storage.foldername(name))[1] = auth.uid()::text
+  and auth.uid()::text = (storage.foldername(name))[1]
 );

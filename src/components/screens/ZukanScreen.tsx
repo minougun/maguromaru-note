@@ -1,16 +1,16 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 import { ShareModal } from "@/components/share/ShareModal";
+import { TunaMap } from "@/components/TunaMap";
+import { Card } from "@/components/ui/Card";
 import { NorenBanner } from "@/components/ui/NorenBanner";
 import { ScreenState } from "@/components/ui/ScreenState";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import { useAppSnapshot } from "@/lib/hooks/use-app-snapshot";
 import { buildZukanShare, type SharePayload } from "@/lib/share/share";
-import { PartsList } from "@/components/zukan/PartsList";
-import { ProgressCard } from "@/components/zukan/ProgressCard";
-import { TunaMap } from "@/components/zukan/TunaMap";
 
 export function ZukanScreen() {
   const { snapshot, loading, error, refresh } = useAppSnapshot();
@@ -35,18 +35,56 @@ export function ZukanScreen() {
   }
 
   const collectedParts = snapshot.parts.filter((part) => snapshot.zukan.collectedPartIds.includes(part.id));
+  const progress = Math.round((snapshot.zukan.collectedCount / Math.max(snapshot.zukan.totalCount, 1)) * 100);
 
   return (
     <>
       <NorenBanner label="まぐろ図鑑" />
-      <ProgressCard
-        onShare={() => setSharePayload(buildZukanShare(collectedParts, snapshot.zukan.totalCount))}
-        summary={snapshot.zukan}
-      />
+      <Card glow>
+        <div className="progress-big">{progress}%</div>
+        <div className="progress-bar-wrap">
+          <div className="progress-bar-fill" style={{ width: `${progress}%` }} />
+        </div>
+        <p className="progress-caption">
+          {snapshot.zukan.collectedCount} / {snapshot.zukan.totalCount} 部位
+        </p>
+        <button className="button-outline" onClick={() => setSharePayload(buildZukanShare(collectedParts, snapshot.zukan.totalCount))} type="button">
+          図鑑の進捗をシェア
+        </button>
+      </Card>
+      {snapshot.zukan.isComplete ? (
+        <Card>
+          <p className="complete-banner">全8部位コンプリートです。次は履歴をシェアして自慢しましょう。</p>
+        </Card>
+      ) : null}
+
       <SectionTitle subtitle="Tuna map" title="部位マップ" />
-      <TunaMap collectedPartIds={snapshot.zukan.collectedPartIds} parts={snapshot.parts} />
+      <TunaMap collectedPartIds={snapshot.zukan.collectedPartIds} />
+
       <SectionTitle subtitle="All parts" title="部位一覧" />
-      <PartsList collectedPartIds={snapshot.zukan.collectedPartIds} parts={snapshot.parts} />
+      <div className="parts-grid">
+        {snapshot.parts.map((part) => {
+          const collected = snapshot.zukan.collectedPartIds.includes(part.id);
+          return (
+            <article className={`part-list-card ${collected ? "collected" : "missing"}`} key={part.id}>
+              <div className="part-name">{collected ? part.name : `？ ${part.name}`}</div>
+              <div className="part-area">
+                {part.area} / {"★".repeat(part.rarity) + "☆".repeat(3 - part.rarity)}
+              </div>
+              <div className="plist-desc">{collected ? part.description : "まだ食べていません"}</div>
+            </article>
+          );
+        })}
+      </div>
+
+      <Card>
+        <p className="helper-text">
+          図鑑を見ながら部位名を覚えたら、まぐろクイズで理解度を確認できます。
+        </p>
+        <Link className="button-outline inline-button" href="/quiz">
+          まぐろクイズへ
+        </Link>
+      </Card>
       <ShareModal onClose={() => setSharePayload(null)} open={Boolean(sharePayload)} payload={sharePayload} />
     </>
   );
