@@ -13,6 +13,8 @@ interface MapRegionDef {
   r?: number;
   rx?: number;
   ry?: number;
+  /** Show label + leader line (for parts not labeled in the illustration) */
+  showLabel?: { lx: number; ly: number };
 }
 
 // Positions matched to tuna-map.jpg illustration
@@ -23,8 +25,8 @@ const MAP_REGIONS: MapRegionDef[] = [
   { id: "chutoro", type: "ellipse", cx: 310, cy: 100, rx: 70, ry: 24 },
   { id: "akami", type: "ellipse", cx: 360, cy: 190, rx: 75, ry: 35 },
   { id: "otoro", type: "ellipse", cx: 265, cy: 278, rx: 40, ry: 20 },
-  { id: "senaka", type: "ellipse", cx: 440, cy: 105, rx: 36, ry: 22 },
-  { id: "haramo", type: "ellipse", cx: 390, cy: 278, rx: 55, ry: 22 },
+  { id: "senaka", type: "ellipse", cx: 440, cy: 105, rx: 36, ry: 22, showLabel: { lx: 440, ly: 58 } },
+  { id: "haramo", type: "ellipse", cx: 390, cy: 278, rx: 55, ry: 22, showLabel: { lx: 390, ly: 322 } },
 ];
 
 const partsById = new Map(seededParts.map((p) => [p.id, p]));
@@ -127,6 +129,35 @@ export function TunaMap({ collectedPartIds }: TunaMapProps) {
                 ) : (
                   <ellipse cx={r.cx} cy={r.cy} rx={(r.rx ?? 30) + 10} ry={(r.ry ?? 20) + 10} fill="transparent" />
                 )}
+                {/* Label for parts not shown in the illustration */}
+                {r.showLabel ? (
+                  <>
+                    <line x1={r.showLabel.lx} y1={r.showLabel.ly + 8} x2={r.cx} y2={r.cy} stroke="var(--cream-faint, #c4a878)" strokeWidth="1.2" opacity="0.7" fill="none" />
+                    <rect
+                      x={r.showLabel.lx - 28}
+                      y={r.showLabel.ly - 12}
+                      rx="10"
+                      ry="10"
+                      width="56"
+                      height="20"
+                      fill={eaten ? part.color : "rgba(80,80,80,0.7)"}
+                      fillOpacity={eaten ? 0.9 : 0.6}
+                      stroke={eaten ? part.color : "rgba(150,150,150,0.4)"}
+                      strokeWidth="1"
+                    />
+                    <text
+                      x={r.showLabel.lx}
+                      y={r.showLabel.ly + 2}
+                      textAnchor="middle"
+                      fontSize="11"
+                      fontWeight="700"
+                      fill={eaten ? "#0d0805" : "#ccc"}
+                      fontFamily="Noto Sans JP, sans-serif"
+                    >
+                      {part.name}
+                    </text>
+                  </>
+                ) : null}
               </g>
             );
           })}
