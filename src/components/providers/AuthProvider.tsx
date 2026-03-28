@@ -54,11 +54,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
+        if (!accessToken) {
+          console.error("[AuthProvider] token取得失敗", {
+            authenticated: result.authenticated,
+            accessToken: result.accessToken,
+            hasClient: Boolean(client),
+          });
+        }
+
         setState({
           ready: true,
           usingSupabase: true,
           error: !accessToken
-            ? "認証セッションの確立に失敗しました。再読み込みしてください。"
+            ? `認証セッションの確立に失敗しました（auth:${result.authenticated}, token:${Boolean(result.accessToken)}, client:${Boolean(client)}）。再読み込みしてください。`
             : null,
           accessToken,
         });
@@ -66,10 +74,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (cancelled) {
           return;
         }
+        const msg = error instanceof Error ? error.message : "unknown";
+        console.error("[AuthProvider] 初期化例外", error);
         setState({
           ready: true,
           usingSupabase: true,
-          error: error instanceof Error ? error.message : "認証初期化に失敗しました。",
+          error: `認証初期化に失敗しました: ${msg}`,
           accessToken: null,
         });
       }
