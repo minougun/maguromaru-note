@@ -4,7 +4,7 @@
  * ## 使い方
  *
  * 1. 初回のみ Chromium を入れる: npx playwright install chromium
- * 2. 別ターミナルで npm run dev
+ * 2. 別ターミナルで npm run dev（WSL から Windows 上の dev に繋ぐときは npm run dev:host）
  * 3. npm run capture:onboarding
  *
  * ### WSL の注意
@@ -289,23 +289,28 @@ function httpProbe(urlStr: string, timeoutMs: number): Promise<void> {
   });
 }
 
-function buildConnectError(failedUrl: string): Error {
+function buildConnectError(triedProbeUrls: string[]): Error {
+  const list = triedProbeUrls.map((u) => "  - " + u).join("\n");
   return new Error(
-    "接続できません: " +
-      failedUrl +
-      "\n- npm run dev を起動し、ポート（例 3002）を CAPTURE_BASE_URL に合わせる" +
-      "\n- 手動: CAPTURE_BASE_URL=http://（到達できるIP）:ポート" +
-      "\n- WSL で自動フォールバックを無効化: CAPTURE_NO_WSL_AUTO_FALLBACK=1" +
-      "\n- Windows の IPv4 を列挙: CAPTURE_WINDOWS_HOST_CANDIDATES=172.x.x.x（ipconfig で確認）",
+    "いずれの URL にも接続できませんでした。\n試した URL:\n" +
+      list +
+      "\n\n対処:\n" +
+      "- ポートが 3002 等なら CAPTURE_BASE_URL=http://127.0.0.1:3002（または届く IP と同じポート）\n" +
+      "- **Windows で next dev / WSL でキャプチャ**のとき: dev が止まっている・別ポート・ファイアウォールで弾かれていると 172.x から届きません。Windows のターミナルで listen を確認。**明示的に全体公開するなら npm run dev:host**（-H 0.0.0.0）\n" +
+      "- Windows ファイアウォールで Node のポートを許可する\n" +
+      "- 手動 IP: CAPTURE_WINDOWS_HOST_CANDIDATES=（Windows の ipconfig の IPv4）\n" +
+      "- 自動候補を切る: CAPTURE_NO_WSL_AUTO_FALLBACK=1",
   );
 }
 
 /** 接続できるオリジンを確定（WSL では 127.0.0.1 失敗後に Windows ホスト候補を順に試行） */
 async function resolveReachableOrigin(origin: string): Promise<string> {
   const timeoutMs = envInt("CAPTURE_PROBE_TIMEOUT_MS", 5000);
+  const triedProbeUrls: string[] = [];
 
   const tryProbe = async (o: string): Promise<boolean> => {
     const p = appUrl(o, "/");
+    triedProbeUrls.push(p);
     console.info("[capture] 接続確認: " + p + " （タイムアウト " + timeoutMs + "ms）");
     try {
       await httpProbe(p, timeoutMs);
@@ -321,7 +326,7 @@ async function resolveReachableOrigin(origin: string): Promise<string> {
   }
 
   if (!canWslAutoFallbackToWindowsHost(origin)) {
-    throw buildConnectError(appUrl(origin, "/"));
+    throw buildConnectError(triedProbeUrls);
   }
 
   const candidates = listWslWindowsHostCandidates();
@@ -329,7 +334,7 @@ async function resolveReachableOrigin(origin: string): Promise<string> {
     console.info(
       "[capture] Windows ホスト候補がありません（ip route default またはプライベート nameserver）。CAPTURE_WINDOWS_HOST_CANDIDATES に ipconfig の IPv4 を入れてください。",
     );
-    throw buildConnectError(appUrl(origin, "/"));
+    throw buildConnectError(triedProbeUrls);
   }
 
   console.info("[capture] 127.0.0.1 に届かないため、候補を順に試します: " + candidates.join(", "));
@@ -345,7 +350,7 @@ async function resolveReachableOrigin(origin: string): Promise<string> {
     }
   }
 
-  throw buildConnectError(appUrl(origin, "/"));
+  throw buildConnectError(triedProbeUrls);
 }
 
 /** Next dev は HMR 等で window.load が遅延・未発火になり得るため、load は短めに試して諦める */
