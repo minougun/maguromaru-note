@@ -2,11 +2,31 @@ import { STORE_INFO, TITLES, quizQuestionsPerStage, quizStageCount, quizStagesPe
 import { getDefaultPartIdsForMenuItem } from "@/lib/domain/menu-part-defaults";
 import { seededMenuItems, seededParts } from "@/lib/domain/seed";
 import { filterTrackedParts } from "@/lib/domain/tracked-parts";
+import {
+  TUNA_CUISINE,
+  TUNA_ECOLOGY,
+  TUNA_FISHING,
+  TUNA_SPECIES,
+  TUNA_TRIVIA,
+  type TunaFact,
+} from "@/lib/tuna-knowledge";
+
+export type QuizQuestionCategory =
+  | "部位"
+  | "メニュー"
+  | "称号"
+  | "お店"
+  | "アプリ"
+  | "魚種"
+  | "生態"
+  | "漁と流通"
+  | "食と栄養"
+  | "雑学";
 
 export interface QuizQuestion {
   id: string;
   stageNumber: number;
-  category: "部位" | "メニュー" | "称号" | "お店" | "アプリ";
+  category: QuizQuestionCategory;
   question: string;
   options: [string, string, string, string];
   answerIndex: number;
@@ -16,7 +36,7 @@ export interface QuizQuestion {
 
 interface QuizQuestionSpec {
   idBase: string;
-  category: QuizQuestion["category"];
+  category: QuizQuestionCategory;
   question: string;
   options: [string, string, string, string];
   answerIndex: number;
@@ -26,7 +46,7 @@ interface QuizQuestionSpec {
 
 interface Statement {
   id: string;
-  category: QuizQuestion["category"];
+  category: QuizQuestionCategory;
   subject: string;
   text: string;
   explanation: string;
@@ -36,7 +56,7 @@ type QuizTier = 1 | 2 | 3 | 4 | 5;
 
 export interface PublicQuizQuestion {
   id: string;
-  category: QuizQuestion["category"];
+  category: QuizQuestionCategory;
   question: string;
   options: [string, string, string, string];
 }
@@ -211,7 +231,7 @@ function buildMultiTruthStatementQuestions(
   lies: Statement[],
   truthCount: 2 | 3,
   limit: number,
-  categoryOverride?: QuizQuestion["category"],
+  categoryOverride?: QuizQuestionCategory,
 ) {
   const questions: QuizQuestionSpec[] = [];
   const truthSets = combinations(truths, truthCount);
@@ -280,6 +300,149 @@ function dedupeQuestionSpecs(questions: QuizQuestionSpec[]) {
     return true;
   });
 }
+
+function tunaFactsToStatements(facts: readonly TunaFact[], category: QuizQuestionCategory) {
+  const truths: Statement[] = facts.map((fact) => ({
+    id: `tuna-truth-${fact.id}`,
+    category,
+    subject: fact.subject,
+    text: fact.truth,
+    explanation: fact.explanation,
+  }));
+  const lies: Statement[] = facts.map((fact) => ({
+    id: `tuna-lie-${fact.id}`,
+    category,
+    subject: fact.subject,
+    text: fact.lie,
+    explanation: fact.explanation,
+  }));
+  return { truths, lies };
+}
+
+function primaryEnName(en: string) {
+  const segment = en.split(" / ")[0];
+  return (segment ?? en).trim();
+}
+
+function buildTunaSpeciesQuestions(): QuizQuestionSpec[] {
+  const specs: QuizQuestionSpec[] = [];
+  const enPrimaryPool = TUNA_SPECIES.map((species) => primaryEnName(species.enName));
+  const lenPool = TUNA_SPECIES.map((species) => species.maxLength);
+  const wtPool = TUNA_SPECIES.map((species) => species.maxWeight);
+  const sciPrimaryPool = TUNA_SPECIES.map((species) => primaryEnName(species.sciName));
+  const usagePool = TUNA_SPECIES.map((species) =>
+    species.usage.length > 80 ? `${species.usage.slice(0, 77)}…` : species.usage,
+  );
+
+  TUNA_SPECIES.forEach((species, index) => {
+    const enP = primaryEnName(species.enName);
+    const enOptions = buildOptions(
+      enP,
+      enPrimaryPool.filter((value) => value !== enP),
+      enPrimaryPool,
+      index + 11,
+    );
+    specs.push({
+      idBase: `species-en-${species.id}`,
+      category: "魚種",
+      question: `「${species.jaName}」の英名として一般的に使われるのはどれ？`,
+      options: enOptions,
+      answerIndex: answerIndexOf(enOptions, enP),
+      explanation: `「${species.jaName}」の英名は「${species.enName}」などと表記されます。`,
+    });
+
+    const lenOptions = buildOptions(
+      species.maxLength,
+      lenPool.filter((value) => value !== species.maxLength),
+      lenPool,
+      index + 23,
+    );
+    specs.push({
+      idBase: `species-len-${species.id}`,
+      category: "魚種",
+      question: `「${species.jaName}」の最大全長の目安として妥当なのはどれ？`,
+      options: lenOptions,
+      answerIndex: answerIndexOf(lenOptions, species.maxLength),
+      explanation: `${species.jaName} は ${species.maxLength} 前後が目安とされています。`,
+    });
+
+    const wtOptions = buildOptions(
+      species.maxWeight,
+      wtPool.filter((value) => value !== species.maxWeight),
+      wtPool,
+      index + 37,
+    );
+    specs.push({
+      idBase: `species-wt-${species.id}`,
+      category: "魚種",
+      question: `「${species.jaName}」の最大体重の目安として近いのはどれ？`,
+      options: wtOptions,
+      answerIndex: answerIndexOf(wtOptions, species.maxWeight),
+      explanation: `${species.jaName} は ${species.maxWeight} 前後が目安とされています。`,
+    });
+
+    const sciP = primaryEnName(species.sciName);
+    const sciOptions = buildOptions(
+      sciP,
+      sciPrimaryPool.filter((value) => value !== sciP),
+      sciPrimaryPool,
+      index + 51,
+    );
+    specs.push({
+      idBase: `species-sci-${species.id}`,
+      category: "魚種",
+      question: `「${species.jaName}」の学名（主な表記）として正しいのはどれ？`,
+      options: sciOptions,
+      answerIndex: answerIndexOf(sciOptions, sciP),
+      explanation: `学名は「${species.sciName}」と表記されます。`,
+    });
+
+    const usageSnippet = usagePool[index]!;
+    const usageOptions = buildOptions(
+      usageSnippet,
+      usagePool.filter((value) => value !== usageSnippet),
+      usagePool,
+      index + 63,
+    );
+    specs.push({
+      idBase: `species-usage-${species.id}`,
+      category: "魚種",
+      question: `「${species.jaName}」の利用・味わいの特徴として最も近いのはどれ？`,
+      options: usageOptions,
+      answerIndex: answerIndexOf(usageOptions, usageSnippet),
+      explanation: species.usage,
+    });
+  });
+
+  return specs;
+}
+
+const { truths: ecologyTruthStatements, lies: ecologyLieStatements } = tunaFactsToStatements(
+  TUNA_ECOLOGY,
+  "生態",
+);
+const { truths: fishingTruthStatements, lies: fishingLieStatements } = tunaFactsToStatements(
+  TUNA_FISHING,
+  "漁と流通",
+);
+const { truths: cuisineTruthStatements, lies: cuisineLieStatements } = tunaFactsToStatements(
+  TUNA_CUISINE,
+  "食と栄養",
+);
+const { truths: triviaTruthStatements, lies: triviaLieStatements } = tunaFactsToStatements(TUNA_TRIVIA, "雑学");
+
+const allTunaTruthStatements = [
+  ...ecologyTruthStatements,
+  ...fishingTruthStatements,
+  ...cuisineTruthStatements,
+  ...triviaTruthStatements,
+];
+const allTunaLieStatements = [
+  ...ecologyLieStatements,
+  ...fishingLieStatements,
+  ...cuisineLieStatements,
+  ...triviaLieStatements,
+];
 
 const quizParts = filterTrackedParts(seededParts);
 const areaPool = [...new Set(quizParts.map((part) => part.area))];
@@ -1100,6 +1263,7 @@ const mixedTruthStatements = [
   ...titleTruthStatements,
   ...storeTruthStatements,
   ...appTruthStatements,
+  ...allTunaTruthStatements,
 ];
 const mixedLieStatements = [
   ...partLieStatements,
@@ -1107,32 +1271,55 @@ const mixedLieStatements = [
   ...titleLieStatements,
   ...storeLieStatements,
   ...appLieStatements,
+  ...allTunaLieStatements,
 ];
 
 const tier1QuestionBank = dedupeQuestionSpecs([
   ...partFactQuestions,
   ...menuQuestions,
-  ...buildSingleTruthStatementQuestions("tier1-part", partTruthStatements, partLieStatements, 220),
-  ...buildSingleTruthStatementQuestions("tier1-menu", menuTruthStatements, menuLieStatements, 140),
-  ...buildSingleTruthStatementQuestions("tier1-title", titleTruthStatements, titleLieStatements, 80),
+  ...buildTunaSpeciesQuestions(),
+  ...buildSingleTruthStatementQuestions("tier1-part", partTruthStatements, partLieStatements, 200),
+  ...buildSingleTruthStatementQuestions("tier1-menu", menuTruthStatements, menuLieStatements, 120),
+  ...buildSingleTruthStatementQuestions(
+    "tier1-eco",
+    ecologyTruthStatements,
+    [...allTunaLieStatements, ...partLieStatements],
+    220,
+  ),
+  ...buildSingleTruthStatementQuestions("tier1-trivia", triviaTruthStatements, allTunaLieStatements, 140),
 ]);
 
 const tier2QuestionBank = dedupeQuestionSpecs([
   ...partCombinationQuestions,
   ...buildMultiTruthStatementQuestions("tier2-part", partTruthStatements, partLieStatements, 2, 160, "部位"),
   ...buildMultiTruthStatementQuestions("tier2-menu", menuTruthStatements, menuLieStatements, 2, 120, "メニュー"),
+  ...buildMultiTruthStatementQuestions("tier2-eco", ecologyTruthStatements, allTunaLieStatements, 2, 140, "生態"),
+  ...buildSingleTruthStatementQuestions("tier2-fish", fishingTruthStatements, allTunaLieStatements, 120),
 ]);
 
 const tier3QuestionBank = dedupeQuestionSpecs([
   ...titleQuestions,
-  ...buildSingleTruthStatementQuestions("tier3-title", titleTruthStatements, titleLieStatements, 160),
-  ...buildMultiTruthStatementQuestions("tier3-title", titleTruthStatements, titleLieStatements, 2, 160, "称号"),
-  ...buildMultiTruthStatementQuestions("tier3-mixed", [...partTruthStatements, ...menuTruthStatements], [...partLieStatements, ...menuLieStatements], 2, 100, "称号"),
+  ...buildSingleTruthStatementQuestions("tier3-fish", fishingTruthStatements, allTunaLieStatements, 220),
+  ...buildSingleTruthStatementQuestions("tier3-title", titleTruthStatements, titleLieStatements, 120),
+  ...buildMultiTruthStatementQuestions("tier3-fish-m", fishingTruthStatements, allTunaLieStatements, 2, 160, "漁と流通"),
+  ...buildMultiTruthStatementQuestions("tier3-title", titleTruthStatements, titleLieStatements, 2, 140, "称号"),
+  ...buildMultiTruthStatementQuestions(
+    "tier3-eco-fish",
+    [...ecologyTruthStatements, ...fishingTruthStatements],
+    [...ecologyLieStatements, ...fishingLieStatements],
+    2,
+    120,
+    "漁と流通",
+  ),
 ]);
 
 const tier4QuestionBank = dedupeQuestionSpecs([
   ...storeQuestions,
   ...appQuestions,
+  ...buildSingleTruthStatementQuestions("tier4-cui", cuisineTruthStatements, allTunaLieStatements, 160),
+  ...buildSingleTruthStatementQuestions("tier4-tri", triviaTruthStatements, allTunaLieStatements, 140),
+  ...buildMultiTruthStatementQuestions("tier4-cui-m", cuisineTruthStatements, allTunaLieStatements, 2, 140, "食と栄養"),
+  ...buildMultiTruthStatementQuestions("tier4-tri-m", triviaTruthStatements, allTunaLieStatements, 2, 120, "雑学"),
   ...buildSingleTruthStatementQuestions("tier4-store", storeTruthStatements, storeLieStatements, 120),
   ...buildMultiTruthStatementQuestions("tier4-store", storeTruthStatements, storeLieStatements, 2, 120, "お店"),
   ...buildSingleTruthStatementQuestions("tier4-app", appTruthStatements, appLieStatements, 120),
@@ -1142,15 +1329,15 @@ const tier4QuestionBank = dedupeQuestionSpecs([
     [...storeTruthStatements, ...appTruthStatements],
     [...storeLieStatements, ...appLieStatements],
     2,
-    200,
+    160,
     "お店",
   ),
 ]);
 
 const tier5QuestionBank = dedupeQuestionSpecs([
-  ...buildMultiTruthStatementQuestions("tier5-mixed-2", mixedTruthStatements, mixedLieStatements, 2, 220, "アプリ"),
-  ...buildMultiTruthStatementQuestions("tier5-mixed-3", mixedTruthStatements, mixedLieStatements, 3, 220, "アプリ"),
-  ...buildSingleTruthStatementQuestions("tier5-mixed-single", mixedTruthStatements, mixedLieStatements, 80),
+  ...buildMultiTruthStatementQuestions("tier5-mixed-2", mixedTruthStatements, mixedLieStatements, 2, 260, "雑学"),
+  ...buildMultiTruthStatementQuestions("tier5-mixed-3", mixedTruthStatements, mixedLieStatements, 3, 260, "雑学"),
+  ...buildSingleTruthStatementQuestions("tier5-mixed-single", mixedTruthStatements, mixedLieStatements, 160),
 ]);
 
 const tierQuestionBanks: Record<QuizTier, QuizQuestionSpec[]> = {
@@ -1204,7 +1391,18 @@ const STAGE_QUESTION_BANKS = buildStageQuestionBanks();
 export const QUIZ_QUESTIONS: QuizQuestion[] = Array.from(STAGE_QUESTION_BANKS.values()).flat();
 export const QUIZ_SESSION_SIZE = quizQuestionsPerStage;
 export const QUIZ_STAGE_NUMBERS = Array.from({ length: quizStageCount }, (_, index) => index + 1);
-export const QUIZ_CATEGORIES = ["部位", "メニュー", "称号", "お店", "アプリ"] as const;
+export const QUIZ_CATEGORIES = [
+  "部位",
+  "メニュー",
+  "魚種",
+  "生態",
+  "漁と流通",
+  "食と栄養",
+  "雑学",
+  "称号",
+  "お店",
+  "アプリ",
+] as const;
 
 const quizSessionCache = new Map<string, QuizQuestion[]>();
 const questionMap = new Map(QUIZ_QUESTIONS.map((question) => [question.id, question]));

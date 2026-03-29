@@ -11,8 +11,8 @@ export const QUIZ_STAGE_CONFIGS = Array.from({ length: quizStageCount }, (_, ind
         stageNumber,
         tier,
         stage,
-        title: "部位ベーシック",
-        detail: "部位の基本情報を固める 10 問",
+        title: "部位入門",
+        detail: "まぐろの部位を覚える 10 問",
         difficultyLabel: "やさしい",
       };
     case 2:
@@ -20,8 +20,8 @@ export const QUIZ_STAGE_CONFIGS = Array.from({ length: quizStageCount }, (_, ind
         stageNumber,
         tier,
         stage,
-        title: "メニュー解析",
-        detail: "部位とメニュー構成を見分ける 10 問",
+        title: "魚種と生態",
+        detail: "まぐろの種類と生態を学ぶ 10 問",
         difficultyLabel: "ふつう",
       };
     case 3:
@@ -29,8 +29,8 @@ export const QUIZ_STAGE_CONFIGS = Array.from({ length: quizStageCount }, (_, ind
         stageNumber,
         tier,
         stage,
-        title: "称号チャレンジ",
-        detail: "称号条件と応用知識を解く 10 問",
+        title: "漁と流通",
+        detail: "漁法・流通・品質の知識 10 問",
         difficultyLabel: "むずかしい",
       };
     case 4:
@@ -38,8 +38,8 @@ export const QUIZ_STAGE_CONFIGS = Array.from({ length: quizStageCount }, (_, ind
         stageNumber,
         tier,
         stage,
-        title: "店舗・アプリ実践",
-        detail: "店舗情報と運用知識を問う 10 問",
+        title: "食と文化",
+        detail: "食べ方・栄養・雑学を問う 10 問",
         difficultyLabel: "かなりむずかしい",
       };
     default:
@@ -47,7 +47,7 @@ export const QUIZ_STAGE_CONFIGS = Array.from({ length: quizStageCount }, (_, ind
         stageNumber,
         tier,
         stage,
-        title: "総合マスター",
+        title: "まぐろマスター",
         detail: "全カテゴリ混合の最難関 10 問",
         difficultyLabel: "最難関",
       };
