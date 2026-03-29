@@ -56,57 +56,72 @@ export function AppSnapshotProvider({ children }: { children: React.ReactNode })
       setLoading(true);
       setError(null);
 
-      const initialToken = auth.usingSupabase
-        ? auth.accessToken ?? (await readSupabaseAccessToken())
-        : auth.accessToken;
-
-      const fetchInit = {
-        cache: "no-store" as const,
-        signal: abortController.signal,
-        headers: buildSupabaseAuthHeaders(initialToken),
-      };
-
-      let response: Response;
       try {
-        response = await fetch(SNAPSHOT_URL, fetchInit);
+        const initialToken = auth.usingSupabase
+          ? auth.accessToken ?? (await readSupabaseAccessToken())
+          : auth.accessToken;
+
+        const fetchInit = {
+          cache: "no-store" as const,
+          signal: abortController.signal,
+          headers: buildSupabaseAuthHeaders(initialToken),
+        };
+
+        let response: Response;
+        try {
+          response = await fetch(SNAPSHOT_URL, fetchInit);
+        } catch (err) {
+          if (err instanceof DOMException && err.name === "AbortError") {
+            return;
+          }
+          throw new Error("network");
+        }
+
+        if (response.status === 401 && auth.usingSupabase) {
+          const retryToken = await readSupabaseAccessToken();
+          if (retryToken && retryToken !== initialToken) {
+            try {
+              response = await fetch(SNAPSHOT_URL, {
+                ...fetchInit,
+                headers: buildSupabaseAuthHeaders(retryToken),
+              });
+            } catch (err) {
+              if (err instanceof DOMException && err.name === "AbortError") {
+                return;
+              }
+              throw new Error("network");
+            }
+          }
+        }
+
+        if (cancelled) {
+          return;
+        }
+
+        if (!response.ok) {
+          const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+          setError(payload?.error ?? "データ取得に失敗しました。");
+          return;
+        }
+
+        const nextSnapshot = (await response.json().catch(() => null)) as AppSnapshot | null;
+        if (!nextSnapshot) {
+          setError("データの形式が不正です。");
+          return;
+        }
+        setSnapshot(nextSnapshot);
       } catch (err) {
         if (cancelled || (err instanceof DOMException && err.name === "AbortError")) {
           return;
         }
-        throw err;
-      }
-
-      if (response.status === 401 && auth.usingSupabase) {
-        const retryToken = await readSupabaseAccessToken();
-        if (retryToken && retryToken !== initialToken) {
-          try {
-            response = await fetch(SNAPSHOT_URL, {
-              ...fetchInit,
-              headers: buildSupabaseAuthHeaders(retryToken),
-            });
-          } catch (err) {
-            if (cancelled || (err instanceof DOMException && err.name === "AbortError")) {
-              return;
-            }
-            throw err;
-          }
+        if (!cancelled) {
+          setError("通信に失敗しました。ネットワークを確認してください。");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
         }
       }
-
-      if (cancelled) {
-        return;
-      }
-
-      if (!response.ok) {
-        const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-        setError(payload?.error ?? "データ取得に失敗しました。");
-        setLoading(false);
-        return;
-      }
-
-      const nextSnapshot = (await response.json()) as AppSnapshot;
-      setSnapshot(nextSnapshot);
-      setLoading(false);
     }
 
     void loadSnapshot();
