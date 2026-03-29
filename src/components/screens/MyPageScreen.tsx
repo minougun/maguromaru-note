@@ -16,13 +16,12 @@ import {
   getSupabaseAuthProfile,
   readStoredAnonymousLinkNonce,
   readSupabaseAccessToken,
-  requestPhoneLinkSms,
+  requestEmailLinkConfirmation,
   signOutSupabase,
   startAnonymousAppleLinkFlow,
   startAnonymousGoogleLinkFlow,
   startAppleLinkFlow,
   startGoogleLinkFlow,
-  verifyPhoneLinkOtp,
 } from "@/lib/supabase/browser";
 
 function profileErrorMessage(error: unknown) {
@@ -40,10 +39,8 @@ export function MyPageScreen() {
   const [linkNotice, setLinkNotice] = useState<string | null>(null);
   const [linkError, setLinkError] = useState<string | null>(null);
   const [pendingLink, setPendingLink] = useState<string | null>(null);
-  const [phoneE164, setPhoneE164] = useState("");
-  const [phoneOtp, setPhoneOtp] = useState("");
-  const [phoneStep, setPhoneStep] = useState<"idle" | "sent">("idle");
-  const [phonePanelOpen, setPhonePanelOpen] = useState(false);
+  const [linkEmail, setLinkEmail] = useState("");
+  const [emailPanelOpen, setEmailPanelOpen] = useState(false);
 
   const loadProfile = useCallback(async () => {
     if (!auth.usingSupabase) {
@@ -131,8 +128,8 @@ export function MyPageScreen() {
   }, [auth.accessToken, auth.usingSupabase, loadProfile]);
 
   useEffect(() => {
-    if (profile && isProviderLinked(profile, "phone")) {
-      setPhonePanelOpen(false);
+    if (profile && isProviderLinked(profile, "email")) {
+      setEmailPanelOpen(false);
     }
   }, [profile]);
 
@@ -142,10 +139,15 @@ export function MyPageScreen() {
 
       {auth.usingSupabase ? (
         <AccountLinkSection
+          email={linkEmail}
+          emailExpanded={emailPanelOpen}
+          emailFieldIdPrefix="mypage"
+          emailFlow="magic_link"
+          emailOtp=""
+          emailStep="idle"
           error={linkError}
           loading={profileLoading}
           notice={linkNotice}
-          phoneFieldIdPrefix="mypage"
           onApple={() => {
             if (!profile) {
               return;
@@ -169,10 +171,9 @@ export function MyPageScreen() {
               }
             })();
           }}
-          onClosePhonePanel={() => {
-            setPhonePanelOpen(false);
-            setPhoneStep("idle");
-            setPhoneOtp("");
+          onCloseEmailPanel={() => {
+            setEmailPanelOpen(false);
+            setLinkEmail("");
             setLinkError(null);
           }}
           onGoogle={() => {
@@ -198,27 +199,31 @@ export function MyPageScreen() {
               }
             })();
           }}
-          onPhoneE164Change={setPhoneE164}
-          onPhoneOtpChange={setPhoneOtp}
-          onPhoneRow={() => {
+          onEmailChange={setLinkEmail}
+          onEmailOtpChange={() => {}}
+          onEmailRow={() => {
             if (!profile) {
               return;
             }
-            if (isProviderLinked(profile, "phone")) {
-              setLinkNotice("すでに電話番号と連携しています。");
-              setPhonePanelOpen(false);
+            if (isProviderLinked(profile, "email")) {
+              setLinkNotice("すでにメールアドレスと連携しています。");
+              setEmailPanelOpen(false);
               return;
             }
-            setPhonePanelOpen((open) => !open);
+            setEmailPanelOpen((open) => !open);
             setLinkError(null);
           }}
-          onSendSms={() => {
+          onSendEmail={() => {
             void (async () => {
               try {
-                setPendingLink("phone-sms");
+                setPendingLink("email-confirm");
                 setLinkError(null);
-                await requestPhoneLinkSms(phoneE164);
-                setPhoneStep("sent");
+                await requestEmailLinkConfirmation(linkEmail, "/mypage");
+                setEmailPanelOpen(false);
+                setLinkEmail("");
+                setLinkNotice(
+                  "確認メールを送信しました。メール内のリンクを開くと連携が完了します。リンク後はこのページを再読み込みしてください。",
+                );
               } catch (err) {
                 setLinkError(profileErrorMessage(err));
               } finally {
@@ -226,30 +231,8 @@ export function MyPageScreen() {
               }
             })();
           }}
-          onVerifyOtp={() => {
-            void (async () => {
-              try {
-                setPendingLink("phone-otp");
-                setLinkError(null);
-                await verifyPhoneLinkOtp(phoneE164, phoneOtp);
-                setPhoneStep("idle");
-                setPhoneOtp("");
-                setPhonePanelOpen(false);
-                setLinkNotice("電話番号の連携が完了しました。");
-                await loadProfile();
-                requestAppSnapshotRefresh();
-              } catch (err) {
-                setLinkError(profileErrorMessage(err));
-              } finally {
-                setPendingLink(null);
-              }
-            })();
-          }}
+          onVerifyEmailOtp={() => {}}
           pending={pendingLink}
-          phoneE164={phoneE164}
-          phoneExpanded={phonePanelOpen}
-          phoneOtp={phoneOtp}
-          phoneStep={phoneStep}
           profile={profile}
         />
       ) : null}

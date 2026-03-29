@@ -5,6 +5,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/lib/database.types";
 import {
+  authEmailSchema,
   authNextPathSchema,
   createEmailAccountInputSchema,
   signInWithPasswordInputSchema,
@@ -169,39 +170,42 @@ export async function startAnonymousSession() {
   }
 }
 
-function assertPhoneE164(phoneE164: string) {
-  const phone = phoneE164.trim();
-  if (!phone.startsWith("+")) {
-    throw new Error("国番号から入力してください（例: +819012345678）。");
-  }
-  return phone;
+function parseAuthEmail(email: string) {
+  return authEmailSchema.parse(email.trim());
 }
 
-/** 初回サインイン用: 電話番号へ SMS（セッション不要）。 */
-export async function requestPhoneSignInSms(phoneE164: string) {
+/** 初回サインイン用: メールへ OTP（セッション不要）。 */
+export async function requestEmailSignInOtp(email: string, nextPath = "/") {
   const client = getSupabaseBrowserClient();
   if (!client) {
     throw new Error("Supabase が設定されていません。");
   }
 
-  const phone = assertPhoneE164(phoneE164);
-  const { error } = await client.auth.signInWithOtp({ phone });
+  const parsed = parseAuthEmail(email);
+  const { error } = await client.auth.signInWithOtp({
+    email: parsed,
+    options: {
+      shouldCreateUser: true,
+      emailRedirectTo: buildAuthCallbackUrl(nextPath),
+    },
+  });
   if (error) {
     throw error;
   }
 }
 
-/** 初回サインイン用: SMS コードでセッション確立。 */
-export async function verifyPhoneSignInOtp(phoneE164: string, token: string) {
+/** 初回サインイン用: メールの確認コードでセッション確立。 */
+export async function verifyEmailSignInOtp(email: string, token: string) {
   const client = getSupabaseBrowserClient();
   if (!client) {
     throw new Error("Supabase が設定されていません。");
   }
 
+  const parsed = parseAuthEmail(email);
   const { error } = await client.auth.verifyOtp({
-    phone: assertPhoneE164(phoneE164),
+    email: parsed,
     token: token.trim(),
-    type: "sms",
+    type: "email",
   });
   if (error) {
     throw error;
@@ -440,33 +444,21 @@ export async function signOutSupabase() {
   await client.auth.signOut();
 }
 
-/** 電話番号の紐づけ: SMS 送信（updateUser）。マイページから呼ぶ。 */
-export async function requestPhoneLinkSms(phoneE164: string) {
+/**
+ * ログイン済みユーザーにメールを紐づける: 確認メール送信（updateUser）。
+ * ユーザーがメール内リンクを開くと確定（emailRedirectTo のコールバック経由）。
+ */
+export async function requestEmailLinkConfirmation(email: string, nextPath = "/mypage") {
   const client = getSupabaseBrowserClient();
   if (!client) {
     throw new Error("Supabase が設定されていません。");
   }
 
-  const phone = assertPhoneE164(phoneE164);
-
-  const { error } = await client.auth.updateUser({ phone });
-  if (error) {
-    throw error;
-  }
-}
-
-/** 電話番号の紐づけ: SMS の確認コードで確定。 */
-export async function verifyPhoneLinkOtp(phoneE164: string, token: string) {
-  const client = getSupabaseBrowserClient();
-  if (!client) {
-    throw new Error("Supabase が設定されていません。");
-  }
-
-  const { error } = await client.auth.verifyOtp({
-    phone: phoneE164.trim(),
-    token: token.trim(),
-    type: "phone_change",
-  });
+  const parsed = parseAuthEmail(email);
+  const { error } = await client.auth.updateUser(
+    { email: parsed },
+    { emailRedirectTo: buildAuthCallbackUrl(nextPath) },
+  );
   if (error) {
     throw error;
   }

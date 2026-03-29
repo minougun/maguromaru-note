@@ -3,18 +3,22 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { ZodError } from "zod";
 
 import { AccountLinkSection } from "@/components/mypage/AccountLinkSection";
 import { useAuthState } from "@/components/providers/AuthProvider";
 import {
-  requestPhoneSignInSms,
+  requestEmailSignInOtp,
   startAnonymousSession,
   startAppleSignInFlow,
   startGoogleSignInFlow,
-  verifyPhoneSignInOtp,
+  verifyEmailSignInOtp,
 } from "@/lib/supabase/browser";
 
 function authErrorMessage(error: unknown) {
+  if (error instanceof ZodError) {
+    return error.issues[0]?.message ?? "入力が不正です。";
+  }
   if (error instanceof Error) {
     return error.message;
   }
@@ -30,10 +34,10 @@ export function LoginScreen() {
   const [notice, setNotice] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
-  const [phoneE164, setPhoneE164] = useState("");
-  const [phoneOtp, setPhoneOtp] = useState("");
-  const [phoneStep, setPhoneStep] = useState<"idle" | "sent">("idle");
-  const [phonePanelOpen, setPhonePanelOpen] = useState(false);
+  const [signInEmail, setSignInEmail] = useState("");
+  const [emailOtp, setEmailOtp] = useState("");
+  const [emailStep, setEmailStep] = useState<"idle" | "sent">("idle");
+  const [emailPanelOpen, setEmailPanelOpen] = useState(false);
 
   useEffect(() => {
     const authResult = new URLSearchParams(window.location.search).get("auth");
@@ -50,10 +54,10 @@ export function LoginScreen() {
 
   useEffect(() => {
     if (mode === "signin") {
-      setPhoneStep("idle");
-      setPhoneOtp("");
+      setEmailStep("idle");
+      setEmailOtp("");
       setFormError(null);
-      setPhonePanelOpen(false);
+      setEmailPanelOpen(false);
     }
   }, [mode]);
 
@@ -144,7 +148,7 @@ export function LoginScreen() {
         </button>
         <h2 className="login-signin-heading">サインイン</h2>
         <p className="login-signin-lead">
-          この環境では Supabase が未設定のため、Google や電話番号でのサインインは使えません。本番では{" "}
+          この環境では Supabase が未設定のため、Google やメールでのサインインは使えません。本番では{" "}
           <code className="login-signin-code">NEXT_PUBLIC_SUPABASE_URL</code> と{" "}
           <code className="login-signin-code">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> を設定してください。開発中は「今すぐはじめる」でモック利用できます。
         </p>
@@ -163,6 +167,12 @@ export function LoginScreen() {
         ← 戻る
       </button>
       <AccountLinkSection
+        email={signInEmail}
+        emailExpanded={emailPanelOpen}
+        emailFieldIdPrefix="login"
+        emailFlow="otp"
+        emailOtp={emailOtp}
+        emailStep={emailStep}
         error={formError}
         loading={false}
         notice={notice}
@@ -179,10 +189,16 @@ export function LoginScreen() {
             }
           })();
         }}
-        onClosePhonePanel={() => {
-          setPhonePanelOpen(false);
-          setPhoneStep("idle");
-          setPhoneOtp("");
+        onCloseEmailPanel={() => {
+          setEmailPanelOpen(false);
+          setEmailStep("idle");
+          setEmailOtp("");
+          setFormError(null);
+        }}
+        onEmailChange={setSignInEmail}
+        onEmailOtpChange={setEmailOtp}
+        onEmailRow={() => {
+          setEmailPanelOpen((open) => !open);
           setFormError(null);
         }}
         onGoogle={() => {
@@ -198,19 +214,13 @@ export function LoginScreen() {
             }
           })();
         }}
-        onPhoneE164Change={setPhoneE164}
-        onPhoneOtpChange={setPhoneOtp}
-        onPhoneRow={() => {
-          setPhonePanelOpen((open) => !open);
-          setFormError(null);
-        }}
-        onSendSms={() => {
+        onSendEmail={() => {
           void (async () => {
             try {
-              setPendingAction("phone-sms");
+              setPendingAction("email-otp-send");
               setFormError(null);
-              await requestPhoneSignInSms(phoneE164);
-              setPhoneStep("sent");
+              await requestEmailSignInOtp(signInEmail, "/");
+              setEmailStep("sent");
             } catch (error) {
               setFormError(authErrorMessage(error));
             } finally {
@@ -218,15 +228,15 @@ export function LoginScreen() {
             }
           })();
         }}
-        onVerifyOtp={() => {
+        onVerifyEmailOtp={() => {
           void (async () => {
             try {
-              setPendingAction("phone-otp");
+              setPendingAction("email-otp-verify");
               setFormError(null);
-              await verifyPhoneSignInOtp(phoneE164, phoneOtp);
-              setPhoneStep("idle");
-              setPhoneOtp("");
-              setPhonePanelOpen(false);
+              await verifyEmailSignInOtp(signInEmail, emailOtp);
+              setEmailStep("idle");
+              setEmailOtp("");
+              setEmailPanelOpen(false);
               router.push("/");
               router.refresh();
             } catch (error) {
@@ -237,11 +247,6 @@ export function LoginScreen() {
           })();
         }}
         pending={pendingAction}
-        phoneE164={phoneE164}
-        phoneExpanded={phonePanelOpen}
-        phoneFieldIdPrefix="login"
-        phoneOtp={phoneOtp}
-        phoneStep={phoneStep}
         profile={null}
         variant="signIn"
       />

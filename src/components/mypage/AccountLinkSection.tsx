@@ -40,7 +40,7 @@ function IconGoogle() {
   );
 }
 
-function IconPhone() {
+function IconMail() {
   return (
     <svg
       aria-hidden
@@ -54,7 +54,8 @@ function IconPhone() {
       viewBox="0 0 24 24"
       width={24}
     >
-      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+      <path d="m22 6-10 7L2 6" />
     </svg>
   );
 }
@@ -70,57 +71,64 @@ function Chevron() {
 export type AccountLinkSectionProps = {
   /** `signIn`: ログイン画面用（プロファイル未取得でも一覧を出す） */
   variant?: "link" | "signIn";
-  /** 電話入力の id 接頭辞（同一 DOM に両方載ることがないよう画面ごとに分ける） */
-  phoneFieldIdPrefix?: string;
+  /** メール入力の id 接頭辞（同一 DOM に両方載ることがないよう画面ごとに分ける） */
+  emailFieldIdPrefix?: string;
   profile: BrowserAuthProfile | null;
   loading: boolean;
   notice: string | null;
   error: string | null;
   pending: string | null;
-  phoneExpanded: boolean;
-  phoneE164: string;
-  phoneOtp: string;
-  phoneStep: "idle" | "sent";
+  emailExpanded: boolean;
+  email: string;
+  emailOtp: string;
+  emailStep: "idle" | "sent";
+  /**
+   * `otp`: ログインはメールの確認コード入力まで。
+   * `magic_link`: マイページは確認メール送信のみ（リンクで確定）。
+   */
+  emailFlow: "otp" | "magic_link";
   onApple: () => void;
   onGoogle: () => void;
-  onPhoneRow: () => void;
-  onPhoneE164Change: (value: string) => void;
-  onPhoneOtpChange: (value: string) => void;
-  onSendSms: () => void;
-  onVerifyOtp: () => void;
-  onClosePhonePanel: () => void;
+  onEmailRow: () => void;
+  onEmailChange: (value: string) => void;
+  onEmailOtpChange: (value: string) => void;
+  onSendEmail: () => void;
+  onVerifyEmailOtp: () => void;
+  onCloseEmailPanel: () => void;
 };
 
 export function AccountLinkSection({
   variant = "link",
-  phoneFieldIdPrefix = "mypage",
+  emailFieldIdPrefix = "mypage",
   profile,
   loading,
   notice,
   error,
   pending,
-  phoneExpanded,
-  phoneE164,
-  phoneOtp,
-  phoneStep,
+  emailExpanded,
+  email,
+  emailOtp,
+  emailStep,
+  emailFlow,
   onApple,
   onGoogle,
-  onPhoneRow,
-  onPhoneE164Change,
-  onPhoneOtpChange,
-  onSendSms,
-  onVerifyOtp,
-  onClosePhonePanel,
+  onEmailRow,
+  onEmailChange,
+  onEmailOtpChange,
+  onSendEmail,
+  onVerifyEmailOtp,
+  onCloseEmailPanel,
 }: AccountLinkSectionProps) {
   const isSignIn = variant === "signIn";
   const appleOn = isProviderLinked(profile, "apple");
   const googleOn = isProviderLinked(profile, "google");
-  const phoneOn = isProviderLinked(profile, "phone");
+  const emailOn = isProviderLinked(profile, "email");
   const busy = pending !== null;
-  const phoneE164Id = `${phoneFieldIdPrefix}-phone-e164`;
-  const phoneOtpId = `${phoneFieldIdPrefix}-phone-otp`;
+  const emailInputId = `${emailFieldIdPrefix}-link-email`;
+  const emailOtpId = `${emailFieldIdPrefix}-link-email-otp`;
   const showRows = isSignIn || (!loading && profile);
-  const showPhonePanel = phoneExpanded && (isSignIn || (profile && !loading));
+  const showEmailPanel = emailExpanded && (isSignIn || (profile && !loading));
+  const useOtpSubstep = emailFlow === "otp" && emailStep === "sent";
 
   return (
     <section className="account-link-section">
@@ -132,7 +140,7 @@ export function AccountLinkSection({
           <h2 className="account-link-title">アカウント連携</h2>
           <p className="account-link-subtitle">
             {isSignIn
-              ? "マイページと同じ手順で、Google・Apple・電話番号のいずれかにサインインできます。"
+              ? "マイページと同じ手順で、Google・Apple・メールのいずれかにサインインできます。"
               : "データのバックアップや引き継ぎができます"}
           </p>
         </header>
@@ -164,13 +172,13 @@ export function AccountLinkSection({
                 <Chevron />
               </button>
 
-              <button className="account-link-row" disabled={busy} onClick={() => onPhoneRow()} type="button">
+              <button className="account-link-row" disabled={busy} onClick={() => onEmailRow()} type="button">
                 <span className="account-link-row-icon" aria-hidden>
-                  <IconPhone />
+                  <IconMail />
                 </span>
-                <span className="account-link-row-label">電話番号</span>
+                <span className="account-link-row-label">メールアドレス</span>
                 <span className="account-link-row-status">
-                  {isSignIn ? "SMS でサインイン" : phoneOn ? "連携済み" : "未連携"}
+                  {isSignIn ? "メールでサインイン" : emailOn ? "連携済み" : "未連携"}
                 </span>
                 <Chevron />
               </button>
@@ -178,66 +186,74 @@ export function AccountLinkSection({
           )}
         </div>
 
-        {showPhonePanel ? (
+        {showEmailPanel ? (
           <div className="account-link-phone-panel">
             <p className="account-link-phone-lead">
-              {isSignIn
-                ? "国番号付きの電話番号を入力し、SMS のコードでサインインします。"
-                : "国番号付きの電話番号を入力し、SMS のコードで連携します。"}
+              {emailFlow === "magic_link"
+                ? "メールアドレスを入力し、届いたメールのリンクを開くと連携が完了します。"
+                : isSignIn
+                  ? "メールアドレスを入力し、届いた確認コードでサインインします。"
+                  : "メールアドレスを入力し、届いた確認コードで連携します。"}
             </p>
-            {phoneStep === "idle" ? (
+            {!useOtpSubstep ? (
               <div className="account-link-phone-form">
-                <label className="account-link-field-label" htmlFor={phoneE164Id}>
-                  電話番号（E.164）
+                <label className="account-link-field-label" htmlFor={emailInputId}>
+                  メールアドレス
                 </label>
                 <input
-                  autoComplete="tel"
+                  autoComplete="email"
                   className="account-link-field-input"
                   disabled={busy}
-                  id={phoneE164Id}
-                  onChange={(e) => onPhoneE164Change(e.target.value)}
-                  placeholder="+819012345678"
-                  type="tel"
-                  value={phoneE164}
+                  id={emailInputId}
+                  inputMode="email"
+                  onChange={(e) => onEmailChange(e.target.value)}
+                  placeholder="you@example.com"
+                  type="email"
+                  value={email}
                 />
                 <div className="account-link-phone-actions">
-                  <button className="account-link-text-btn" disabled={busy} onClick={() => onClosePhonePanel()} type="button">
+                  <button className="account-link-text-btn" disabled={busy} onClick={() => onCloseEmailPanel()} type="button">
                     閉じる
                   </button>
-                  <button className="account-link-pill-btn" disabled={busy} onClick={() => void onSendSms()} type="button">
-                    {pending === "phone-sms" ? "送信中…" : "SMS を送る"}
+                  <button className="account-link-pill-btn" disabled={busy} onClick={() => void onSendEmail()} type="button">
+                    {pending === "email-confirm" || pending === "email-otp-send"
+                      ? "送信中…"
+                      : emailFlow === "magic_link"
+                        ? "確認メールを送る"
+                        : "確認コードを送る"}
                   </button>
                 </div>
               </div>
             ) : (
               <div className="account-link-phone-form">
-                <label className="account-link-field-label" htmlFor={phoneOtpId}>
-                  SMS の確認コード
+                <label className="account-link-field-label" htmlFor={emailOtpId}>
+                  メールの確認コード
                 </label>
                 <input
                   className="account-link-field-input"
                   disabled={busy}
-                  id={phoneOtpId}
+                  id={emailOtpId}
                   inputMode="numeric"
-                  onChange={(e) => onPhoneOtpChange(e.target.value)}
-                  placeholder="6桁のコード"
+                  onChange={(e) => onEmailOtpChange(e.target.value)}
+                  placeholder="メールに記載のコード"
                   type="text"
-                  value={phoneOtp}
+                  value={emailOtp}
                 />
                 <div className="account-link-phone-actions">
-                  <button className="account-link-text-btn" disabled={busy} onClick={() => onClosePhonePanel()} type="button">
+                  <button className="account-link-text-btn" disabled={busy} onClick={() => onCloseEmailPanel()} type="button">
                     閉じる
                   </button>
-                  <button className="account-link-pill-btn" disabled={busy} onClick={() => void onVerifyOtp()} type="button">
-                    {pending === "phone-otp" ? "確認中…" : "コードを確定"}
+                  <button className="account-link-pill-btn" disabled={busy} onClick={() => void onVerifyEmailOtp()} type="button">
+                    {pending === "email-otp-verify" ? "確認中…" : "コードを確定"}
                   </button>
                 </div>
               </div>
             )}
-            <p className="account-link-footnote">Supabase で Phone プロバイダを有効にしてください。</p>
+            <p className="account-link-footnote">
+              Supabase で Email プロバイダを有効にし、リダイレクト URL にコールバック先を登録してください。
+            </p>
           </div>
         ) : null}
-
       </div>
     </section>
   );
