@@ -2,16 +2,18 @@
 
 import { ShareBonusCallout } from "@/components/share/ShareBonusCallout";
 import { publicPath } from "@/lib/public-path";
+import { TAB_STRIP_IMAGE_URL } from "@/lib/tabbar-strip";
 
 export type OnboardingMockId = "intro" | "home" | "record" | "zukan" | "quiz" | "titles" | "account";
 
-const MOCK_TABS = [
-  { href: "/", label: "ホーム", icon: "🏠" },
-  { href: "/record", label: "記録", icon: "✏️" },
-  { href: "/zukan", label: "図鑑", icon: "📖" },
-  { href: "/quiz", label: "クイズ", icon: "🐟" },
-  { href: "/titles", label: "称号", icon: "🏅" },
-  { href: "/mypage", label: "アカウント連携", icon: "👤" },
+/** 下部タブ帯のセル数・ルート対応（ラベルは PNG に含まれる） */
+const MOCK_TAB_SLOTS = [
+  { href: "/" },
+  { href: "/record" },
+  { href: "/zukan" },
+  { href: "/quiz" },
+  { href: "/titles" },
+  { href: "/mypage" },
 ] as const;
 
 function activeHrefForScreen(screen: OnboardingMockId): string | null {
@@ -59,13 +61,11 @@ function MockIntro() {
   return (
     <div className="onboarding-mock-intro">
       <p className="onboarding-mock-intro-lead">画面下のタブから主要機能へ</p>
-      <div className="onboarding-mock-intro-grid">
-        {MOCK_TABS.map((t) => (
-          <div className="onboarding-mock-intro-cell" key={t.href}>
-            <span className="onboarding-mock-intro-ico">{t.icon}</span>
-            <span className="onboarding-mock-intro-lbl">{t.label}</span>
-          </div>
-        ))}
+      <div className="onboarding-mock-intro-strip-wrap">
+        <div
+          className="onboarding-mock-intro-tabstrip"
+          style={{ backgroundImage: `url(${TAB_STRIP_IMAGE_URL})` }}
+        />
       </div>
       <p className="onboarding-mock-intro-note">次のスライドで、それぞれの画面イメージを紹介します。</p>
     </div>
@@ -385,12 +385,13 @@ export function OnboardingDeviceMock({ screen }: { screen: OnboardingMockId }) {
           <MockBody screen={screen} />
         </div>
 
-        <nav className="onboarding-mock-tabbar" aria-hidden>
-          {MOCK_TABS.map((tab) => (
-            <div className="onboarding-mock-tab" data-active={activeHref === tab.href} key={tab.href}>
-              <span className="onboarding-mock-tab-ico">{tab.icon}</span>
-              <span className="onboarding-mock-tab-lbl">{tab.label}</span>
-            </div>
+        <nav
+          aria-hidden
+          className="onboarding-mock-tabbar"
+          style={{ backgroundImage: `url(${TAB_STRIP_IMAGE_URL})` }}
+        >
+          {MOCK_TAB_SLOTS.map((tab) => (
+            <div className="onboarding-mock-tab" data-active={activeHref === tab.href} key={tab.href} />
           ))}
         </nav>
       </div>

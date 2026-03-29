@@ -3,10 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { publicPath } from "@/lib/public-path";
-
-/** 見た目は `public/tabbar/bottom-tabs.png`（ユーザー指定のタブ帯画像）に合わせる */
-const TAB_STRIP_URL = publicPath("/tabbar/bottom-tabs.png");
+import { TAB_STRIP_IMAGE_URL } from "@/lib/tabbar-strip";
 
 const tabs = [
   { href: "/", label: "ホーム" },
@@ -25,7 +22,7 @@ export function TabBar() {
       aria-label="メインタブ"
       className="tab-bar"
       style={{
-        backgroundImage: `url(${TAB_STRIP_URL})`,
+        backgroundImage: `url(${TAB_STRIP_IMAGE_URL})`,
       }}
     >
       {tabs.map((tab) => {
