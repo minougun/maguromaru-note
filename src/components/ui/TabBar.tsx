@@ -18,28 +18,29 @@ export function TabBar() {
   const pathname = usePathname();
 
   return (
-    <nav
-      aria-label="メインタブ"
-      className="tab-bar"
-      style={{
-        backgroundImage: `url(${TAB_STRIP_IMAGE_URL})`,
-      }}
-    >
-      {tabs.map((tab) => {
-        const active = pathname === tab.href;
-        return (
-          <Link
-            aria-current={active ? "page" : undefined}
-            className="tab-link"
-            data-active={active}
-            href={tab.href}
-            key={tab.href}
-            prefetch={false}
-          >
-            <span className="tab-link-sr">{tab.label}</span>
-          </Link>
-        );
-      })}
+    <nav aria-label="メインタブ" className="tab-bar">
+      <div
+        className="tab-bar-strip"
+        style={{
+          backgroundImage: `url(${TAB_STRIP_IMAGE_URL})`,
+        }}
+      >
+        {tabs.map((tab) => {
+          const active = pathname === tab.href;
+          return (
+            <Link
+              aria-current={active ? "page" : undefined}
+              className="tab-link"
+              data-active={active}
+              href={tab.href}
+              key={tab.href}
+              prefetch={false}
+            >
+              <span className="tab-link-sr">{tab.label}</span>
+            </Link>
+          );
+        })}
+      </div>
     </nav>
   );
 }

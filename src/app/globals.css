@@ -194,6 +194,7 @@ body {
   text-transform: uppercase;
 }
 
+/* 下部タブ帯: public/tabbar/bottom-tabs.png は 430×75（アプリ max 幅 430px と同一スケール） */
 .tab-bar {
   position: fixed;
   left: 50%;
@@ -202,18 +203,23 @@ body {
   max-width: 430px;
   transform: translateX(-50%);
   padding-bottom: var(--safe-bottom);
+  z-index: 50;
+  box-sizing: border-box;
+  /* 背景は .tab-bar-strip のみ。セーフエリア用 padding で帯が縦に伸びないようにする */
+  background: transparent;
+}
+
+.tab-bar-strip {
   border-top: 2px solid var(--navy);
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  z-index: 50;
-  /* public/tabbar/bottom-tabs.png（643×112）を帯全体にフィット */
-  aspect-ratio: 643 / 112;
-  height: auto;
+  align-items: stretch;
+  aspect-ratio: 430 / 75;
+  width: 100%;
   background-color: rgba(27, 45, 79, 0.97);
   background-repeat: no-repeat;
-  background-position: center top;
-  background-size: 100% auto;
-  align-items: stretch;
+  background-position: center;
+  background-size: 100% 100%;
 }
 
 .tab-link {
@@ -2507,21 +2513,26 @@ body {
   letter-spacing: 0.5px;
 }
 
+/* モック本文の横パディングを打ち消し、下部タブバーと同じベゼル幅に揃える */
 .onboarding-mock-intro-strip-wrap {
-  margin: 0 auto;
-  max-width: 100%;
-  border-radius: 4px;
+  margin-left: -7px;
+  margin-right: -7px;
+  width: calc(100% + 14px);
+  max-width: none;
+  border-radius: 0;
   overflow: hidden;
-  border: 1px solid var(--wood-mid);
+  border: 0;
+  border-top: 1px solid var(--wood-mid);
+  border-bottom: 1px solid var(--wood-mid);
 }
 
 .onboarding-mock-intro-tabstrip {
-  aspect-ratio: 643 / 112;
+  aspect-ratio: 430 / 75;
   width: 100%;
   background-color: rgba(27, 45, 79, 0.97);
   background-repeat: no-repeat;
-  background-position: center top;
-  background-size: 100% auto;
+  background-position: center;
+  background-size: 100% 100%;
 }
 
 .onboarding-mock-intro-note {
@@ -3080,11 +3091,11 @@ body {
   align-items: stretch;
   width: 100%;
   border-top: 2px solid var(--navy);
-  aspect-ratio: 643 / 112;
+  aspect-ratio: 430 / 75;
   background-color: rgba(27, 45, 79, 0.97);
   background-repeat: no-repeat;
-  background-position: center top;
-  background-size: 100% auto;
+  background-position: center;
+  background-size: 100% 100%;
 }
 
 .onboarding-mock-tab {
