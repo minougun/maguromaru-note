@@ -47,6 +47,17 @@ export const quizAnswerIndexSchema = z.number().int().min(0).max(3);
 export const quizAnswerProofSchema = z.string().trim().min(1).max(2048);
 export const shareTargetTypeSchema = z.enum(["visit_log", "quiz_session"]);
 export const shareChannelSchema = z.enum(["x", "line", "instagram"]);
+
+/** 匿名→OAuth 連携の確定 API 用（32 バイト hex） */
+export const anonymousLinkNonceSchema = z
+  .string()
+  .regex(/^[a-f0-9]{64}$/, "トークン形式が不正です。");
+
+export const anonymousLinkCompleteBodySchema = z
+  .object({
+    nonce: anonymousLinkNonceSchema,
+  })
+  .strict();
 export const quizAnswerIndexesSchema = z
   .array(quizAnswerIndexSchema)
   .min(1, "少なくとも1つは選択してください。")

@@ -179,6 +179,24 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["share_bonus_events"]["Insert"]>;
         Relationships: [];
       };
+      anonymous_link_nonces: {
+        Row: {
+          id: string;
+          from_user_id: string;
+          nonce: string;
+          expires_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          from_user_id: string;
+          nonce: string;
+          expires_at: string;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["anonymous_link_nonces"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: {
       user_collected_parts: {

@@ -40,7 +40,7 @@ import { createEmptyQuizStageProgress, isQuizStageUnlocked } from "@/lib/quiz-st
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getCurrentTitle } from "@/lib/titles";
 
-class AppServiceError extends Error {
+export class AppServiceError extends Error {
   status: number;
 
   constructor(status: number, message: string) {

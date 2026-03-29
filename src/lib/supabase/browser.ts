@@ -186,6 +186,117 @@ export async function verifyPhoneSignInOtp(phoneE164: string, token: string) {
   }
 }
 
+const ANON_LINK_NONCE_STORAGE_KEY = "maguromaru_anon_link_nonce";
+
+export function clearStoredAnonymousLinkNonce() {
+  try {
+    sessionStorage.removeItem(ANON_LINK_NONCE_STORAGE_KEY);
+  } catch {
+    /* ignore private mode */
+  }
+}
+
+export function readStoredAnonymousLinkNonce(): string | null {
+  try {
+    return sessionStorage.getItem(ANON_LINK_NONCE_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+async function prepareAnonymousLinkNonceOnServer(accessToken: string): Promise<string> {
+  const res = await fetch(`${window.location.origin}/api/auth/anonymous-link/prepare`, {
+    method: "POST",
+    headers: buildSupabaseAuthHeaders(accessToken, { "Cache-Control": "no-store" }),
+  });
+  const body = (await res.json().catch(() => ({}))) as { nonce?: string; error?: string };
+  if (!res.ok) {
+    throw new Error(body.error ?? "連携の準備に失敗しました。");
+  }
+  if (!body.nonce) {
+    throw new Error("連携の準備に失敗しました。");
+  }
+  return body.nonce;
+}
+
+/**
+ * 匿名ユーザーが Google アカウントへ「昇格」する（Manual linking 不要）。
+ * OAuth 完了後、マイページで complete API が走り DB 上の user_id を引き継ぎます。
+ */
+export async function startAnonymousGoogleLinkFlow(nextPath = "/") {
+  const client = getSupabaseBrowserClient();
+  if (!client) {
+    throw new Error("Supabase が設定されていません。");
+  }
+
+  const {
+    data: { session },
+  } = await client.auth.getSession();
+  if (!session?.access_token) {
+    throw new Error("ログインが必要です。");
+  }
+  if (!session.user.is_anonymous) {
+    throw new Error("匿名セッションでのみこの手順を使えます。");
+  }
+
+  const nonce = await prepareAnonymousLinkNonceOnServer(session.access_token);
+  sessionStorage.setItem(ANON_LINK_NONCE_STORAGE_KEY, nonce);
+
+  const { data, error } = await client.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: buildAuthCallbackUrl(nextPath),
+    },
+  });
+
+  if (error) {
+    clearStoredAnonymousLinkNonce();
+    throw error;
+  }
+
+  if (data.url) {
+    window.location.assign(data.url);
+  }
+}
+
+/** 匿名ユーザーが Apple アカウントへ「昇格」する。 */
+export async function startAnonymousAppleLinkFlow(nextPath = "/") {
+  const client = getSupabaseBrowserClient();
+  if (!client) {
+    throw new Error("Supabase が設定されていません。");
+  }
+
+  const {
+    data: { session },
+  } = await client.auth.getSession();
+  if (!session?.access_token) {
+    throw new Error("ログインが必要です。");
+  }
+  if (!session.user.is_anonymous) {
+    throw new Error("匿名セッションでのみこの手順を使えます。");
+  }
+
+  const nonce = await prepareAnonymousLinkNonceOnServer(session.access_token);
+  sessionStorage.setItem(ANON_LINK_NONCE_STORAGE_KEY, nonce);
+
+  const { data, error } = await client.auth.signInWithOAuth({
+    provider: "apple",
+    options: {
+      redirectTo: buildAuthCallbackUrl(nextPath),
+    },
+  });
+
+  if (error) {
+    clearStoredAnonymousLinkNonce();
+    throw error;
+  }
+
+  if (data.url) {
+    window.location.assign(data.url);
+  }
+}
+
+/** 既に永続アカウントのとき、Google を追加で紐づける（Supabase の Manual linking が有効なときのみ成功しやすい）。 */
 export async function startGoogleLinkFlow(nextPath = "/") {
   const client = getSupabaseBrowserClient();
   if (!client) {
@@ -208,6 +319,7 @@ export async function startGoogleLinkFlow(nextPath = "/") {
   }
 }
 
+/** 既に永続アカウントのとき、Apple を追加で紐づける。 */
 export async function startAppleLinkFlow(nextPath = "/") {
   const client = getSupabaseBrowserClient();
   if (!client) {

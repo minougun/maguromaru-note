@@ -15,9 +15,14 @@ import { buildMyPageSummary } from "@/lib/mypage";
 import { formatSupabaseAuthError } from "@/lib/supabase/auth-errors";
 import {
   type BrowserAuthProfile,
+  clearStoredAnonymousLinkNonce,
   getSupabaseAuthProfile,
+  readStoredAnonymousLinkNonce,
+  readSupabaseAccessToken,
   requestPhoneLinkSms,
   signOutSupabase,
+  startAnonymousAppleLinkFlow,
+  startAnonymousGoogleLinkFlow,
   startAppleLinkFlow,
   startGoogleLinkFlow,
   verifyPhoneLinkOtp,
@@ -64,17 +69,63 @@ export function MyPageScreen() {
 
   useEffect(() => {
     const authResult = new URLSearchParams(window.location.search).get("auth");
-    if (authResult === "linked") {
-      setLinkNotice("アカウント連携が完了しました。");
-      setLinkError(null);
-      window.history.replaceState({}, "", window.location.pathname);
-      void loadProfile();
-      void refresh();
+    if (authResult !== "linked" && authResult !== "error") {
       return;
     }
+
     if (authResult === "error") {
       setLinkError("認証のコールバックに失敗しました。");
+      return;
     }
+
+    void (async () => {
+      const nonce = readStoredAnonymousLinkNonce();
+      window.history.replaceState({}, "", window.location.pathname);
+
+      if (nonce) {
+        let token: string | null = null;
+        for (let attempt = 0; attempt < 6; attempt++) {
+          token = await readSupabaseAccessToken();
+          if (token) {
+            break;
+          }
+          await new Promise((r) => setTimeout(r, 120));
+        }
+
+        if (!token) {
+          setLinkError("セッションの確立を待てませんでした。再読み込みしてください。");
+          clearStoredAnonymousLinkNonce();
+        } else {
+          try {
+            const res = await fetch(`${window.location.origin}/api/auth/anonymous-link/complete`, {
+              body: JSON.stringify({ nonce }),
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Cache-Control": "no-store",
+                "Content-Type": "application/json",
+              },
+              method: "POST",
+            });
+            const body = (await res.json().catch(() => ({}))) as { error?: string };
+            if (!res.ok) {
+              throw new Error(body.error ?? "データの引き継ぎに失敗しました。");
+            }
+            setLinkNotice("アカウント連携が完了しました。");
+            setLinkError(null);
+          } catch (err) {
+            setLinkError(profileErrorMessage(err));
+          } finally {
+            clearStoredAnonymousLinkNonce();
+          }
+        }
+      } else {
+        setLinkNotice("アカウント連携が完了しました。");
+        setLinkError(null);
+      }
+
+      void loadProfile();
+      void refresh();
+    })();
   }, [loadProfile, refresh]);
 
   useEffect(() => {
@@ -170,7 +221,11 @@ export function MyPageScreen() {
               try {
                 setPendingLink("apple");
                 setLinkError(null);
-                await startAppleLinkFlow("/mypage");
+                if (profile.isAnonymous) {
+                  await startAnonymousAppleLinkFlow("/mypage");
+                } else {
+                  await startAppleLinkFlow("/mypage");
+                }
               } catch (err) {
                 setLinkError(profileErrorMessage(err));
                 setPendingLink(null);
@@ -195,7 +250,11 @@ export function MyPageScreen() {
               try {
                 setPendingLink("google");
                 setLinkError(null);
-                await startGoogleLinkFlow("/mypage");
+                if (profile.isAnonymous) {
+                  await startAnonymousGoogleLinkFlow("/mypage");
+                } else {
+                  await startGoogleLinkFlow("/mypage");
+                }
               } catch (err) {
                 setLinkError(profileErrorMessage(err));
                 setPendingLink(null);

@@ -68,6 +68,10 @@ export function getSupabaseServiceEnv() {
   };
 }
 
+export function hasSupabaseServiceEnv() {
+  return Boolean(env.supabaseUrl && env.supabaseAnonKey && env.supabaseServiceRoleKey);
+}
+
 export function getSiteUrl() {
   return env.siteUrl.replace(/\/$/, "");
 }

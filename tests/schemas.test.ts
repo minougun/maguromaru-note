@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  anonymousLinkCompleteBodySchema,
   authNextPathSchema,
   claimShareBonusInputSchema,
   checkQuizAnswerInputSchema,
@@ -243,6 +244,26 @@ test("signInWithPasswordInputSchema rejects short password", () => {
 
 test("authNextPathSchema rejects external redirects", () => {
   assert.throws(() => authNextPathSchema.parse("https://evil.example.com"), /遷移先が不正です/);
+});
+
+const validAnonLinkNonce = "a".repeat(64);
+
+test("anonymousLinkCompleteBodySchema rejects invalid nonce length", () => {
+  assert.throws(
+    () => anonymousLinkCompleteBodySchema.parse({ nonce: "abc" }),
+    /トークン形式が不正です/,
+  );
+});
+
+test("anonymousLinkCompleteBodySchema rejects extra keys", () => {
+  assert.throws(
+    () =>
+      anonymousLinkCompleteBodySchema.parse({
+        extra: "x",
+        nonce: validAnonLinkNonce,
+      }),
+    /Unrecognized key/,
+  );
 });
 
 test("updateStoreStatusInputSchema rejects invalid status", () => {

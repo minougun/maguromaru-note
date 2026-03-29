@@ -19,9 +19,5 @@ export function formatSupabaseAuthError(error: unknown): string {
     return "処理に失敗しました。";
   }
 
-  if (/manual linking is disabled/i.test(message)) {
-    return "アカウントの連携は現在できません。";
-  }
-
   return message;
 }
