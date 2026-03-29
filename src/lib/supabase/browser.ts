@@ -208,6 +208,28 @@ export async function startGoogleLinkFlow(nextPath = "/") {
   }
 }
 
+export async function startAppleLinkFlow(nextPath = "/") {
+  const client = getSupabaseBrowserClient();
+  if (!client) {
+    throw new Error("Supabase が設定されていません。");
+  }
+
+  const { data, error } = await client.auth.linkIdentity({
+    provider: "apple",
+    options: {
+      redirectTo: buildAuthCallbackUrl(nextPath),
+    },
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  if (data.url) {
+    window.location.assign(data.url);
+  }
+}
+
 export async function startGoogleSignInFlow(nextPath = "/") {
   const client = getSupabaseBrowserClient();
   if (!client) {

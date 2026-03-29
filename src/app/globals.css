@@ -1643,3 +1643,224 @@ body {
   opacity: 0.4;
   cursor: not-allowed;
 }
+
+/* マイページ・アカウント連携（リスト型） */
+.account-link-section {
+  margin-bottom: 14px;
+}
+
+.account-link-banner {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.account-link-banner--ok {
+  background: rgba(42, 155, 84, 0.12);
+  color: #1a6b3a;
+  border: 1px solid rgba(42, 155, 84, 0.25);
+}
+
+.account-link-banner--err {
+  background: rgba(194, 59, 59, 0.08);
+  color: var(--aka-bold);
+  border: 1px solid rgba(194, 59, 59, 0.25);
+}
+
+.account-link-panel {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e5e5ea;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.account-link-header {
+  background: #f2f2f7;
+  padding: 16px 16px 14px;
+  text-align: center;
+  border-bottom: 1px solid #e5e5ea;
+}
+
+.account-link-title {
+  margin: 0 0 6px;
+  font-size: 17px;
+  font-weight: 700;
+  color: #111;
+  letter-spacing: 0.02em;
+}
+
+.account-link-subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: #636366;
+  line-height: 1.45;
+}
+
+.account-link-list {
+  background: #fff;
+}
+
+.account-link-loading {
+  margin: 0;
+  padding: 20px 16px;
+  font-size: 14px;
+  color: var(--cream-dark);
+  text-align: center;
+}
+
+.account-link-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 54px;
+  padding: 12px 16px;
+  border: 0;
+  border-bottom: 1px solid #e5e5ea;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: #111;
+  transition: background 0.12s ease;
+}
+
+.account-link-row:last-of-type {
+  border-bottom: 0;
+}
+
+.account-link-row:hover:not(:disabled) {
+  background: #f9f9fb;
+}
+
+.account-link-row:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.account-link-row-icon {
+  flex-shrink: 0;
+  width: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #111;
+}
+
+.account-link-icon-svg {
+  display: block;
+}
+
+.account-link-icon-google {
+  overflow: visible;
+}
+
+.account-link-row-label {
+  flex: 1;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.account-link-row-status {
+  font-size: 14px;
+  color: #8e8e93;
+  margin-right: 4px;
+}
+
+.account-link-chevron {
+  flex-shrink: 0;
+  font-size: 22px;
+  font-weight: 300;
+  color: #c7c7cc;
+  line-height: 1;
+}
+
+.account-link-phone-panel {
+  padding: 14px 16px 16px;
+  border-top: 1px solid #e5e5ea;
+  background: #fafafa;
+}
+
+.account-link-phone-lead {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #636366;
+}
+
+.account-link-phone-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.account-link-field-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #636366;
+}
+
+.account-link-field-input {
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: 10px;
+  border: 1px solid #d1d1d6;
+  background: #fff;
+  font-size: 16px;
+  color: #111;
+}
+
+.account-link-field-input:focus {
+  outline: none;
+  border-color: #8e8e93;
+  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.15);
+}
+
+.account-link-phone-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.account-link-text-btn {
+  padding: 8px 4px;
+  border: none;
+  background: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: #007aff;
+  cursor: pointer;
+}
+
+.account-link-text-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.account-link-pill-btn {
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: none;
+  background: #007aff;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.account-link-pill-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.account-link-footnote {
+  margin: 12px 0 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #8e8e93;
+}

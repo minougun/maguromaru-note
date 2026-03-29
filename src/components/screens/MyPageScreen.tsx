@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { ZodError } from "zod";
 
+import { AccountLinkSection, isProviderLinked } from "@/components/mypage/AccountLinkSection";
 import { useAuthState } from "@/components/providers/AuthProvider";
 import { Card } from "@/components/ui/Card";
 import { NorenBanner } from "@/components/ui/NorenBanner";
@@ -16,24 +17,11 @@ import {
   getSupabaseAuthProfile,
   requestPhoneLinkSms,
   signOutSupabase,
+  startAppleLinkFlow,
   startGoogleLinkFlow,
   verifyPhoneLinkOtp,
 } from "@/lib/supabase/browser";
 import { formatCount } from "@/lib/utils/format";
-
-const providerLabels: Record<string, string> = {
-  email: "メール",
-  google: "Google",
-  apple: "Apple",
-  phone: "電話番号",
-};
-
-function formatProviders(profile: BrowserAuthProfile) {
-  if (profile.identityProviders.length === 0) {
-    return "未設定";
-  }
-  return profile.identityProviders.map((p) => providerLabels[p] ?? p).join(" / ");
-}
 
 function profileErrorMessage(error: unknown) {
   if (error instanceof ZodError) {
@@ -57,6 +45,7 @@ export function MyPageScreen() {
   const [phoneE164, setPhoneE164] = useState("");
   const [phoneOtp, setPhoneOtp] = useState("");
   const [phoneStep, setPhoneStep] = useState<"idle" | "sent">("idle");
+  const [phonePanelOpen, setPhonePanelOpen] = useState(false);
 
   const loadProfile = useCallback(async () => {
     if (!auth.usingSupabase) {
@@ -78,7 +67,7 @@ export function MyPageScreen() {
   useEffect(() => {
     const authResult = new URLSearchParams(window.location.search).get("auth");
     if (authResult === "linked") {
-      setLinkNotice("Google アカウントの紐づけが完了しました。");
+      setLinkNotice("アカウント連携が完了しました。");
       setLinkError(null);
       window.history.replaceState({}, "", window.location.pathname);
       void loadProfile();
@@ -96,6 +85,12 @@ export function MyPageScreen() {
     }
     void loadProfile();
   }, [auth.accessToken, auth.usingSupabase, loadProfile]);
+
+  useEffect(() => {
+    if (profile && isProviderLinked(profile, "phone")) {
+      setPhonePanelOpen(false);
+    }
+  }, [profile]);
 
   if (loading) {
     return <ScreenState description="マイページを読み込んでいます。" title="読み込み中" />;
@@ -161,137 +156,108 @@ export function MyPageScreen() {
       </div>
 
       {auth.usingSupabase ? (
-        <>
-          <SectionTitle subtitle="Link" title="アカウントの紐づけ" />
-          <Card>
-            {linkNotice ? <p className="account-notice-card" style={{ marginBottom: 12 }}>{linkNotice}</p> : null}
-            {linkError ? <p className="account-error-card" style={{ marginBottom: 12 }}>{linkError}</p> : null}
-            {profileLoading || !profile ? (
-              <p className="helper-text">アカウント状態を読み込み中です。</p>
-            ) : profile.isAnonymous ? (
-              <>
-                <p className="account-copy">
-                  今は匿名で利用中です。Google アカウントや電話番号を紐づけるとアカウントが作成され、機種変更や別ブラウザでも同じ記録を引き継げます。
-                </p>
-                <button
-                  className="button-primary"
-                  disabled={pendingLink !== null}
-                  onClick={() => {
-                    void (async () => {
-                      try {
-                        setPendingLink("google");
-                        setLinkError(null);
-                        await startGoogleLinkFlow("/mypage");
-                      } catch (err) {
-                        setLinkError(profileErrorMessage(err));
-                        setPendingLink(null);
-                      }
-                    })();
-                  }}
-                  type="button"
-                >
-                  {pendingLink === "google" ? "Google へ移動中..." : "Google アカウントと紐づける"}
-                </button>
-                <p className="account-meta-note" style={{ marginTop: 14 }}>
-                  Supabase で Manual linking と Google プロバイダを有効にしてください。
-                </p>
-
-                <p className="account-copy" style={{ marginTop: 18 }}>
-                  電話番号（国番号付き）を入力し、SMS のコードで紐づけます。Supabase で Phone プロバイダを有効にしてください。
-                </p>
-                {phoneStep === "idle" ? (
-                  <div className="account-form">
-                    <label className="form-label">
-                      電話番号（E.164）
-                      <input
-                        autoComplete="tel"
-                        className="memo-input"
-                        onChange={(event) => setPhoneE164(event.target.value)}
-                        placeholder="+819012345678"
-                        type="tel"
-                        value={phoneE164}
-                      />
-                    </label>
-                    <button
-                      className="button-outline"
-                      disabled={pendingLink !== null}
-                      onClick={() => {
-                        void (async () => {
-                          try {
-                            setPendingLink("phone-sms");
-                            setLinkError(null);
-                            await requestPhoneLinkSms(phoneE164);
-                            setPhoneStep("sent");
-                          } catch (err) {
-                            setLinkError(profileErrorMessage(err));
-                          } finally {
-                            setPendingLink(null);
-                          }
-                        })();
-                      }}
-                      type="button"
-                    >
-                      {pendingLink === "phone-sms" ? "送信中..." : "SMS を送る"}
-                    </button>
-                  </div>
-                ) : (
-                  <div className="account-form">
-                    <label className="form-label">
-                      SMS の確認コード
-                      <input
-                        className="memo-input"
-                        inputMode="numeric"
-                        onChange={(event) => setPhoneOtp(event.target.value)}
-                        placeholder="6桁のコード"
-                        type="text"
-                        value={phoneOtp}
-                      />
-                    </label>
-                    <button
-                      className="button-primary"
-                      disabled={pendingLink !== null}
-                      onClick={() => {
-                        void (async () => {
-                          try {
-                            setPendingLink("phone-otp");
-                            setLinkError(null);
-                            await verifyPhoneLinkOtp(phoneE164, phoneOtp);
-                            setPhoneStep("idle");
-                            setPhoneOtp("");
-                            setLinkNotice("電話番号の紐づけが完了しました。");
-                            router.refresh();
-                            await loadProfile();
-                          } catch (err) {
-                            setLinkError(profileErrorMessage(err));
-                          } finally {
-                            setPendingLink(null);
-                          }
-                        })();
-                      }}
-                      type="button"
-                    >
-                      {pendingLink === "phone-otp" ? "確認中..." : "コードを確定する"}
-                    </button>
-                    <button
-                      className="button-subtle"
-                      disabled={pendingLink !== null}
-                      onClick={() => {
-                        setPhoneStep("idle");
-                        setPhoneOtp("");
-                        setLinkError(null);
-                      }}
-                      type="button"
-                    >
-                      電話番号をやり直す
-                    </button>
-                  </div>
-                )}
-              </>
-            ) : (
-              <p className="account-copy">紐づけ済み: {formatProviders(profile)}</p>
-            )}
-          </Card>
-        </>
+        <AccountLinkSection
+          error={linkError}
+          loading={profileLoading}
+          notice={linkNotice}
+          onApple={() => {
+            if (!profile) {
+              return;
+            }
+            if (isProviderLinked(profile, "apple")) {
+              setLinkNotice("すでに Apple と連携しています。");
+              return;
+            }
+            void (async () => {
+              try {
+                setPendingLink("apple");
+                setLinkError(null);
+                await startAppleLinkFlow("/mypage");
+              } catch (err) {
+                setLinkError(profileErrorMessage(err));
+                setPendingLink(null);
+              }
+            })();
+          }}
+          onClosePhonePanel={() => {
+            setPhonePanelOpen(false);
+            setPhoneStep("idle");
+            setPhoneOtp("");
+            setLinkError(null);
+          }}
+          onGoogle={() => {
+            if (!profile) {
+              return;
+            }
+            if (isProviderLinked(profile, "google")) {
+              setLinkNotice("すでに Google と連携しています。");
+              return;
+            }
+            void (async () => {
+              try {
+                setPendingLink("google");
+                setLinkError(null);
+                await startGoogleLinkFlow("/mypage");
+              } catch (err) {
+                setLinkError(profileErrorMessage(err));
+                setPendingLink(null);
+              }
+            })();
+          }}
+          onPhoneE164Change={setPhoneE164}
+          onPhoneOtpChange={setPhoneOtp}
+          onPhoneRow={() => {
+            if (!profile) {
+              return;
+            }
+            if (isProviderLinked(profile, "phone")) {
+              setLinkNotice("すでに電話番号と連携しています。");
+              setPhonePanelOpen(false);
+              return;
+            }
+            setPhonePanelOpen((open) => !open);
+            setLinkError(null);
+          }}
+          onSendSms={() => {
+            void (async () => {
+              try {
+                setPendingLink("phone-sms");
+                setLinkError(null);
+                await requestPhoneLinkSms(phoneE164);
+                setPhoneStep("sent");
+              } catch (err) {
+                setLinkError(profileErrorMessage(err));
+              } finally {
+                setPendingLink(null);
+              }
+            })();
+          }}
+          onVerifyOtp={() => {
+            void (async () => {
+              try {
+                setPendingLink("phone-otp");
+                setLinkError(null);
+                await verifyPhoneLinkOtp(phoneE164, phoneOtp);
+                setPhoneStep("idle");
+                setPhoneOtp("");
+                setPhonePanelOpen(false);
+                setLinkNotice("電話番号の連携が完了しました。");
+                router.refresh();
+                await loadProfile();
+              } catch (err) {
+                setLinkError(profileErrorMessage(err));
+              } finally {
+                setPendingLink(null);
+              }
+            })();
+          }}
+          pending={pendingLink}
+          phoneE164={phoneE164}
+          phoneExpanded={phonePanelOpen}
+          phoneOtp={phoneOtp}
+          phoneStep={phoneStep}
+          profile={profile}
+        />
       ) : null}
 
       <SectionTitle subtitle="Titles" title="称号" />
