@@ -86,50 +86,55 @@ export function LoginScreen() {
   if (mode === "choose") {
     return (
       <div className="login-launch">
-        <div className="login-launch-inner">
-          <div className="login-launch-hero">
-            <Image
-              alt=""
-              className="login-launch-hero-img"
-              height={544}
-              priority
-              sizes="(max-width: 420px) 88vw, 340px"
-              src="/brand/login-launch-hero.webp"
-              width={560}
-            />
-            <h1 className="login-launch-title">まぐろ丸ノート</h1>
-          </div>
-          {(formError || notice) && (
-            <p
-              className={
-                formError ? "login-launch-flash login-launch-flash--error" : "login-launch-flash login-launch-flash--ok"
-              }
-              role={formError ? "alert" : "status"}
-            >
-              {formError ?? notice}
-            </p>
-          )}
-          <div className="login-launch-actions">
-            <button
-              className="login-launch-btn login-launch-btn--primary"
-              disabled={pendingAction !== null}
-              onClick={() => void handleStartAnonymous()}
-              type="button"
-            >
-              {pendingAction === "anonymous" ? "準備中…" : "今すぐはじめる"}
-            </button>
-            <button
-              className="login-launch-btn login-launch-btn--secondary"
-              disabled={pendingAction !== null}
-              onClick={() => {
-                setMode("signin");
-                setNotice(null);
-                setFormError(null);
-              }}
-              type="button"
-            >
-              サインイン
-            </button>
+        <header className="app-header login-launch-header">
+          <h1 className="header-title">まぐろ丸ノート</h1>
+          <div className="accent-line" aria-hidden="true" />
+        </header>
+        <div className="login-launch-body">
+          <div className="login-launch-inner">
+            <div className="login-launch-hero">
+              <Image
+                alt=""
+                className="login-launch-hero-img"
+                height={544}
+                priority
+                sizes="(max-width: 420px) 88vw, 340px"
+                src="/brand/login-launch-hero.webp"
+                width={560}
+              />
+            </div>
+            {(formError || notice) ? (
+              <p
+                className={
+                  formError ? "login-launch-flash login-launch-flash--error" : "login-launch-flash login-launch-flash--ok"
+                }
+                role={formError ? "alert" : "status"}
+              >
+                {formError ?? notice}
+              </p>
+            ) : null}
+            <div className="login-launch-actions">
+              <button
+                className="login-launch-btn login-launch-btn--primary"
+                disabled={pendingAction !== null}
+                onClick={() => void handleStartAnonymous()}
+                type="button"
+              >
+                {pendingAction === "anonymous" ? "準備中…" : "今すぐはじめる"}
+              </button>
+              <button
+                className="login-launch-btn login-launch-btn--secondary"
+                disabled={pendingAction !== null}
+                onClick={() => {
+                  setMode("signin");
+                  setNotice(null);
+                  setFormError(null);
+                }}
+                type="button"
+              >
+                サインイン
+              </button>
+            </div>
           </div>
         </div>
       </div>
