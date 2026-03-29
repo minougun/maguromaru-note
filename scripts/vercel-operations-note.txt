@@ -11,3 +11,4 @@ Upstash（任意・本番推奨）
 
 クライアント staleTime（任意）
 - NEXT_PUBLIC_APP_SNAPSHOT_STALE_MS … ミリ秒。既定 45000。5000〜600000 の範囲外は 45000 にフォールバック。
+- ログイン後は AppSnapshotProvider が GET /api/app-snapshot?scope=full を一度に取り、全タブでメモリ共有（タブ切替では再フェッチしない。stale 超過後のみ再取得）。
