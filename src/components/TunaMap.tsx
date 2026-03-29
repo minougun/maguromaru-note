@@ -27,8 +27,8 @@ interface MapRegionDef {
 
 /**
  * viewBox 1365×768（`/zukan-tuna-map.webp` / `public/tuna-map-base.svg` と同一想定）。
- * 参照: 部位図（655546 系）— 頭部3点、背部に赤身・中とろ、腹部は大とろ・中とろを分割せず一領域。
- * 中とろは背のブロックと腹の一括りの両方でハイライトされる。
+ * 腹部は前後2領域：前＝大トロのみ、後＝大トロ・中トロ（記録は部位ごと）。
+ * 中とろは背のブロック＋腹の後方の両方でハイライトされる。
  */
 const MAP_REGIONS: MapRegionDef[] = [
   { key: "noten", partIds: ["noten"], type: "ellipse", cx: 292, cy: 178, rx: 48, ry: 30, label: { x: 228, y: 92 } },
@@ -46,15 +46,26 @@ const MAP_REGIONS: MapRegionDef[] = [
   },
   { key: "akami", partIds: ["akami"], type: "ellipse", cx: 718, cy: 394, rx: 238, ry: 90, label: { x: 1040, y: 336 } },
   {
-    key: "belly-otoro-chutoro",
+    key: "belly-otoro-chutoro-rear",
     partIds: ["otoro", "chutoro"],
     type: "ellipse",
-    cx: 632,
+    cx: 738,
+    cy: 548,
+    rx: 132,
+    ry: 52,
+    label: { x: 926, y: 628, text: "大トロ・中トロ" },
+    labelWidth: 248,
+  },
+  {
+    key: "belly-otoro-front",
+    partIds: ["otoro"],
+    type: "ellipse",
+    cx: 438,
     cy: 556,
-    rx: 298,
-    ry: 58,
-    label: { x: 618, y: 698, text: "大とろ・中とろ" },
-    labelWidth: 236,
+    rx: 112,
+    ry: 48,
+    label: { x: 352, y: 692, text: "大トロ" },
+    labelWidth: 132,
   },
 ];
 
@@ -203,7 +214,7 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
                   x={r.label.x}
                   y={r.label.y + 8}
                   textAnchor="middle"
-                  fontSize={r.label.text && r.label.text.length > 7 ? 22 : 28}
+                  fontSize={r.label.text && r.label.text.length > 5 ? 22 : 28}
                   fontWeight="700"
                   fill={eaten ? "#0d0805" : "#f2e4c7"}
                   fontFamily="Noto Sans JP, sans-serif"
@@ -246,7 +257,11 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
 
       {selectedRegion && selectedRegion.partIds.length > 1 ? (
         <div className="map-detail-card map-detail-card--multi">
-          <p className="map-detail-desc map-detail-multi-lead">腹部（大とろ・中とろ）はマップ上ひとまとまりです。それぞれの記録状況は下記のとおりです。</p>
+          <p className="map-detail-desc map-detail-multi-lead">
+            {selectedRegion.key === "belly-otoro-chutoro-rear"
+              ? "後方の腹はマップ上「大トロ・中トロ」と表示しています。記録は大トロ・中トロそれぞれで管理されます。"
+              : "この領域に含まれる部位の記録状況は下記のとおりです。"}
+          </p>
           <ul className="map-detail-multi-list">
             {selectedRegion.partIds.map((pid) => {
               const part = partsById.get(pid);
