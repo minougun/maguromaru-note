@@ -1,37 +1,50 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import {
+  seededMenuItemStatuses,
+  seededQuizSessions,
+  seededQuizStats,
+  seededShareBonusEvents,
+  seededStoreStatus,
+  seededVisitLogParts,
+  seededVisitLogs,
+} from "@/lib/domain/seed";
+import { writeMockState } from "@/lib/mock/store";
 import { createMockViewerContext } from "@/lib/mock/store";
-import { seededTitles } from "@/lib/domain/seed";
-import { calculateVisitStreakWeeks, resolveCurrentTitle } from "@/lib/utils/date";
-import { recordVisit, upsertMenuStatus } from "@/lib/services/app-service";
+import { getUnlockedQuizStageNumbers, isQuizStageUnlocked } from "@/lib/quiz-stages";
+import { getCurrentTitle } from "@/lib/titles";
+import {
+  checkQuizAnswer,
+  claimShareBonus,
+  createQuizSessionForViewer,
+  deleteVisit,
+  getAppSnapshot,
+  recordVisit,
+  submitQuizSession,
+  updateStoreStatus,
+} from "@/lib/services/app-service";
 
-test("calculateVisitStreakWeeks counts consecutive ISO weeks only once per week", () => {
-  const streak = calculateVisitStreakWeeks([
-    { id: "1", user_id: "u", visited_at: "2026-03-28", photo_url: null, memo: null, created_at: "" },
-    { id: "2", user_id: "u", visited_at: "2026-03-27", photo_url: null, memo: null, created_at: "" },
-    { id: "3", user_id: "u", visited_at: "2026-03-20", photo_url: null, memo: null, created_at: "" },
-    { id: "4", user_id: "u", visited_at: "2026-03-03", photo_url: null, memo: null, created_at: "" },
-  ]);
-
-  assert.equal(streak, 2);
+test("getCurrentTitle requires both visit count and quiz correct answers", () => {
+  assert.equal(getCurrentTitle(1, 0, 0)?.id, "beginner");
+  assert.equal(getCurrentTitle(3, 5, 200)?.id, "akami_fan");
+  assert.equal(getCurrentTitle(5, 5, 500)?.id, "chutoro");
+  assert.equal(getCurrentTitle(10, 6, 750)?.id, "hunter");
+  assert.equal(getCurrentTitle(20, 6, 1000)?.id, "master");
+  assert.equal(getCurrentTitle(10, 4, 900)?.id, "beginner");
+  assert.equal(getCurrentTitle(0, 8, 2000), null);
 });
 
-test("resolveCurrentTitle picks the highest unlocked title", () => {
-  const title = resolveCurrentTitle(seededTitles, 12);
-  assert.equal(title.id, "hunter");
-});
-
-test("recordVisit rejects empty part selection", async () => {
+test("recordVisit rejects payload without menu selection", async () => {
   await assert.rejects(
     () =>
       recordVisit({
         visitedAt: "2026-03-28",
-        partIds: [],
+        partIds: ["akami"],
         memo: "x",
         photoDataUrl: null,
       }),
-    /部位を1つ以上/,
+    /Invalid option/,
   );
 });
 
@@ -39,6 +52,7 @@ test("recordVisit rejects invalid extra key payload", async () => {
   await assert.rejects(
     () =>
       recordVisit({
+        menuItemId: "maguro_don",
         visitedAt: "2026-03-28",
         partIds: ["akami"],
         memo: "x",
@@ -49,54 +63,272 @@ test("recordVisit rejects invalid extra key payload", async () => {
   );
 });
 
-test("mock viewer is not staff by default", () => {
-  const previous = process.env.MAGUROMARU_ENABLE_MOCK_STAFF;
-  delete process.env.MAGUROMARU_ENABLE_MOCK_STAFF;
+test("deleteVisit rejects invalid uuid", async () => {
+  await assert.rejects(() => deleteVisit("not-a-uuid"), /Invalid UUID/);
+});
+
+test("submitQuizSession rejects empty answers", async () => {
+  await assert.rejects(
+    () =>
+      submitQuizSession({
+        sessionId: "10000000-0000-4000-8000-000000000001",
+        answers: [],
+      }),
+    /回答が空です/,
+  );
+});
+
+test("mock viewer is not admin by default", () => {
+  const previous = process.env.MAGUROMARU_ENABLE_MOCK_ADMIN;
+  delete process.env.MAGUROMARU_ENABLE_MOCK_ADMIN;
 
   try {
     assert.equal(createMockViewerContext().role, "user");
   } finally {
     if (previous === undefined) {
-      delete process.env.MAGUROMARU_ENABLE_MOCK_STAFF;
+      delete process.env.MAGUROMARU_ENABLE_MOCK_ADMIN;
     } else {
-      process.env.MAGUROMARU_ENABLE_MOCK_STAFF = previous;
+      process.env.MAGUROMARU_ENABLE_MOCK_ADMIN = previous;
     }
   }
 });
 
-test("upsertMenuStatus rejects unauthorized mutation in mock mode by default", async () => {
-  const previous = process.env.MAGUROMARU_ENABLE_MOCK_STAFF;
-  delete process.env.MAGUROMARU_ENABLE_MOCK_STAFF;
+test("updateStoreStatus rejects unauthorized mutation in mock mode by default", async () => {
+  const previous = process.env.MAGUROMARU_ENABLE_MOCK_ADMIN;
+  delete process.env.MAGUROMARU_ENABLE_MOCK_ADMIN;
 
   try {
     await assert.rejects(
       () =>
-        upsertMenuStatus({
-          menuItemId: "maguro_don",
-          status: "few",
+        updateStoreStatus({
+          recommendation: "今日はまぐろ丼がおすすめ",
+          status: "busy",
+          statusNote: "少し並びます",
+          weatherComment: "雨なので足元注意",
+          menuStocks: {
+            maguro_don: "available",
+            maguro_don_mini: "available",
+            tokujo_don: "few",
+            tokujo_don_mini: "soldout",
+          },
         }),
-      /スタッフのみ更新できます/,
+      /管理者のみ更新できます/,
     );
   } finally {
     if (previous === undefined) {
-      delete process.env.MAGUROMARU_ENABLE_MOCK_STAFF;
+      delete process.env.MAGUROMARU_ENABLE_MOCK_ADMIN;
     } else {
-      process.env.MAGUROMARU_ENABLE_MOCK_STAFF = previous;
+      process.env.MAGUROMARU_ENABLE_MOCK_ADMIN = previous;
     }
   }
 });
 
-test("mock viewer becomes staff only when explicitly enabled", () => {
-  const previous = process.env.MAGUROMARU_ENABLE_MOCK_STAFF;
-  process.env.MAGUROMARU_ENABLE_MOCK_STAFF = "true";
+test("mock viewer becomes admin only when explicitly enabled", () => {
+  const previous = process.env.MAGUROMARU_ENABLE_MOCK_ADMIN;
+  process.env.MAGUROMARU_ENABLE_MOCK_ADMIN = "true";
 
   try {
-    assert.equal(createMockViewerContext().role, "staff");
+    assert.equal(createMockViewerContext().role, "admin");
   } finally {
     if (previous === undefined) {
-      delete process.env.MAGUROMARU_ENABLE_MOCK_STAFF;
+      delete process.env.MAGUROMARU_ENABLE_MOCK_ADMIN;
     } else {
-      process.env.MAGUROMARU_ENABLE_MOCK_STAFF = previous;
+      process.env.MAGUROMARU_ENABLE_MOCK_ADMIN = previous;
     }
   }
+});
+
+test("updateStoreStatus succeeds in mock mode only when explicitly enabled", async () => {
+  const previous = process.env.MAGUROMARU_ENABLE_MOCK_ADMIN;
+  process.env.MAGUROMARU_ENABLE_MOCK_ADMIN = "true";
+
+  try {
+    const result = await updateStoreStatus({
+      recommendation: "今日はまぐろ丼がおすすめ",
+      status: "busy",
+      statusNote: "少し並びます",
+      weatherComment: "雨なので足元注意",
+      menuStocks: {
+        maguro_don: "available",
+        maguro_don_mini: "few",
+        tokujo_don: "few",
+        tokujo_don_mini: "soldout",
+      },
+    });
+    assert.equal(result.ok, true);
+    assert.equal(result.storeStatus.status, "busy");
+    assert.equal(result.menuItemStatuses.maguro_don_mini, "few");
+  } finally {
+    if (previous === undefined) {
+      delete process.env.MAGUROMARU_ENABLE_MOCK_ADMIN;
+    } else {
+      process.env.MAGUROMARU_ENABLE_MOCK_ADMIN = previous;
+    }
+  }
+});
+
+test("quiz session is server-scored and cannot be submitted twice", async () => {
+  const session = await createQuizSessionForViewer({ stageNumber: 1 });
+  assert.equal(session.questions.length, 10);
+  assert.equal(typeof session.questions[0]?.answerProof, "string");
+
+  const first = await submitQuizSession({
+    sessionId: session.sessionId,
+    answers: Array.from({ length: 10 }, () => [0]),
+  });
+  assert.equal(first.ok, true);
+  assert.equal(first.results.length, 10);
+
+  await assert.rejects(
+    () =>
+      submitQuizSession({
+        sessionId: session.sessionId,
+        answers: Array.from({ length: 10 }, () => [0]),
+      }),
+    /すでに保存済み/,
+  );
+});
+
+test("quiz stages unlock only after clearing the previous stage", () => {
+  assert.deepEqual(getUnlockedQuizStageNumbers({ correctByStage: { 1: 0, 2: 0, 3: 0 } }), [1]);
+  assert.equal(isQuizStageUnlocked(2, { correctByStage: { 1: 10, 2: 0, 3: 0 } }), true);
+  assert.equal(isQuizStageUnlocked(3, { correctByStage: { 1: 10, 2: 9, 3: 0 } }), false);
+  assert.equal(isQuizStageUnlocked(3, { correctByStage: { 1: 10, 2: 10, 3: 0 } }), true);
+});
+
+test("createQuizSessionForViewer rejects locked stages", async () => {
+  await writeMockState({
+    menuItemStatuses: seededMenuItemStatuses.map((entry) => ({ ...entry })),
+    quizSessions: seededQuizSessions.map((entry) => ({ ...entry })),
+    visitLogs: seededVisitLogs.map((entry) => ({ ...entry })),
+    visitLogParts: seededVisitLogParts.map((entry) => ({ ...entry })),
+    storeStatus: { ...seededStoreStatus },
+    quizStats: [{ ...seededQuizStats, total_correct_answers: 999, total_answered_questions: 999, quizzes_completed: 0, best_score: 999, best_question_count: 50 }],
+    shareBonusEvents: seededShareBonusEvents.map((entry) => ({ ...entry })),
+  });
+
+  await assert.rejects(
+    () => createQuizSessionForViewer({ stageNumber: 100 }),
+    /累計正解数が足りないため、このステージはまだ開放されていません/,
+  );
+});
+
+test("checkQuizAnswer returns immediate correctness and explanation", async () => {
+  const session = await createQuizSessionForViewer({ stageNumber: 1 });
+  const firstQuestion = session.questions[0];
+  const result = await checkQuizAnswer({
+    sessionId: session.sessionId,
+    questionId: firstQuestion.id,
+    answerIndexes: [0],
+    answerProof: firstQuestion.answerProof,
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.result.question.id, firstQuestion.id);
+  assert.equal(typeof result.result.correct, "boolean");
+  assert.equal(typeof result.result.explanation, "string");
+});
+
+test("checkQuizAnswer rejects question ids outside the active session", async () => {
+  const session = await createQuizSessionForViewer({ stageNumber: 1 });
+
+  await assert.rejects(
+    () =>
+      checkQuizAnswer({
+        sessionId: session.sessionId,
+        questionId: "not-in-session-question",
+        answerIndexes: [0],
+        answerProof: session.questions[0].answerProof,
+      }),
+    /問題の照合に失敗しました/,
+  );
+});
+
+test("checkQuizAnswer rejects tampered proof tokens", async () => {
+  const session = await createQuizSessionForViewer({ stageNumber: 1 });
+
+  await assert.rejects(
+    () =>
+      checkQuizAnswer({
+        sessionId: session.sessionId,
+        questionId: session.questions[0].id,
+        answerIndexes: [0],
+        answerProof: `${session.questions[0].answerProof}x`,
+      }),
+    /回答の判定トークンが不正です/,
+  );
+});
+
+test("claimShareBonus boosts visit counts only once per visit record", async () => {
+  const snapshotBefore = await getAppSnapshot();
+  const created = await recordVisit({
+    menuItemId: "maguro_don",
+    visitedAt: "2026-03-29",
+    partIds: ["akami"],
+    memo: "share bonus test",
+    photoDataUrl: null,
+  });
+  assert.ok(created.record);
+
+  const first = await claimShareBonus({
+    targetType: "visit_log",
+    targetId: created.id,
+    channel: "x",
+  });
+  assert.equal(first.ok, true);
+  assert.equal(first.alreadyClaimed, false);
+  assert.equal(first.bonusVisitCount, 0.2);
+
+  const second = await claimShareBonus({
+    targetType: "visit_log",
+    targetId: created.id,
+    channel: "line",
+  });
+  assert.equal(second.ok, true);
+  assert.equal(second.alreadyClaimed, true);
+
+  const snapshotAfter = await getAppSnapshot();
+  assert.equal(snapshotAfter.history.visitCount, Number((snapshotBefore.history.visitCount + 1.2).toFixed(1)));
+  assert.equal(snapshotAfter.history.logs.find((entry) => entry.id === created.id)?.shareBonusClaimed, true);
+});
+
+test("claimShareBonus boosts quiz correct answers only once per result", async () => {
+  const snapshotBefore = await getAppSnapshot();
+  const session = await createQuizSessionForViewer({ stageNumber: 1 });
+  const submitted = await submitQuizSession({
+    sessionId: session.sessionId,
+    answers: session.questions.map(() => [0]),
+  });
+
+  const first = await claimShareBonus({
+    targetType: "quiz_session",
+    targetId: session.sessionId,
+    channel: "x",
+  });
+  assert.equal(first.ok, true);
+  assert.equal(first.alreadyClaimed, false);
+  assert.equal(first.bonusCorrectAnswers, (submitted.score * 2) / 10);
+
+  const second = await claimShareBonus({
+    targetType: "quiz_session",
+    targetId: session.sessionId,
+    channel: "line",
+  });
+  assert.equal(second.ok, true);
+  assert.equal(second.alreadyClaimed, true);
+
+  const snapshotAfter = await getAppSnapshot();
+  assert.equal(snapshotAfter.history.quizStats.totalCorrectAnswers, snapshotBefore.history.quizStats.totalCorrectAnswers + submitted.score + (submitted.score * 0.2));
+});
+
+test("claimShareBonus rejects unknown targets", async () => {
+  await assert.rejects(
+    () =>
+      claimShareBonus({
+        targetType: "visit_log",
+        targetId: "10000000-0000-4000-8000-999999999999",
+        channel: "x",
+      }),
+    /シェア対象の記録が見つかりません/,
+  );
 });

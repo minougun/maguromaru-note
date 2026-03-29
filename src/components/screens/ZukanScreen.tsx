@@ -54,12 +54,12 @@ export function ZukanScreen() {
       </Card>
       {snapshot.zukan.isComplete ? (
         <Card>
-          <p className="complete-banner">全8部位コンプリートです。次は履歴をシェアして自慢しましょう。</p>
+          <p className="complete-banner">全{snapshot.zukan.totalCount}部位コンプリートです。次は履歴をシェアして自慢しましょう。</p>
         </Card>
       ) : null}
 
       <SectionTitle subtitle="Tuna map" title="部位マップ" />
-      <TunaMap collectedPartIds={snapshot.zukan.collectedPartIds} />
+      <TunaMap collectedPartIds={snapshot.zukan.collectedPartIds} parts={snapshot.parts} />
 
       <SectionTitle subtitle="All parts" title="部位一覧" />
       <div className="parts-grid">

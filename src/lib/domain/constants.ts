@@ -4,9 +4,19 @@ export const partIds = [
   "akami",
   "noten",
   "hoho",
+  "meura",
   "kama",
   "haramo",
   "senaka",
+] as const;
+
+export const trackedPartIds = [
+  "otoro",
+  "chutoro",
+  "akami",
+  "noten",
+  "hoho",
+  "meura",
 ] as const;
 
 export const menuItemIds = [
@@ -24,15 +34,24 @@ export const menuStockLabels: Record<MenuStockStatus, { text: string; className:
   soldout: { text: "✕ 終了", className: "badge badge-soldout" },
 };
 
+export const defaultMenuStockById: Record<(typeof menuItemIds)[number], MenuStockStatus> = {
+  maguro_don: "available",
+  maguro_don_mini: "available",
+  tokujo_don: "few",
+  tokujo_don_mini: "soldout",
+};
+
 export const storeStatuses = ["open", "busy", "closing_soon", "closed"] as const;
-export const quizSessionSizes = [10, 20, 30, 50] as const;
+export const quizQuestionsPerStage = 10;
+export const quizStageCount = 100;
+export const quizStagesPerTier = 20;
 
 export const TITLES = [
   { id: "beginner", name: "まぐろ入門者", icon: "🐟", requiredVisits: 1, requiredCollectedParts: 0, requiredQuizCorrect: 0 },
   { id: "akami_fan", name: "赤身の理解者", icon: "🎣", requiredVisits: 3, requiredCollectedParts: 5, requiredQuizCorrect: 200 },
-  { id: "chutoro", name: "中トロ通", icon: "🍣", requiredVisits: 5, requiredCollectedParts: 5, requiredQuizCorrect: 500 },
+  { id: "chutoro", name: "中とろ通", icon: "🍣", requiredVisits: 5, requiredCollectedParts: 5, requiredQuizCorrect: 500 },
   { id: "hunter", name: "希少部位ハンター", icon: "🏆", requiredVisits: 10, requiredCollectedParts: 6, requiredQuizCorrect: 750 },
-  { id: "master", name: "一頭理解者", icon: "👑", requiredVisits: 20, requiredCollectedParts: 8, requiredQuizCorrect: 1000 },
+  { id: "master", name: "まぐろマスター", icon: "👑", requiredVisits: 20, requiredCollectedParts: 6, requiredQuizCorrect: 1000 },
 ] as const;
 
 export const STORE_INFO = {

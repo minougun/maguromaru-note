@@ -1,24 +1,44 @@
 import { Buffer } from "node:buffer";
-import { randomUUID } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID } from "node:crypto";
 
-import type { SupabaseClient, User } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { ZodError } from "zod";
 
 import type { Database } from "@/lib/database.types";
-import { hasSupabaseEnv } from "@/lib/env";
+import {
+  checkQuizAnswerInputSchema,
+  claimShareBonusInputSchema,
+  createQuizSessionInputSchema,
+  recordVisitInputSchema,
+  submitQuizSessionInputSchema,
+  updateStoreStatusInputSchema,
+  visitLogIdSchema,
+} from "@/lib/domain/schemas";
 import type {
   AppSnapshot,
-  MenuStatusEntry,
-  MyPageSummary,
+  MenuItem,
+  MenuItemId,
+  MenuItemStatusRow,
   Part,
   PartId,
-  Title,
+  QuizSessionRow,
+  QuizStatsRow,
+  QuizStatsSummary,
+  ShareBonusEventRow,
+  ShareBonusSummary,
+  StoreStatus,
   ViewerContext,
   VisitRecord,
 } from "@/lib/domain/types";
-import { recordVisitInputSchema, upsertMenuStatusInputSchema } from "@/lib/domain/schemas";
-import { mockMasterData, createMockPhotoUrl, createMockViewerContext, readMockState, writeMockState } from "@/lib/mock/store";
+import { defaultMenuStockById, quizQuestionsPerStage, type MenuStockStatus } from "@/lib/domain/constants";
+import { seededMenuItemStatuses, seededQuizStats, seededShareBonusEvents, seededStoreStatus } from "@/lib/domain/seed";
+import { filterTrackedParts, isTrackedPartId } from "@/lib/domain/tracked-parts";
+import { getAdminEmail, getSupabaseEnv, getSupabaseServiceEnv, hasSupabaseEnv, isMockAllowed } from "@/lib/env";
+import { createMockPhotoUrl, createMockViewerContext, mockMasterData, readMockState, writeMockState } from "@/lib/mock/store";
+import { QUIZ_SESSION_SIZE, createQuizSession, getStageNumberFromQuestionId, scoreQuizAnswers, toPublicQuizSession } from "@/lib/quiz";
+import { createEmptyQuizStageProgress, isQuizStageUnlocked } from "@/lib/quiz-stages";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { calculateVisitStreakWeeks, resolveCurrentTitle } from "@/lib/utils/date";
+import { getCurrentTitle } from "@/lib/titles";
 
 class AppServiceError extends Error {
   status: number;
@@ -29,212 +49,34 @@ class AppServiceError extends Error {
   }
 }
 
-function buildVisitRecords(parts: Part[], visitLogs: Database["public"]["Tables"]["visit_logs"]["Row"][], visitLogParts: Database["public"]["Tables"]["visit_log_parts"]["Row"][]) {
-  const partMap = new Map(parts.map((part) => [part.id, part]));
-  const partsByVisit = new Map<string, Part[]>();
-
-  for (const entry of visitLogParts) {
-    const part = partMap.get(entry.part_id);
-    if (!part) {
-      continue;
-    }
-
-    const existing = partsByVisit.get(entry.visit_log_id) ?? [];
-    existing.push(part);
-    partsByVisit.set(entry.visit_log_id, existing.sort((left, right) => left.sort_order - right.sort_order));
-  }
-
-  return visitLogs.map<VisitRecord>((visitLog) => ({
-    id: visitLog.id,
-    visitedAt: visitLog.visited_at,
-    memo: visitLog.memo,
-    photoUrl: visitLog.photo_url,
-    createdAt: visitLog.created_at,
-    parts: partsByVisit.get(visitLog.id) ?? [],
-  }));
+function isMissingShareBonusSchemaError(message: string | undefined) {
+  return Boolean(message && (message.includes("share_bonus_events") || message.includes("bonus_visit_tenths") || message.includes("bonus_correct_tenths")));
 }
 
-function buildMenuStatusEntries(menuItems: Database["public"]["Tables"]["menu_items"]["Row"][], statusRows: Database["public"]["Tables"]["menu_status"]["Row"][]) {
-  const statusMap = new Map(statusRows.map((row) => [row.menu_item_id, row]));
-
-  return menuItems.map<MenuStatusEntry>((menuItem) => {
-    const statusRow = statusMap.get(menuItem.id);
-
-    return {
-      menuItem,
-      status: statusRow?.status ?? "available",
-      updatedAt: statusRow?.updated_at ?? new Date().toISOString(),
-    };
-  });
+function isMissingQuizSessionScoreColumnError(message: string | undefined) {
+  return Boolean(message && message.includes("score"));
 }
 
-function buildMyPageSummary(titles: Title[], visitLogs: Database["public"]["Tables"]["visit_logs"]["Row"][], collectedPartIds: PartId[]): MyPageSummary {
-  const visitCount = visitLogs.length;
-  const currentTitle = resolveCurrentTitle(titles, visitCount);
+function shouldUseMockBackend() {
+  if (hasSupabaseEnv()) {
+    return false;
+  }
 
-  return {
-    visitCount,
-    collectedCount: collectedPartIds.length,
-    streakWeeks: calculateVisitStreakWeeks(visitLogs),
-    currentTitle,
-    titles: titles.map((title) => ({
-      ...title,
-      unlocked: visitCount >= title.required_visits,
-      current: title.id === currentTitle.id,
-    })),
-  };
+  if (!isMockAllowed()) {
+    throw new AppServiceError(503, "Supabase環境変数が未設定です。本番環境ではmockは使用できません。");
+  }
+
+  return true;
 }
 
-async function getSupabaseViewer(client: SupabaseClient<Database>): Promise<ViewerContext> {
-  const {
-    data: { user },
-    error,
-  } = await client.auth.getUser();
-
-  if (error || !user) {
-    throw new AppServiceError(401, "ログインが必要です。");
-  }
-
-  const role = user.app_metadata?.role === "staff" ? "staff" : "user";
-
-  return {
-    userId: user.id,
-    role,
-    isMock: false,
-  };
+/* eslint-disable @typescript-eslint/no-explicit-any */
+function fromAny(client: SupabaseClient<Database>, relation: string): any {
+  return (client as unknown as { from(table: string): unknown }).from(relation) as any;
 }
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
-async function ensureSupabaseProfile(client: SupabaseClient<Database>, user: User) {
-  const payload = {
-    id: user.id,
-    display_name: user.user_metadata.display_name ?? "匿名のまぐろ好き",
-    avatar_url: user.user_metadata.avatar_url ?? null,
-  };
-
-  const { error } = await client.from("profiles").upsert(payload, { onConflict: "id" });
-  if (error) {
-    throw new AppServiceError(500, error.message);
-  }
-}
-
-async function getSupabaseContext() {
-  const client = await createServerSupabaseClient();
-  const viewer = await getSupabaseViewer(client);
-  const {
-    data: { user },
-  } = await client.auth.getUser();
-
-  if (user) {
-    await ensureSupabaseProfile(client, user);
-  }
-
-  return { client, viewer };
-}
-
-async function listMasterData(client?: SupabaseClient<Database>) {
-  if (!client) {
-    return mockMasterData;
-  }
-
-  const [{ data: parts, error: partsError }, { data: titles, error: titlesError }, { data: menuItems, error: menuItemsError }] = await Promise.all([
-    client.from("parts").select("*").order("sort_order"),
-    client.from("titles").select("*").order("sort_order"),
-    client.from("menu_items").select("*").order("sort_order"),
-  ]);
-
-  if (partsError || titlesError || menuItemsError || !parts || !titles || !menuItems) {
-    throw new AppServiceError(500, partsError?.message ?? titlesError?.message ?? menuItemsError?.message ?? "マスターデータの取得に失敗しました。");
-  }
-
-  return {
-    parts: parts as Part[],
-    titles: titles as Title[],
-    menuItems: menuItems as Database["public"]["Tables"]["menu_items"]["Row"][],
-  };
-}
-
-export async function getViewerContext() {
-  if (!hasSupabaseEnv()) {
-    return createMockViewerContext();
-  }
-
-  const { viewer } = await getSupabaseContext();
-  return viewer;
-}
-
-export async function getAppSnapshot(): Promise<AppSnapshot> {
-  if (!hasSupabaseEnv()) {
-    const viewer = createMockViewerContext();
-    const state = await readMockState();
-    const { parts, titles, menuItems } = mockMasterData;
-    const visitLogs = state.visitLogs
-      .filter((visitLog) => visitLog.user_id === viewer.userId)
-      .sort((left, right) => right.visited_at.localeCompare(left.visited_at));
-    const visitLogParts = state.visitLogParts.filter((entry) =>
-      visitLogs.some((visitLog) => visitLog.id === entry.visit_log_id),
-    );
-    const visitRecords = buildVisitRecords(parts, visitLogs, visitLogParts);
-    const collectedPartIds = [...new Set(visitLogParts.map((entry) => entry.part_id as PartId))];
-
-    return {
-      parts,
-      titles,
-      menuItems,
-      home: {
-        recentLogs: visitRecords.slice(0, 5),
-        menuStatus: buildMenuStatusEntries(menuItems, state.menuStatus),
-      },
-      zukan: {
-        collectedCount: collectedPartIds.length,
-        totalCount: parts.length,
-        collectedPartIds,
-      },
-      myPage: buildMyPageSummary(titles, visitLogs, collectedPartIds),
-    };
-  }
-
-  const { client, viewer } = await getSupabaseContext();
-  const { parts, titles, menuItems } = await listMasterData(client);
-  const { data: visitLogs, error: visitLogsError } = await client
-    .from("visit_logs")
-    .select("*")
-    .eq("user_id", viewer.userId)
-    .order("visited_at", { ascending: false });
-  const { data: menuStatusRows, error: menuStatusError } = await client.from("menu_status").select("*");
-
-  if (visitLogsError || menuStatusError || !visitLogs || !menuStatusRows) {
-    throw new AppServiceError(500, visitLogsError?.message ?? menuStatusError?.message ?? "データ取得に失敗しました。");
-  }
-
-  const typedVisitLogs = visitLogs as Database["public"]["Tables"]["visit_logs"]["Row"][];
-  const visitLogIds = typedVisitLogs.map((entry) => entry.id);
-  const { data: visitLogPartsData, error: visitLogPartsError } = visitLogIds.length
-    ? await client.from("visit_log_parts").select("*").in("visit_log_id", visitLogIds)
-    : { data: [] as Database["public"]["Tables"]["visit_log_parts"]["Row"][], error: null };
-
-  if (visitLogPartsError || !visitLogPartsData) {
-    throw new AppServiceError(500, visitLogPartsError?.message ?? "部位情報の取得に失敗しました。");
-  }
-
-  const typedVisitLogParts = visitLogPartsData as Database["public"]["Tables"]["visit_log_parts"]["Row"][];
-  const visitRecords = buildVisitRecords(parts, typedVisitLogs, typedVisitLogParts);
-  const collectedPartIds = [...new Set(typedVisitLogParts.map((entry) => entry.part_id as PartId))];
-
-  return {
-    parts,
-    titles,
-    menuItems,
-    home: {
-      recentLogs: visitRecords.slice(0, 5),
-      menuStatus: buildMenuStatusEntries(menuItems, menuStatusRows as Database["public"]["Tables"]["menu_status"]["Row"][]),
-    },
-    zukan: {
-      collectedCount: collectedPartIds.length,
-      totalCount: parts.length,
-      collectedPartIds,
-    },
-    myPage: buildMyPageSummary(titles, typedVisitLogs, collectedPartIds),
-  };
+function todayIsoDate() {
+  return new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
 }
 
 function decodeDataUrl(dataUrl: string) {
@@ -243,49 +85,621 @@ function decodeDataUrl(dataUrl: string) {
     throw new AppServiceError(400, "画像データが不正です。");
   }
 
-  const match = header.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64$/);
+  const match = header.match(/^data:(image\/(?:jpeg|png|webp));base64$/);
   if (!match) {
     throw new AppServiceError(400, "画像形式が不正です。");
   }
 
+  const buffer = Buffer.from(payload, "base64");
+  if (buffer.length === 0) {
+    throw new AppServiceError(400, "画像データが空です。");
+  }
+
+  if (buffer.length > 3 * 1024 * 1024) {
+    throw new AppServiceError(400, "画像サイズが大きすぎます。");
+  }
+
   return {
     contentType: match[1],
-    buffer: Buffer.from(payload, "base64"),
+    buffer,
   };
 }
 
-async function uploadPhotoToSupabase(client: SupabaseClient<Database>, userId: string, logId: string, photoDataUrl: string) {
-  const { buffer, contentType } = decodeDataUrl(photoDataUrl);
-  const ext = contentType === "image/png" ? "png" : "jpg";
-  const filePath = `${userId}/${logId}.${ext}`;
-  const { error } = await client.storage
-    .from("don-photos")
-    .upload(filePath, buffer, { contentType, upsert: true });
+function fileExtension(contentType: string) {
+  if (contentType === "image/png") return "png";
+  if (contentType === "image/webp") return "webp";
+  return "jpg";
+}
+
+function toQuizStatsSummary(row: QuizStatsRow): QuizStatsSummary {
+  return {
+    totalCorrectAnswers: row.total_correct_answers,
+    totalAnsweredQuestions: row.total_answered_questions,
+    quizzesCompleted: row.quizzes_completed,
+    bestScore: row.best_score,
+    bestQuestionCount: row.best_question_count,
+    accuracyRate:
+      row.total_answered_questions > 0
+        ? Math.round((row.total_correct_answers / row.total_answered_questions) * 100)
+        : 0,
+  };
+}
+
+function buildVisitRecords(
+  parts: Part[],
+  menuItems: MenuItem[],
+  visitLogs: Database["public"]["Tables"]["visit_logs"]["Row"][],
+  visitLogParts: Database["public"]["Tables"]["visit_log_parts"]["Row"][],
+  sharedVisitLogIdSet = new Set<string>(),
+) {
+  const partMap = new Map(parts.map((part) => [part.id, part]));
+  const menuMap = new Map(menuItems.map((menuItem) => [menuItem.id, menuItem]));
+  const partsByVisit = new Map<string, Part[]>();
+
+  for (const entry of visitLogParts) {
+    const part = partMap.get(entry.part_id);
+    if (!part) {
+      continue;
+    }
+
+    const list = partsByVisit.get(entry.visit_log_id) ?? [];
+    list.push(part);
+    partsByVisit.set(entry.visit_log_id, list);
+  }
+
+  for (const list of partsByVisit.values()) {
+    list.sort((left, right) => left.sort_order - right.sort_order);
+  }
+
+  return visitLogs.flatMap<VisitRecord>((visitLog) => {
+    const menuItem = menuMap.get(visitLog.menu_item_id);
+    if (!menuItem) {
+      return [];
+    }
+
+    return [
+      {
+        id: visitLog.id,
+        visitedAt: visitLog.visited_at,
+        createdAt: visitLog.created_at,
+        memo: visitLog.memo,
+        photoUrl: visitLog.photo_url,
+        menuItem,
+        parts: partsByVisit.get(visitLog.id) ?? [],
+        shareBonusClaimed: sharedVisitLogIdSet.has(visitLog.id),
+      },
+    ];
+  });
+}
+
+function tenthsToCount(value: number) {
+  return value / 10;
+}
+
+function buildShareBonusSummary(rows: ShareBonusEventRow[]): ShareBonusSummary {
+  const bonusVisitTenths = rows.reduce((sum, row) => sum + row.bonus_visit_tenths, 0);
+  const bonusCorrectTenths = rows.reduce((sum, row) => sum + row.bonus_correct_tenths, 0);
+
+  return {
+    bonusVisitCount: tenthsToCount(bonusVisitTenths),
+    bonusCorrectAnswers: tenthsToCount(bonusCorrectTenths),
+    sharedVisitLogIds: rows.filter((row) => row.target_type === "visit_log").map((row) => row.target_id),
+    sharedQuizSessionIds: rows.filter((row) => row.target_type === "quiz_session").map((row) => row.target_id),
+  };
+}
+
+function buildCollectedPartIds(parts: Part[], visitLogParts: Database["public"]["Tables"]["visit_log_parts"]["Row"][]) {
+  const orderMap = new Map(parts.map((part) => [part.id, part.sort_order]));
+  const collectedPartIds = new Set<PartId>();
+
+  for (const entry of visitLogParts) {
+    collectedPartIds.add(entry.part_id as PartId);
+  }
+
+  return [...collectedPartIds].sort(
+    (left, right) => (orderMap.get(left) ?? 999) - (orderMap.get(right) ?? 999),
+  );
+}
+
+async function getSupabaseViewer(client: SupabaseClient<Database>): Promise<ViewerContext> {
+  return getSupabaseViewerFromToken(client);
+}
+
+async function getSupabaseViewerFromToken(
+  client: SupabaseClient<Database>,
+  accessToken?: string,
+): Promise<ViewerContext> {
+  const {
+    data: { user },
+    error,
+  } = await client.auth.getUser(accessToken);
+
+  if (error || !user) {
+    throw new AppServiceError(401, "ログインが必要です。");
+  }
+
+  const adminEmail = getAdminEmail();
+  const email = user.email?.toLowerCase() ?? null;
+  const role = adminEmail && email === adminEmail ? "admin" : "user";
+
+  return {
+    userId: user.id,
+    email,
+    role,
+    isMock: false,
+  };
+}
+
+async function getSupabaseContext() {
+  const client = await createServerSupabaseClient();
+  const viewer = await getSupabaseViewer(client);
+  return { client, viewer };
+}
+
+function readBearerToken(value: unknown) {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const match = value.match(/^Bearer\s+(.+)$/i);
+  const token = match?.[1]?.trim();
+  return token || undefined;
+}
+
+function createTokenSupabaseClient(accessToken: string) {
+  const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
+  return createClient<Database>(supabaseUrl, supabaseAnonKey, {
+    global: {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+}
+
+async function getSupabaseContextFromAccessToken(accessToken: string) {
+  const client = createTokenSupabaseClient(accessToken);
+  const viewer = await getSupabaseViewerFromToken(client, accessToken);
+  return { client, viewer };
+}
+
+function assertAdminViewer(viewer: ViewerContext) {
+  if (viewer.isMock) {
+    if (viewer.role !== "admin") {
+      throw new AppServiceError(403, "管理者のみ更新できます。");
+    }
+    return;
+  }
+
+  const adminEmail = getAdminEmail();
+  if (!adminEmail) {
+    throw new AppServiceError(500, "ADMIN_EMAIL が設定されていません。");
+  }
+
+  if (viewer.role !== "admin" || viewer.email !== adminEmail) {
+    throw new AppServiceError(403, "管理者のみ更新できます。");
+  }
+}
+
+async function listMasterData(client?: SupabaseClient<Database>) {
+  if (!client) {
+    return mockMasterData;
+  }
+
+  const [{ data: parts, error: partsError }, { data: menuItems, error: menuItemsError }] = await Promise.all([
+    fromAny(client, "parts").select("*").order("sort_order"),
+    fromAny(client, "menu_items").select("*").order("sort_order"),
+  ]);
+
+  if (partsError || menuItemsError || !parts || !menuItems) {
+    throw new AppServiceError(500, partsError?.message ?? menuItemsError?.message ?? "マスターデータの取得に失敗しました。");
+  }
+
+  return {
+    parts: parts as Part[],
+    menuItems: menuItems as MenuItem[],
+  };
+}
+
+async function listVisitData(client: SupabaseClient<Database>, userId: string) {
+  const { data: visitLogs, error: visitLogsError } = await fromAny(client, "visit_logs")
+    .select("*")
+    .eq("user_id", userId)
+    .order("visited_at", { ascending: false })
+    .order("created_at", { ascending: false });
+
+  if (visitLogsError || !visitLogs) {
+    throw new AppServiceError(500, visitLogsError?.message ?? "来店記録の取得に失敗しました。");
+  }
+
+  const typedVisitLogs = visitLogs as Database["public"]["Tables"]["visit_logs"]["Row"][];
+  const visitLogIds = typedVisitLogs.map((entry) => entry.id);
+  if (visitLogIds.length === 0) {
+    return {
+      visitLogs: [] as Database["public"]["Tables"]["visit_logs"]["Row"][],
+      visitLogParts: [] as Database["public"]["Tables"]["visit_log_parts"]["Row"][],
+    };
+  }
+
+  const { data: visitLogParts, error: visitLogPartsError } = await fromAny(client, "visit_log_parts")
+    .select("*")
+    .in("visit_log_id", visitLogIds);
+
+  if (visitLogPartsError || !visitLogParts) {
+    throw new AppServiceError(500, visitLogPartsError?.message ?? "部位記録の取得に失敗しました。");
+  }
+
+  return {
+    visitLogs: typedVisitLogs,
+    visitLogParts: visitLogParts as Database["public"]["Tables"]["visit_log_parts"]["Row"][],
+  };
+}
+
+async function getStoreStatus(client?: SupabaseClient<Database>) {
+  if (!client) {
+    const state = await readMockState();
+    return state.storeStatus;
+  }
+
+  const { data, error } = await fromAny(client, "store_status").select("*").eq("id", 1).maybeSingle();
+  if (error) {
+    throw new AppServiceError(500, error.message);
+  }
+
+  return (data as StoreStatus | null) ?? seededStoreStatus;
+}
+
+function buildMenuItemStatuses(rows: MenuItemStatusRow[]) {
+  const statuses = { ...defaultMenuStockById } as Record<MenuItemId, MenuStockStatus>;
+
+  for (const row of rows) {
+    statuses[row.menu_item_id as MenuItemId] = row.status;
+  }
+
+  return statuses;
+}
+
+async function getMenuItemStatuses(client?: SupabaseClient<Database>) {
+  if (!client) {
+    const state = await readMockState();
+    return buildMenuItemStatuses(state.menuItemStatuses);
+  }
+
+  const { data, error } = await fromAny(client, "menu_item_statuses").select("*");
+  if (error) {
+    throw new AppServiceError(500, error.message);
+  }
+
+  return buildMenuItemStatuses((data as MenuItemStatusRow[] | null) ?? seededMenuItemStatuses);
+}
+
+function createEmptyQuizStats(userId: string): QuizStatsRow {
+  return {
+    ...seededQuizStats,
+    user_id: userId,
+    total_correct_answers: 0,
+    total_answered_questions: 0,
+    quizzes_completed: 0,
+    best_score: 0,
+    best_question_count: 0,
+  };
+}
+
+async function getQuizStats(client: SupabaseClient<Database> | undefined, userId: string) {
+  if (!client) {
+    const state = await readMockState();
+    return state.quizStats.find((entry) => entry.user_id === userId) ?? seededQuizStats;
+  }
+
+  const { data, error } = await fromAny(client, "quiz_stats")
+    .select("*")
+    .eq("user_id", userId)
+    .maybeSingle();
 
   if (error) {
     throw new AppServiceError(500, error.message);
   }
 
-  const { data } = client.storage.from("don-photos").getPublicUrl(filePath);
-  return data.publicUrl;
+  return (data as QuizStatsRow | null) ?? createEmptyQuizStats(userId);
 }
 
-export async function recordVisit(input: unknown) {
-  const parsed = recordVisitInputSchema.parse(input);
-  const visitId = randomUUID();
+async function getShareBonusEvents(client: SupabaseClient<Database> | undefined, userId: string) {
+  if (!client) {
+    const state = await readMockState();
+    return state.shareBonusEvents.filter((entry) => entry.user_id === userId);
+  }
 
-  if (!hasSupabaseEnv()) {
+  const { data, error } = await fromAny(client, "share_bonus_events")
+    .select("*")
+    .eq("user_id", userId);
+
+  if (error) {
+    if (isMissingShareBonusSchemaError(error.message)) {
+      return [];
+    }
+    throw new AppServiceError(500, error.message);
+  }
+
+  return (data as ShareBonusEventRow[] | null) ?? seededShareBonusEvents;
+}
+
+async function listQuizSessionsForUser(client: SupabaseClient<Database> | undefined, userId: string) {
+  if (!client) {
+    const state = await readMockState();
+    return state.quizSessions.filter((entry) => entry.user_id === userId);
+  }
+
+  const { data, error } = await fromAny(client, "quiz_sessions")
+    .select("*")
+    .eq("user_id", userId);
+
+  if (error) {
+    throw new AppServiceError(500, error.message);
+  }
+
+  return (data as QuizSessionRow[] | null) ?? [];
+}
+
+function buildQuizStageProgressSummary(quizSessions: QuizSessionRow[], shareBonusEvents: ShareBonusEventRow[]) {
+  const correctByStage = createEmptyQuizStageProgress();
+  const quizShareBonusBySessionId = new Map(
+    shareBonusEvents
+      .filter((entry) => entry.target_type === "quiz_session")
+      .map((entry) => [entry.target_id, tenthsToCount(entry.bonus_correct_tenths)]),
+  );
+
+  for (const session of quizSessions) {
+    if (!session.submitted_at) {
+      continue;
+    }
+
+    const questionIds = parseQuestionIds(session.question_ids);
+    const inferredStageNumber =
+      getStageNumberFromQuestionId(questionIds[0] ?? "") ??
+      Math.max(1, Math.ceil(session.question_count / quizQuestionsPerStage));
+    const current = correctByStage[inferredStageNumber] ?? 0;
+    correctByStage[inferredStageNumber] =
+      current + (session.score ?? 0) + (quizShareBonusBySessionId.get(session.id) ?? 0);
+  }
+
+  return {
+    correctByStage,
+  };
+}
+
+function buildSnapshotFromRecords(
+  viewer: ViewerContext,
+  parts: Part[],
+  menuItems: MenuItem[],
+  menuItemStatuses: Record<MenuItemId, MenuStockStatus>,
+  storeStatus: StoreStatus,
+  quizStatsRow: QuizStatsRow,
+  quizSessions: QuizSessionRow[],
+  shareBonusEvents: ShareBonusEventRow[],
+  visitLogs: Database["public"]["Tables"]["visit_logs"]["Row"][],
+  visitLogParts: Database["public"]["Tables"]["visit_log_parts"]["Row"][],
+): AppSnapshot {
+  const shareBonus = buildShareBonusSummary(shareBonusEvents);
+  const quizStageProgress = buildQuizStageProgressSummary(quizSessions, shareBonusEvents);
+  const visitRecords = buildVisitRecords(
+    parts,
+    menuItems,
+    visitLogs,
+    visitLogParts,
+    new Set(shareBonus.sharedVisitLogIds),
+  );
+  const trackedParts = filterTrackedParts(parts);
+  const collectedPartIds = buildCollectedPartIds(
+    trackedParts,
+    visitLogParts.filter((entry) => isTrackedPartId(entry.part_id)),
+  );
+  const baseQuizStats = toQuizStatsSummary(quizStatsRow);
+  const quizStats = {
+    ...baseQuizStats,
+    totalCorrectAnswers: baseQuizStats.totalCorrectAnswers + shareBonus.bonusCorrectAnswers,
+  };
+  const boostedVisitCount = visitRecords.length + shareBonus.bonusVisitCount;
+  const currentTitle = getCurrentTitle(
+    boostedVisitCount,
+    collectedPartIds.length,
+    quizStats.totalCorrectAnswers,
+  );
+
+  return {
+    viewer,
+    parts: trackedParts,
+    menuItems,
+    home: {
+      menuItemStatuses,
+      storeStatus,
+      recentLogs: visitRecords.slice(0, 3),
+    },
+    history: {
+      visitCount: boostedVisitCount,
+      quizStats,
+      quizStageProgress,
+      currentTitle,
+      logs: visitRecords,
+      shareBonus,
+    },
+    zukan: {
+      collectedPartIds,
+      collectedCount: collectedPartIds.length,
+      totalCount: trackedParts.length,
+      isComplete: collectedPartIds.length === trackedParts.length,
+    },
+    canManageAdmin: viewer.role === "admin",
+  };
+}
+
+function buildStoragePath(userId: string, visitId: string, ext: string) {
+  return `${userId}/${visitId}.${ext}`;
+}
+
+function extractStoragePathFromPublicUrl(photoUrl: string | null) {
+  if (!photoUrl) {
+    return null;
+  }
+
+  const marker = "/don-photos/";
+  const index = photoUrl.indexOf(marker);
+  if (index < 0) {
+    return null;
+  }
+
+  return decodeURIComponent(photoUrl.slice(index + marker.length));
+}
+
+async function removePhotoIfNeeded(client: SupabaseClient<Database>, photoUrl: string | null) {
+  const path = extractStoragePathFromPublicUrl(photoUrl);
+  if (!path) {
+    return;
+  }
+
+  await client.storage.from("don-photos").remove([path]);
+}
+
+async function buildRecordedVisit(
+  parts: Part[],
+  menuItems: MenuItem[],
+  input: {
+    id: string;
+    visitedAt: string;
+    createdAt: string;
+    memo: string | null;
+    photoUrl: string | null;
+    menuItemId: string;
+    partIds: readonly string[];
+    shareBonusClaimed?: boolean;
+  },
+) {
+  const menuItem = menuItems.find((entry) => entry.id === input.menuItemId);
+  if (!menuItem) {
+    throw new AppServiceError(500, "メニュー情報の解決に失敗しました。");
+  }
+
+  const selectedPartIds = new Set(input.partIds);
+  const selectedParts = parts
+    .filter((part) => selectedPartIds.has(part.id))
+    .sort((left, right) => left.sort_order - right.sort_order);
+
+  return {
+    id: input.id,
+    visitedAt: input.visitedAt,
+    createdAt: input.createdAt,
+    memo: input.memo,
+    photoUrl: input.photoUrl,
+    menuItem,
+    parts: selectedParts,
+    shareBonusClaimed: input.shareBonusClaimed ?? false,
+  } satisfies VisitRecord;
+}
+
+export async function getViewerContext() {
+  if (shouldUseMockBackend()) {
+    return createMockViewerContext();
+  }
+
+  const { viewer } = await getSupabaseContext();
+  return viewer;
+}
+
+export async function getViewerContextSafe(): Promise<ViewerContext | null> {
+  if (shouldUseMockBackend()) {
+    return createMockViewerContext();
+  }
+
+  try {
+    const { viewer } = await getSupabaseContext();
+    return viewer;
+  } catch {
+    return null;
+  }
+}
+
+export async function getAppSnapshot(accessToken?: string): Promise<AppSnapshot> {
+  if (shouldUseMockBackend()) {
     const viewer = createMockViewerContext();
     const state = await readMockState();
-    const createdAt = new Date().toISOString();
+    const { parts, menuItems } = mockMasterData;
+    const quizStatsRow = state.quizStats.find((entry) => entry.user_id === viewer.userId) ?? seededQuizStats;
+    const quizSessions = state.quizSessions.filter((entry) => entry.user_id === viewer.userId);
+    const shareBonusEvents = state.shareBonusEvents.filter((entry) => entry.user_id === viewer.userId);
+    const visitLogs = state.visitLogs
+      .filter((visitLog) => visitLog.user_id === viewer.userId)
+      .sort((left, right) => {
+        const byDate = right.visited_at.localeCompare(left.visited_at);
+        return byDate !== 0 ? byDate : right.created_at.localeCompare(left.created_at);
+      });
+    const visitLogIds = new Set(visitLogs.map((entry) => entry.id));
+    const visitLogParts = state.visitLogParts.filter((entry) => visitLogIds.has(entry.visit_log_id));
+    return buildSnapshotFromRecords(
+      viewer,
+      parts,
+      menuItems,
+      buildMenuItemStatuses(state.menuItemStatuses),
+      state.storeStatus,
+      quizStatsRow,
+      quizSessions,
+      shareBonusEvents,
+      visitLogs,
+      visitLogParts,
+    );
+  }
+
+  const { client, viewer } = accessToken
+    ? await getSupabaseContextFromAccessToken(accessToken)
+    : await getSupabaseContext();
+  const serviceRoleClient = createServiceRoleClient();
+  const [{ parts, menuItems }, menuItemStatuses, storeStatus, quizStatsRow, quizSessions, shareBonusEvents, { visitLogs, visitLogParts }] = await Promise.all([
+    listMasterData(client),
+    getMenuItemStatuses(client),
+    getStoreStatus(client),
+    getQuizStats(client, viewer.userId),
+    listQuizSessionsForUser(serviceRoleClient, viewer.userId),
+    getShareBonusEvents(serviceRoleClient, viewer.userId),
+    listVisitData(client, viewer.userId),
+  ]);
+
+  return buildSnapshotFromRecords(
+    viewer,
+    parts,
+    menuItems,
+    menuItemStatuses,
+    storeStatus,
+    quizStatsRow,
+    quizSessions,
+    shareBonusEvents,
+    visitLogs,
+    visitLogParts,
+  );
+}
+
+export async function recordVisit(input: unknown, accessToken?: string) {
+  const parsed = recordVisitInputSchema.parse(input);
+  const visitId = randomUUID();
+  const createdAt = new Date().toISOString();
+  const visitedAt = parsed.visitedAt ?? todayIsoDate();
+
+  if (shouldUseMockBackend()) {
+    const viewer = createMockViewerContext();
+    const state = await readMockState();
+    const photoUrl = parsed.photoDataUrl ? createMockPhotoUrl() : null;
+
     state.visitLogs.unshift({
       id: visitId,
       user_id: viewer.userId,
-      visited_at: parsed.visitedAt,
-      photo_url: parsed.photoDataUrl ? createMockPhotoUrl() : null,
+      menu_item_id: parsed.menuItemId,
+      visited_at: visitedAt,
       memo: parsed.memo ?? null,
+      photo_url: photoUrl,
       created_at: createdAt,
     });
+
     for (const partId of parsed.partIds) {
       state.visitLogParts.push({
         id: randomUUID(),
@@ -293,94 +707,813 @@ export async function recordVisit(input: unknown) {
         part_id: partId,
       });
     }
+
     await writeMockState(state);
-    return { id: visitId };
+    const { parts, menuItems } = mockMasterData;
+    const record = await buildRecordedVisit(parts, menuItems, {
+      id: visitId,
+      visitedAt,
+      createdAt,
+      memo: parsed.memo ?? null,
+      photoUrl,
+      menuItemId: parsed.menuItemId,
+      partIds: parsed.partIds,
+    });
+    return { id: visitId, record };
   }
 
-  const { client, viewer } = await getSupabaseContext();
+  const { client, viewer } = accessToken
+    ? await getSupabaseContextFromAccessToken(accessToken)
+    : await getSupabaseContext();
+  const { parts, menuItems } = await listMasterData(client);
+
   let photoUrl: string | null = null;
+  let uploadedFilePath: string | null = null;
+
   if (parsed.photoDataUrl) {
-    photoUrl = await uploadPhotoToSupabase(client, viewer.userId, visitId, parsed.photoDataUrl);
+    const { buffer, contentType } = decodeDataUrl(parsed.photoDataUrl);
+    uploadedFilePath = buildStoragePath(viewer.userId, visitId, fileExtension(contentType));
+    const { error: uploadError } = await client.storage
+      .from("don-photos")
+      .upload(uploadedFilePath, buffer, { contentType, upsert: true });
+
+    if (uploadError) {
+      throw new AppServiceError(500, uploadError.message);
+    }
+
+    const { data } = client.storage.from("don-photos").getPublicUrl(uploadedFilePath);
+    photoUrl = data.publicUrl;
   }
 
   const visitPayload: Database["public"]["Tables"]["visit_logs"]["Insert"] = {
     id: visitId,
     user_id: viewer.userId,
-    visited_at: parsed.visitedAt,
+    menu_item_id: parsed.menuItemId,
+    visited_at: visitedAt,
     memo: parsed.memo ?? null,
     photo_url: photoUrl,
+    created_at: createdAt,
   };
 
-  const { error: visitError } = await client.from("visit_logs").insert(visitPayload);
+  const { error: visitError } = await fromAny(client, "visit_logs").insert(visitPayload);
   if (visitError) {
+    if (uploadedFilePath) {
+      await client.storage.from("don-photos").remove([uploadedFilePath]);
+    }
     throw new AppServiceError(500, visitError.message);
   }
 
-  const partPayloads: Database["public"]["Tables"]["visit_log_parts"]["Insert"][] = parsed.partIds.map((partId) => ({
-    id: randomUUID(),
-    visit_log_id: visitId,
-    part_id: partId,
-  }));
-  const { error: partsError } = await client.from("visit_log_parts").insert(partPayloads);
-  if (partsError) {
-    throw new AppServiceError(500, partsError.message);
+  if (parsed.partIds.length > 0) {
+    const partPayloads: Database["public"]["Tables"]["visit_log_parts"]["Insert"][] = parsed.partIds.map((partId) => ({
+      id: randomUUID(),
+      visit_log_id: visitId,
+      part_id: partId,
+    }));
+
+    const { error: partsError } = await fromAny(client, "visit_log_parts").insert(partPayloads);
+    if (partsError) {
+      await fromAny(client, "visit_logs").delete().eq("id", visitId);
+      if (uploadedFilePath) {
+        await client.storage.from("don-photos").remove([uploadedFilePath]);
+      }
+      throw new AppServiceError(500, partsError.message);
+    }
   }
 
-  return { id: visitId };
+  const record = await buildRecordedVisit(parts, menuItems, {
+    id: visitId,
+    visitedAt,
+    createdAt,
+    memo: parsed.memo ?? null,
+    photoUrl,
+    menuItemId: parsed.menuItemId,
+    partIds: parsed.partIds,
+  });
+
+  return { id: visitId, record };
 }
 
-export async function upsertMenuStatus(input: unknown) {
-  const parsed = upsertMenuStatusInputSchema.parse(input);
+export async function deleteVisit(visitLogId: unknown, accessToken?: string) {
+  const id = visitLogIdSchema.parse(visitLogId);
 
-  if (!hasSupabaseEnv()) {
+  if (shouldUseMockBackend()) {
     const viewer = createMockViewerContext();
-    if (viewer.role !== "staff") {
-      throw new AppServiceError(403, "スタッフのみ更新できます。");
+    const state = await readMockState();
+    const target = state.visitLogs.find((entry) => entry.id === id && entry.user_id === viewer.userId);
+    if (!target) {
+      throw new AppServiceError(404, "記録が見つかりません。");
     }
 
-    const state = await readMockState();
-    const existing = state.menuStatus.find((entry) => entry.menu_item_id === parsed.menuItemId);
-    const updatedAt = new Date().toISOString();
-    if (existing) {
-      existing.status = parsed.status;
-      existing.updated_at = updatedAt;
-      existing.updated_by = viewer.userId;
-    } else {
-      state.menuStatus.push({
-        id: randomUUID(),
-        menu_item_id: parsed.menuItemId,
-        status: parsed.status,
-        updated_at: updatedAt,
-        updated_by: viewer.userId,
-      });
-    }
+    state.visitLogs = state.visitLogs.filter((entry) => entry.id !== id);
+    state.visitLogParts = state.visitLogParts.filter((entry) => entry.visit_log_id !== id);
+    state.shareBonusEvents = state.shareBonusEvents.filter(
+      (entry) => !(entry.target_type === "visit_log" && entry.target_id === id && entry.user_id === viewer.userId),
+    );
     await writeMockState(state);
     return { ok: true };
   }
 
-  const { client, viewer } = await getSupabaseContext();
-  if (viewer.role !== "staff") {
-    throw new AppServiceError(403, "スタッフのみ更新できます。");
+  const { client, viewer } = accessToken
+    ? await getSupabaseContextFromAccessToken(accessToken)
+    : await getSupabaseContext();
+  const { data: target, error: targetError } = await fromAny(client, "visit_logs")
+    .select("id, photo_url")
+    .eq("id", id)
+    .eq("user_id", viewer.userId)
+    .maybeSingle();
+
+  if (targetError) {
+    throw new AppServiceError(500, targetError.message);
   }
 
-  const payload: Database["public"]["Tables"]["menu_status"]["Insert"] = {
-    menu_item_id: parsed.menuItemId,
-    status: parsed.status,
-    updated_by: viewer.userId,
-    updated_at: new Date().toISOString(),
-  };
+  if (!target) {
+    throw new AppServiceError(404, "記録が見つかりません。");
+  }
 
-  const { error } = await client.from("menu_status").upsert(payload, { onConflict: "menu_item_id" });
+  const { error } = await fromAny(client, "visit_logs").delete().eq("id", id).eq("user_id", viewer.userId);
   if (error) {
     throw new AppServiceError(500, error.message);
   }
 
+  await removePhotoIfNeeded(client, target.photo_url);
+  await fromAny(client, "share_bonus_events")
+    .delete()
+    .eq("user_id", viewer.userId)
+    .eq("target_type", "visit_log")
+    .eq("target_id", id);
   return { ok: true };
+}
+
+function createServiceRoleClient() {
+  const { supabaseUrl, supabaseServiceRoleKey } = getSupabaseServiceEnv();
+  return createClient<Database>(supabaseUrl, supabaseServiceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+}
+
+function createQuizSessionSeed() {
+  return Math.floor(Math.random() * 2_147_483_647) || 1;
+}
+
+function createQuizSessionExpiry() {
+  return new Date(Date.now() + 30 * 60 * 1000).toISOString();
+}
+
+type QuizAnswerProofPayload = {
+  v: 1;
+  sessionId: string;
+  questionId: string;
+  expiresAt: string;
+};
+
+function toBase64Url(value: Buffer) {
+  return value.toString("base64url");
+}
+
+function fromBase64Url(value: string) {
+  const decoded = Buffer.from(value, "base64url");
+  if (decoded.toString("base64url") !== value) {
+    throw new AppServiceError(400, "回答の判定トークンが不正です。");
+  }
+  return decoded;
+}
+
+function getQuizAnswerProofKey() {
+  const configured = process.env.QUIZ_ANSWER_PROOF_SECRET?.trim();
+  const fallback = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  const secret = configured || fallback || "mock-quiz-answer-proof-secret";
+  return createHash("sha256").update(secret).digest();
+}
+
+function createQuizAnswerProof(payload: QuizAnswerProofPayload) {
+  const iv = randomBytes(12);
+  const cipher = createCipheriv("aes-256-gcm", getQuizAnswerProofKey(), iv);
+  const ciphertext = Buffer.concat([cipher.update(JSON.stringify(payload), "utf8"), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return `${toBase64Url(iv)}.${toBase64Url(tag)}.${toBase64Url(ciphertext)}`;
+}
+
+function parseQuizAnswerProof(proof: string): QuizAnswerProofPayload {
+  const [ivText, tagText, ciphertextText] = proof.split(".");
+  if (!ivText || !tagText || !ciphertextText) {
+    throw new AppServiceError(400, "回答の判定トークンが不正です。");
+  }
+
+  try {
+    const decipher = createDecipheriv("aes-256-gcm", getQuizAnswerProofKey(), fromBase64Url(ivText));
+    decipher.setAuthTag(fromBase64Url(tagText));
+    const plaintext = Buffer.concat([
+      decipher.update(fromBase64Url(ciphertextText)),
+      decipher.final(),
+    ]).toString("utf8");
+    const parsed = JSON.parse(plaintext) as Partial<QuizAnswerProofPayload>;
+
+    if (
+      parsed.v !== 1 ||
+      typeof parsed.sessionId !== "string" ||
+      typeof parsed.questionId !== "string" ||
+      typeof parsed.expiresAt !== "string"
+    ) {
+      throw new AppServiceError(400, "回答の判定トークンが不正です。");
+    }
+
+    return {
+      v: 1,
+      sessionId: parsed.sessionId,
+      questionId: parsed.questionId,
+      expiresAt: parsed.expiresAt,
+    };
+  } catch {
+    throw new AppServiceError(400, "回答の判定トークンが不正です。");
+  }
+}
+
+function buildQuizAnswerCheckQuestions(
+  session: ReturnType<typeof createQuizSession>,
+  sessionId: string,
+  expiresAt: string,
+) {
+  return toPublicQuizSession(session).map((question) => ({
+    ...question,
+    answerProof: createQuizAnswerProof({
+      v: 1,
+      sessionId,
+      questionId: question.id,
+      expiresAt,
+    }),
+  }));
+}
+
+function buildQuizStatsUpsert(existing: QuizStatsRow, questionCount: number, correctCount: number) {
+  return {
+    user_id: existing.user_id,
+    total_correct_answers: existing.total_correct_answers + correctCount,
+    total_answered_questions: existing.total_answered_questions + questionCount,
+    quizzes_completed: existing.quizzes_completed + 1,
+    best_score: correctCount > existing.best_score ? correctCount : existing.best_score,
+    best_question_count: correctCount > existing.best_score ? questionCount : existing.best_question_count,
+    updated_at: new Date().toISOString(),
+  } satisfies Database["public"]["Tables"]["quiz_stats"]["Insert"];
+}
+
+function parseQuestionIds(value: unknown) {
+  if (!Array.isArray(value) || value.some((entry) => typeof entry !== "string")) {
+    throw new AppServiceError(500, "クイズセッションの形式が不正です。");
+  }
+
+  return value;
+}
+
+function collectRecentQuizQuestionIds(
+  rows: Array<Pick<QuizSessionRow, "question_ids" | "created_at">>,
+  maxSessionCount = 5,
+) {
+  const recentRows = [...rows]
+    .sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime())
+    .slice(0, maxSessionCount);
+
+  return [...new Set(recentRows.flatMap((row) => parseQuestionIds(row.question_ids)))];
+}
+
+function assertQuizSessionAvailable(session: QuizSessionRow) {
+  if (session.submitted_at) {
+    throw new AppServiceError(409, "このクイズ結果はすでに保存済みです。");
+  }
+  if (new Date(session.expires_at).getTime() < Date.now()) {
+    throw new AppServiceError(410, "クイズセッションの有効期限が切れました。");
+  }
+}
+
+export async function createQuizSessionForViewer(input: unknown, accessToken?: string) {
+  const parsed = createQuizSessionInputSchema.parse(input);
+  const seed = createQuizSessionSeed();
+  const expiresAt = createQuizSessionExpiry();
+
+  if (shouldUseMockBackend()) {
+    const viewer = createMockViewerContext();
+    const state = await readMockState();
+    const shareBonusEvents = state.shareBonusEvents.filter((entry) => entry.user_id === viewer.userId);
+    const quizStageProgress = buildQuizStageProgressSummary(
+      state.quizSessions.filter((entry) => entry.user_id === viewer.userId),
+      shareBonusEvents,
+    );
+    if (
+      !isQuizStageUnlocked(parsed.stageNumber, {
+        correctByStage: quizStageProgress.correctByStage,
+      })
+    ) {
+      throw new AppServiceError(403, "累計正解数が足りないため、このステージはまだ開放されていません。");
+    }
+    const recentQuestionIds = collectRecentQuizQuestionIds(
+      state.quizSessions.filter((entry) => entry.user_id === viewer.userId),
+    );
+    const session = createQuizSession(parsed.stageNumber, seed, recentQuestionIds);
+    const questionIds = session.map((question) => question.id);
+    const record: QuizSessionRow = {
+      id: randomUUID(),
+      user_id: viewer.userId,
+      question_count: QUIZ_SESSION_SIZE,
+      question_ids: questionIds,
+      score: 0,
+      submitted_at: null,
+      created_at: new Date().toISOString(),
+      expires_at: expiresAt,
+    };
+    state.quizSessions = [...state.quizSessions, record];
+    await writeMockState(state);
+
+    return {
+      sessionId: record.id,
+      stageNumber: parsed.stageNumber,
+      questionCount: record.question_count,
+      questions: buildQuizAnswerCheckQuestions(session, record.id, record.expires_at),
+      expiresAt: record.expires_at,
+    };
+  }
+
+  const { viewer } = accessToken
+    ? await getSupabaseContextFromAccessToken(accessToken)
+    : await getSupabaseContext();
+  const client = createServiceRoleClient();
+  const [quizSessions, shareBonusEvents] = await Promise.all([
+    listQuizSessionsForUser(client, viewer.userId),
+    getShareBonusEvents(client, viewer.userId),
+  ]);
+  const quizStageProgress = buildQuizStageProgressSummary(quizSessions, shareBonusEvents);
+  if (
+    !isQuizStageUnlocked(parsed.stageNumber, {
+      correctByStage: quizStageProgress.correctByStage,
+    })
+  ) {
+    throw new AppServiceError(403, "累計正解数が足りないため、このステージはまだ開放されていません。");
+  }
+  const { data: recentSessionRows, error: recentSessionError } = await fromAny(client, "quiz_sessions")
+    .select("question_ids, created_at")
+    .eq("user_id", viewer.userId)
+    .order("created_at", { ascending: false })
+    .limit(5);
+  if (recentSessionError) {
+    throw new AppServiceError(500, recentSessionError.message);
+  }
+  const recentQuestionIds = collectRecentQuizQuestionIds(
+    ((recentSessionRows as Array<Pick<QuizSessionRow, "question_ids" | "created_at">> | null) ?? []),
+  );
+  const session = createQuizSession(parsed.stageNumber, seed, recentQuestionIds);
+  const questionIds = session.map((question) => question.id);
+  const payload: Database["public"]["Tables"]["quiz_sessions"]["Insert"] = {
+    user_id: viewer.userId,
+    question_count: QUIZ_SESSION_SIZE,
+    question_ids: questionIds,
+    score: 0,
+    submitted_at: null,
+    expires_at: expiresAt,
+  };
+
+  let insertResult = await fromAny(client, "quiz_sessions").insert(payload).select("*").single();
+  if (insertResult.error && isMissingQuizSessionScoreColumnError(insertResult.error.message)) {
+    const { score: _score, ...legacyPayload } = payload;
+    insertResult = await fromAny(client, "quiz_sessions").insert(legacyPayload).select("*").single();
+  }
+  const { data, error } = insertResult;
+  if (error || !data) {
+    throw new AppServiceError(500, error?.message ?? "クイズセッションの作成に失敗しました。");
+  }
+
+  return {
+    sessionId: (data as QuizSessionRow).id,
+    stageNumber: parsed.stageNumber,
+    questionCount: QUIZ_SESSION_SIZE,
+    questions: buildQuizAnswerCheckQuestions(session, (data as QuizSessionRow).id, expiresAt),
+    expiresAt,
+  };
+}
+
+export async function submitQuizSession(input: unknown, accessToken?: string) {
+  const parsed = submitQuizSessionInputSchema.parse(input);
+
+  if (shouldUseMockBackend()) {
+    const viewer = createMockViewerContext();
+    const state = await readMockState();
+    const session = state.quizSessions.find((entry) => entry.id === parsed.sessionId && entry.user_id === viewer.userId);
+    if (!session) {
+      throw new AppServiceError(404, "クイズセッションが見つかりません。");
+    }
+    assertQuizSessionAvailable(session);
+    if (parsed.answers.length !== session.question_count) {
+      throw new AppServiceError(400, "回答数が問題数と一致しません。");
+    }
+
+    const questionIds = parseQuestionIds(session.question_ids);
+    const results = scoreQuizAnswers(questionIds, parsed.answers);
+    const correctCount = results.filter((entry) => entry.correct).length;
+    const existing =
+      state.quizStats.find((entry) => entry.user_id === viewer.userId) ?? createEmptyQuizStats(viewer.userId);
+    const updatedQuizStats: QuizStatsRow = {
+      ...buildQuizStatsUpsert(existing, session.question_count, correctCount),
+    };
+    session.submitted_at = new Date().toISOString();
+    session.score = correctCount;
+    state.quizStats = [...state.quizStats.filter((entry) => entry.user_id !== viewer.userId), updatedQuizStats];
+    state.quizSessions = state.quizSessions.map((entry) => (entry.id === session.id ? session : entry));
+    await writeMockState(state);
+
+    return {
+      ok: true,
+      score: correctCount,
+      questionCount: session.question_count,
+      quizStats: toQuizStatsSummary(updatedQuizStats),
+      results,
+    };
+  }
+
+  const { viewer } = accessToken
+    ? await getSupabaseContextFromAccessToken(accessToken)
+    : await getSupabaseContext();
+  const client = createServiceRoleClient();
+  const { data: sessionData, error: sessionError } = await fromAny(client, "quiz_sessions")
+    .select("*")
+    .eq("id", parsed.sessionId)
+    .eq("user_id", viewer.userId)
+    .maybeSingle();
+
+  if (sessionError) {
+    throw new AppServiceError(500, sessionError.message);
+  }
+  if (!sessionData) {
+    throw new AppServiceError(404, "クイズセッションが見つかりません。");
+  }
+
+  const session = sessionData as QuizSessionRow;
+  assertQuizSessionAvailable(session);
+  if (parsed.answers.length !== session.question_count) {
+    throw new AppServiceError(400, "回答数が問題数と一致しません。");
+  }
+
+  const questionIds = parseQuestionIds(session.question_ids);
+  const results = scoreQuizAnswers(questionIds, parsed.answers);
+  const correctCount = results.filter((entry) => entry.correct).length;
+
+  let submitResult = await fromAny(client, "quiz_sessions")
+    .update({ submitted_at: new Date().toISOString(), score: correctCount })
+    .eq("id", session.id)
+    .eq("user_id", viewer.userId)
+    .is("submitted_at", null)
+    .select("id");
+
+  if (submitResult.error && isMissingQuizSessionScoreColumnError(submitResult.error.message)) {
+    submitResult = await fromAny(client, "quiz_sessions")
+      .update({ submitted_at: new Date().toISOString() })
+      .eq("id", session.id)
+      .eq("user_id", viewer.userId)
+      .is("submitted_at", null)
+      .select("id");
+  }
+
+  const { data: submittedRows, error: submitError } = submitResult;
+
+  if (submitError) {
+    throw new AppServiceError(500, submitError.message);
+  }
+  if (!submittedRows || submittedRows.length === 0) {
+    throw new AppServiceError(409, "このクイズ結果はすでに保存済みです。");
+  }
+
+  const existing = await getQuizStats(client, viewer.userId);
+  const statsPayload = buildQuizStatsUpsert(existing, session.question_count, correctCount);
+  const { data: quizStatsData, error: quizStatsError } = await fromAny(client, "quiz_stats")
+    .upsert(statsPayload)
+    .select("*")
+    .single();
+
+  if (quizStatsError || !quizStatsData) {
+    throw new AppServiceError(500, quizStatsError?.message ?? "クイズ結果の保存に失敗しました。");
+  }
+
+  return {
+    ok: true,
+    score: correctCount,
+    questionCount: session.question_count,
+    quizStats: toQuizStatsSummary(quizStatsData as QuizStatsRow),
+    results,
+  };
+}
+
+export async function claimShareBonus(input: unknown, accessToken?: string) {
+  const parsed = claimShareBonusInputSchema.parse(input);
+
+  if (shouldUseMockBackend()) {
+    const viewer = createMockViewerContext();
+    const state = await readMockState();
+    const existingEvent = state.shareBonusEvents.find(
+      (entry) =>
+        entry.user_id === viewer.userId &&
+        entry.target_type === parsed.targetType &&
+        entry.target_id === parsed.targetId,
+    );
+    if (existingEvent) {
+      return {
+        ok: true,
+        alreadyClaimed: true,
+        bonusVisitCount: tenthsToCount(existingEvent.bonus_visit_tenths),
+        bonusCorrectAnswers: tenthsToCount(existingEvent.bonus_correct_tenths),
+      };
+    }
+
+    let event: ShareBonusEventRow;
+    if (parsed.targetType === "visit_log") {
+      const log = state.visitLogs.find((entry) => entry.id === parsed.targetId && entry.user_id === viewer.userId);
+      if (!log) {
+        throw new AppServiceError(404, "シェア対象の記録が見つかりません。");
+      }
+      event = {
+        id: randomUUID(),
+        user_id: viewer.userId,
+        target_type: "visit_log",
+        target_id: log.id,
+        channel: parsed.channel,
+        bonus_visit_tenths: 2,
+        bonus_correct_tenths: 0,
+        created_at: new Date().toISOString(),
+      };
+    } else {
+      const session = state.quizSessions.find((entry) => entry.id === parsed.targetId && entry.user_id === viewer.userId);
+      if (!session || !session.submitted_at) {
+        throw new AppServiceError(404, "シェア対象のクイズ結果が見つかりません。");
+      }
+      event = {
+        id: randomUUID(),
+        user_id: viewer.userId,
+        target_type: "quiz_session",
+        target_id: session.id,
+        channel: parsed.channel,
+        bonus_visit_tenths: 0,
+        bonus_correct_tenths: session.score * 2,
+        created_at: new Date().toISOString(),
+      };
+    }
+
+    state.shareBonusEvents.push(event);
+    await writeMockState(state);
+    return {
+      ok: true,
+      alreadyClaimed: false,
+      bonusVisitCount: tenthsToCount(event.bonus_visit_tenths),
+      bonusCorrectAnswers: tenthsToCount(event.bonus_correct_tenths),
+    };
+  }
+
+  const { viewer } = accessToken
+    ? await getSupabaseContextFromAccessToken(accessToken)
+    : await getSupabaseContext();
+  const client = createServiceRoleClient();
+  const { data: existingEventRows, error: existingEventError } = await fromAny(client, "share_bonus_events")
+    .select("*")
+    .eq("user_id", viewer.userId)
+    .eq("target_type", parsed.targetType)
+    .eq("target_id", parsed.targetId)
+    .limit(1);
+
+  if (existingEventError) {
+    if (isMissingShareBonusSchemaError(existingEventError.message)) {
+      throw new AppServiceError(503, "本番DBのシェアボーナス migration が未適用です。");
+    }
+    throw new AppServiceError(500, existingEventError.message);
+  }
+
+  const existingEvent = (existingEventRows as ShareBonusEventRow[] | null)?.[0];
+  if (existingEvent) {
+    return {
+      ok: true,
+      alreadyClaimed: true,
+      bonusVisitCount: tenthsToCount(existingEvent.bonus_visit_tenths),
+      bonusCorrectAnswers: tenthsToCount(existingEvent.bonus_correct_tenths),
+    };
+  }
+
+  let payload: Database["public"]["Tables"]["share_bonus_events"]["Insert"];
+  if (parsed.targetType === "visit_log") {
+    const { data: visitLogData, error: visitLogError } = await fromAny(client, "visit_logs")
+      .select("id")
+      .eq("id", parsed.targetId)
+      .eq("user_id", viewer.userId)
+      .maybeSingle();
+    if (visitLogError) {
+      throw new AppServiceError(500, visitLogError.message);
+    }
+    if (!visitLogData) {
+      throw new AppServiceError(404, "シェア対象の記録が見つかりません。");
+    }
+
+    payload = {
+      user_id: viewer.userId,
+      target_type: "visit_log",
+      target_id: parsed.targetId,
+      channel: parsed.channel,
+      bonus_visit_tenths: 2,
+      bonus_correct_tenths: 0,
+    };
+  } else {
+    let quizSessionResult = await fromAny(client, "quiz_sessions")
+      .select("id, submitted_at, score")
+      .eq("id", parsed.targetId)
+      .eq("user_id", viewer.userId)
+      .maybeSingle();
+    if (quizSessionResult.error && isMissingQuizSessionScoreColumnError(quizSessionResult.error.message)) {
+      throw new AppServiceError(503, "本番DBのクイズ共有ボーナス migration が未適用です。");
+    }
+    const { data: quizSessionData, error: quizSessionError } = quizSessionResult;
+    if (quizSessionError) {
+      throw new AppServiceError(500, quizSessionError.message);
+    }
+    if (!quizSessionData || !(quizSessionData as Pick<QuizSessionRow, "submitted_at">).submitted_at) {
+      throw new AppServiceError(404, "シェア対象のクイズ結果が見つかりません。");
+    }
+
+    payload = {
+      user_id: viewer.userId,
+      target_type: "quiz_session",
+      target_id: parsed.targetId,
+      channel: parsed.channel,
+      bonus_visit_tenths: 0,
+      bonus_correct_tenths: ((quizSessionData as Pick<QuizSessionRow, "score">).score ?? 0) * 2,
+    };
+  }
+
+  const { data, error } = await fromAny(client, "share_bonus_events").insert(payload).select("*").single();
+  if (error || !data) {
+    if (isMissingShareBonusSchemaError(error?.message)) {
+      throw new AppServiceError(503, "本番DBのシェアボーナス migration が未適用です。");
+    }
+    throw new AppServiceError(500, error?.message ?? "シェアボーナスの記録に失敗しました。");
+  }
+
+  return {
+    ok: true,
+    alreadyClaimed: false,
+    bonusVisitCount: tenthsToCount((data as ShareBonusEventRow).bonus_visit_tenths),
+    bonusCorrectAnswers: tenthsToCount((data as ShareBonusEventRow).bonus_correct_tenths),
+  };
+}
+
+export async function checkQuizAnswer(input: unknown, accessToken?: string) {
+  const parsed = checkQuizAnswerInputSchema.parse(input);
+
+  if (parsed.answerProof) {
+    const proof = parseQuizAnswerProof(parsed.answerProof);
+    if (proof.sessionId !== parsed.sessionId || proof.questionId !== parsed.questionId) {
+      throw new AppServiceError(400, "問題の照合に失敗しました。");
+    }
+    if (new Date(proof.expiresAt).getTime() < Date.now()) {
+      throw new AppServiceError(410, "クイズセッションの有効期限が切れました。");
+    }
+
+    const [result] = scoreQuizAnswers([parsed.questionId], [parsed.answerIndexes]);
+    return {
+      ok: true,
+      result,
+    };
+  }
+
+  if (shouldUseMockBackend()) {
+    const viewer = createMockViewerContext();
+    const state = await readMockState();
+    const session = state.quizSessions.find((entry) => entry.id === parsed.sessionId && entry.user_id === viewer.userId);
+    if (!session) {
+      throw new AppServiceError(404, "クイズセッションが見つかりません。");
+    }
+    assertQuizSessionAvailable(session);
+
+    const questionIds = parseQuestionIds(session.question_ids);
+    if (!questionIds.includes(parsed.questionId)) {
+      throw new AppServiceError(400, "この問題はクイズセッションに含まれていません。");
+    }
+
+    const [result] = scoreQuizAnswers([parsed.questionId], [parsed.answerIndexes]);
+    return {
+      ok: true,
+      result,
+    };
+  }
+
+  const { viewer } = accessToken
+    ? await getSupabaseContextFromAccessToken(accessToken)
+    : await getSupabaseContext();
+  const client = createServiceRoleClient();
+  const { data: sessionData, error: sessionError } = await fromAny(client, "quiz_sessions")
+    .select("*")
+    .eq("id", parsed.sessionId)
+    .eq("user_id", viewer.userId)
+    .maybeSingle();
+
+  if (sessionError) {
+    throw new AppServiceError(500, sessionError.message);
+  }
+  if (!sessionData) {
+    throw new AppServiceError(404, "クイズセッションが見つかりません。");
+  }
+
+  const session = sessionData as QuizSessionRow;
+  assertQuizSessionAvailable(session);
+
+  const questionIds = parseQuestionIds(session.question_ids);
+  if (!questionIds.includes(parsed.questionId)) {
+    throw new AppServiceError(400, "この問題はクイズセッションに含まれていません。");
+  }
+
+  const [result] = scoreQuizAnswers([parsed.questionId], [parsed.answerIndexes]);
+  return {
+    ok: true,
+    result,
+  };
+}
+
+export async function updateStoreStatus(input: unknown, accessToken?: string) {
+  const parsed = updateStoreStatusInputSchema.parse(input);
+
+  if (shouldUseMockBackend()) {
+    const viewer = createMockViewerContext();
+    assertAdminViewer(viewer);
+
+    const state = await readMockState();
+    state.storeStatus = {
+      id: 1,
+      recommendation: parsed.recommendation,
+      status: parsed.status,
+      status_note: parsed.statusNote,
+      weather_comment: parsed.weatherComment,
+      updated_at: new Date().toISOString(),
+    };
+    state.menuItemStatuses = Object.entries(parsed.menuStocks).map(([menuItemId, status]) => ({
+      menu_item_id: menuItemId,
+      status,
+      updated_at: state.storeStatus.updated_at,
+    })) as MenuItemStatusRow[];
+    await writeMockState(state);
+    return {
+      ok: true,
+      storeStatus: state.storeStatus,
+      menuItemStatuses: buildMenuItemStatuses(state.menuItemStatuses),
+    };
+  }
+
+  const { viewer } = accessToken
+    ? await getSupabaseContextFromAccessToken(accessToken)
+    : await getSupabaseContext();
+  assertAdminViewer(viewer);
+  const client = createServiceRoleClient();
+  const payload: Database["public"]["Tables"]["store_status"]["Insert"] = {
+    id: 1,
+    recommendation: parsed.recommendation,
+    status: parsed.status,
+    status_note: parsed.statusNote,
+    weather_comment: parsed.weatherComment,
+    updated_at: new Date().toISOString(),
+  };
+
+  const { data, error } = await fromAny(client, "store_status").upsert(payload).select("*").single();
+  if (error || !data) {
+    throw new AppServiceError(500, error?.message ?? "店舗ステータスの更新に失敗しました。");
+  }
+
+  const menuStatusPayloads = Object.entries(parsed.menuStocks).map(([menuItemId, status]) => ({
+    menu_item_id: menuItemId,
+    status,
+    updated_at: payload.updated_at!,
+  })) satisfies Database["public"]["Tables"]["menu_item_statuses"]["Insert"][];
+
+  const { data: menuStatusRows, error: menuStatusError } = await fromAny(client, "menu_item_statuses")
+    .upsert(menuStatusPayloads)
+    .select("*");
+
+  if (menuStatusError || !menuStatusRows) {
+    throw new AppServiceError(500, menuStatusError?.message ?? "メニュー在庫の更新に失敗しました。");
+  }
+
+  return {
+    ok: true,
+    storeStatus: data as StoreStatus,
+    menuItemStatuses: buildMenuItemStatuses(menuStatusRows as MenuItemStatusRow[]),
+  };
+}
+
+export function getAccessTokenFromRequest(request: Request) {
+  return readBearerToken(request.headers.get("authorization"));
 }
 
 export function toRouteError(error: unknown) {
   if (error instanceof AppServiceError) {
     return { status: error.status, message: error.message };
+  }
+
+  if (error instanceof ZodError) {
+    return { status: 400, message: error.issues[0]?.message ?? "入力が不正です。" };
+  }
+
+  if (error instanceof SyntaxError) {
+    return { status: 400, message: "リクエスト本文の形式が不正です。" };
   }
 
   if (error instanceof Error) {

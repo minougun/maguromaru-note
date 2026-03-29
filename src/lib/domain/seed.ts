@@ -1,23 +1,34 @@
-import type { MenuItem, Part, QuizStatsRow, StoreStatus, VisitLog, VisitLogPart } from "@/lib/domain/types";
+import type {
+  MenuItem,
+  MenuItemStatusRow,
+  Part,
+  QuizSessionRow,
+  QuizStatsRow,
+  ShareBonusEventRow,
+  StoreStatus,
+  VisitLog,
+  VisitLogPart,
+} from "@/lib/domain/types";
 
 export const MOCK_USER_ID = "00000000-0000-4000-8000-000000000001";
 export const MOCK_ADMIN_EMAIL = "admin@example.com";
 
 export const seededParts: Part[] = [
-  { id: "otoro", name: "大トロ", area: "腹部", rarity: 3, description: "最高級の脂のり", color: "#ff6b6b", sort_order: 1 },
-  { id: "chutoro", name: "中トロ", area: "腹部", rarity: 2, description: "脂と赤身のバランス", color: "#e85555", sort_order: 2 },
+  { id: "otoro", name: "大とろ", area: "腹部", rarity: 3, description: "最高級の脂のり", color: "#ff6b6b", sort_order: 1 },
+  { id: "chutoro", name: "中とろ", area: "腹部", rarity: 2, description: "脂と赤身のバランス", color: "#e85555", sort_order: 2 },
   { id: "akami", name: "赤身", area: "背部", rarity: 1, description: "旨味の王道", color: "#cc3333", sort_order: 3 },
-  { id: "noten", name: "脳天", area: "頭部", rarity: 3, description: "大トロ級のとろける食感", color: "#ff8585", sort_order: 4 },
+  { id: "noten", name: "脳天", area: "頭部", rarity: 3, description: "大とろ級のとろける食感", color: "#ff8585", sort_order: 4 },
   { id: "hoho", name: "ほほ肉", area: "頭部", rarity: 3, description: "肉のような弾力と濃厚な旨味", color: "#d94444", sort_order: 5 },
-  { id: "kama", name: "カマ", area: "胸部", rarity: 2, description: "脂がのった希少部位", color: "#f07070", sort_order: 6 },
-  { id: "haramo", name: "ハラモ", area: "腹部", rarity: 2, description: "腹の大トロに近い部分", color: "#e06060", sort_order: 7 },
-  { id: "senaka", name: "背とろ", area: "背部", rarity: 2, description: "赤身に近い上品な脂", color: "#d35050", sort_order: 8 },
+  { id: "meura", name: "目裏", area: "頭部", rarity: 3, description: "目の裏側にある濃厚でとろける希少部位", color: "#f08d7d", sort_order: 6 },
+  { id: "kama", name: "カマ", area: "胸部", rarity: 2, description: "脂がのった希少部位", color: "#f07070", sort_order: 7 },
+  { id: "haramo", name: "ハラモ", area: "腹部", rarity: 2, description: "腹の大とろに近い部分", color: "#e06060", sort_order: 8 },
+  { id: "senaka", name: "中とろ", area: "背部", rarity: 2, description: "赤身に近い上品な脂", color: "#d35050", sort_order: 9 },
 ];
 
 export const seededMenuItems: MenuItem[] = [
   { id: "maguro_don", name: "まぐろ丼", price: 2000, sort_order: 1 },
   { id: "maguro_don_mini", name: "まぐろ丼ミニ", price: 1500, sort_order: 2 },
-  { id: "tokujo_don", name: "特上まぐろ丼（大トロ入り）", price: 3000, sort_order: 3 },
+  { id: "tokujo_don", name: "特上まぐろ丼（大とろ入り）", price: 3000, sort_order: 3 },
   { id: "tokujo_don_mini", name: "特上まぐろ丼ミニ", price: 2500, sort_order: 4 },
 ];
 
@@ -29,6 +40,13 @@ export const seededStoreStatus: StoreStatus = {
   weather_comment: "本町で営業中",
   updated_at: "2026-03-28T12:34:00.000Z",
 };
+
+export const seededMenuItemStatuses: MenuItemStatusRow[] = [
+  { menu_item_id: "maguro_don", status: "available", updated_at: "2026-03-28T12:34:00.000Z" },
+  { menu_item_id: "maguro_don_mini", status: "available", updated_at: "2026-03-28T12:34:00.000Z" },
+  { menu_item_id: "tokujo_don", status: "few", updated_at: "2026-03-28T12:34:00.000Z" },
+  { menu_item_id: "tokujo_don_mini", status: "soldout", updated_at: "2026-03-28T12:34:00.000Z" },
+];
 
 export const seededQuizStats: QuizStatsRow = {
   user_id: MOCK_USER_ID,
@@ -68,3 +86,6 @@ export const seededVisitLogParts: VisitLogPart[] = [
   { id: "20000000-0000-4000-8000-000000000004", visit_log_id: "10000000-0000-4000-8000-000000000002", part_id: "akami" },
   { id: "20000000-0000-4000-8000-000000000005", visit_log_id: "10000000-0000-4000-8000-000000000002", part_id: "kama" },
 ];
+
+export const seededQuizSessions: QuizSessionRow[] = [];
+export const seededShareBonusEvents: ShareBonusEventRow[] = [];

@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 
-import type { PartId } from "@/lib/domain/types";
-import { seededParts } from "@/lib/domain/seed";
+import type { Part, PartId } from "@/lib/domain/types";
 
 interface MapRegionDef {
   id: PartId;
@@ -13,29 +12,28 @@ interface MapRegionDef {
   r?: number;
   rx?: number;
   ry?: number;
-  /** Show label + leader line (for parts not labeled in the illustration) */
-  showLabel?: { lx: number; ly: number };
+  label: {
+    x: number;
+    y: number;
+  };
 }
 
-// Positions matched to tuna-map.jpg illustration
 const MAP_REGIONS: MapRegionDef[] = [
-  { id: "noten", type: "circle", cx: 148, cy: 82, r: 22 },
-  { id: "hoho", type: "ellipse", cx: 130, cy: 195, rx: 26, ry: 20 },
-  { id: "kama", type: "ellipse", cx: 155, cy: 285, rx: 28, ry: 18 },
-  { id: "chutoro", type: "ellipse", cx: 310, cy: 100, rx: 70, ry: 24 },
-  { id: "akami", type: "ellipse", cx: 360, cy: 190, rx: 75, ry: 35 },
-  { id: "otoro", type: "ellipse", cx: 265, cy: 278, rx: 40, ry: 20, showLabel: { lx: 265, ly: 320 } },
-  { id: "senaka", type: "ellipse", cx: 440, cy: 105, rx: 36, ry: 22, showLabel: { lx: 440, ly: 58 } },
-  { id: "haramo", type: "ellipse", cx: 390, cy: 278, rx: 55, ry: 22, showLabel: { lx: 390, ly: 322 } },
+  { id: "noten", type: "ellipse", cx: 304, cy: 214, rx: 48, ry: 28, label: { x: 240, y: 102 } },
+  { id: "hoho", type: "ellipse", cx: 250, cy: 436, rx: 54, ry: 42, label: { x: 120, y: 486 } },
+  { id: "meura", type: "ellipse", cx: 333, cy: 490, rx: 46, ry: 34, label: { x: 300, y: 662 } },
+  { id: "chutoro", type: "ellipse", cx: 718, cy: 250, rx: 210, ry: 72, label: { x: 682, y: 90 } },
+  { id: "akami", type: "ellipse", cx: 739, cy: 386, rx: 228, ry: 92, label: { x: 1034, y: 344 } },
+  { id: "otoro", type: "ellipse", cx: 582, cy: 494, rx: 156, ry: 72, label: { x: 538, y: 680 } },
 ];
 
-const partsById = new Map(seededParts.map((p) => [p.id, p]));
-
 interface TunaMapProps {
+  parts: Part[];
   collectedPartIds: PartId[];
 }
 
-export function TunaMap({ collectedPartIds }: TunaMapProps) {
+export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
+  const partsById = new Map(parts.map((part) => [part.id, part]));
   const collected = new Set(collectedPartIds);
   const [selectedPartId, setSelectedPartId] = useState<PartId | null>(null);
 
@@ -49,12 +47,8 @@ export function TunaMap({ collectedPartIds }: TunaMapProps) {
   return (
     <div>
       <div className="map-wrap">
-        <svg viewBox="0 0 603 370" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="まぐろ部位マップ">
+        <svg viewBox="0 0 1365 768" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="まぐろ部位マップ">
           <defs>
-            <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#1a0e08" />
-              <stop offset="100%" stopColor="#0d0805" />
-            </linearGradient>
             <filter id="glowF" x="-40%" y="-40%" width="180%" height="180%">
               <feGaussianBlur stdDeviation="4" result="b" />
               <feMerge>
@@ -64,17 +58,13 @@ export function TunaMap({ collectedPartIds }: TunaMapProps) {
             </filter>
           </defs>
 
-          <rect width="603" height="370" fill="url(#bgGrad)" />
-
           <image
-            href="/tuna-map.jpg"
-            width="603"
-            height="370"
-            preserveAspectRatio="xMidYMid slice"
-            opacity="0.85"
+            href="/Gemini_Generated_Image_kxpb3ykxpb3ykxpb.png"
+            width="1365"
+            height="768"
+            preserveAspectRatio="xMidYMid meet"
           />
 
-          {/* regions (circles/ellipses only, no labels) */}
           {MAP_REGIONS.map((r) => {
             const part = partsById.get(r.id);
             if (!part) return null;
@@ -129,35 +119,38 @@ export function TunaMap({ collectedPartIds }: TunaMapProps) {
                 ) : (
                   <ellipse cx={r.cx} cy={r.cy} rx={(r.rx ?? 30) + 10} ry={(r.ry ?? 20) + 10} fill="transparent" />
                 )}
-                {/* Label for parts not shown in the illustration */}
-                {r.showLabel ? (
-                  <>
-                    <line x1={r.showLabel.lx} y1={r.showLabel.ly + 8} x2={r.cx} y2={r.cy} stroke="var(--cream-faint, #c4a878)" strokeWidth="1.2" opacity="0.7" fill="none" />
-                    <rect
-                      x={r.showLabel.lx - 28}
-                      y={r.showLabel.ly - 12}
-                      rx="10"
-                      ry="10"
-                      width="56"
-                      height="20"
-                      fill={eaten ? part.color : "rgba(80,80,80,0.7)"}
-                      fillOpacity={eaten ? 0.9 : 0.6}
-                      stroke={eaten ? part.color : "rgba(150,150,150,0.4)"}
-                      strokeWidth="1"
-                    />
-                    <text
-                      x={r.showLabel.lx}
-                      y={r.showLabel.ly + 2}
-                      textAnchor="middle"
-                      fontSize="11"
-                      fontWeight="700"
-                      fill={eaten ? "#0d0805" : "#ccc"}
-                      fontFamily="Noto Sans JP, sans-serif"
-                    >
-                      {part.name}
-                    </text>
-                  </>
-                ) : null}
+                <line
+                  x1={r.label.x}
+                  y1={r.label.y + 18}
+                  x2={r.cx}
+                  y2={r.cy}
+                  stroke="rgba(92,63,45,0.72)"
+                  strokeWidth="4"
+                  opacity="0.9"
+                  fill="none"
+                />
+                <rect
+                  x={r.label.x - 76}
+                  y={r.label.y - 26}
+                  rx="22"
+                  ry="22"
+                  width="152"
+                  height="52"
+                  fill={eaten ? part.color : "rgba(55,38,32,0.92)"}
+                  stroke={eaten ? part.color : "rgba(196,168,120,0.45)"}
+                  strokeWidth="2"
+                />
+                <text
+                  x={r.label.x}
+                  y={r.label.y + 8}
+                  textAnchor="middle"
+                  fontSize="28"
+                  fontWeight="700"
+                  fill={eaten ? "#0d0805" : "#f2e4c7"}
+                  fontFamily="Noto Sans JP, sans-serif"
+                >
+                  {part.name}
+                </text>
               </g>
             );
           })}

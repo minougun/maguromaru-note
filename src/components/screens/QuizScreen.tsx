@@ -1,75 +1,182 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
-import { useAuthState } from "@/components/providers/AuthProvider";
+import { ShareModal } from "@/components/share/ShareModal";
 import { Card } from "@/components/ui/Card";
 import { NorenBanner } from "@/components/ui/NorenBanner";
 import { ScreenState } from "@/components/ui/ScreenState";
 import { useAppSnapshot } from "@/lib/hooks/use-app-snapshot";
-import { QUIZ_QUESTIONS, QUIZ_SESSION_SIZES, createQuizSession } from "@/lib/quiz";
-import { buildSupabaseAuthHeaders } from "@/lib/supabase/browser";
+import { QUIZ_SESSION_SIZE } from "@/lib/quiz";
+import {
+  QUIZ_STAGE_CONFIGS,
+  getHighestUnlockedQuizStageNumber,
+  getQuizStageConfig,
+  getStageProgressCount,
+  getUnlockedQuizStageNumbers,
+  isQuizStageUnlocked,
+} from "@/lib/quiz-stages";
+import { buildQuizResultShare, type SharePayload } from "@/lib/share/share";
+import { buildFreshSupabaseAuthHeaders } from "@/lib/supabase/browser";
+import { formatCount } from "@/lib/utils/format";
+
+type SessionQuestion = {
+  id: string;
+  category: "部位" | "メニュー" | "称号" | "お店" | "アプリ";
+  question: string;
+  options: [string, string, string, string];
+  answerProof: string;
+};
+
+type QuizSessionPayload = {
+  sessionId: string;
+  stageNumber: number;
+  questionCount: number;
+  questions: SessionQuestion[];
+  expiresAt: string;
+};
+
+type QuizResultPayload = {
+  ok: true;
+  score: number;
+  questionCount: number;
+  results: Array<{
+    question: SessionQuestion;
+    selectedIndexes: number[];
+    correct: boolean;
+    correctIndex: number;
+    correctIndexes: number[];
+    explanation: string;
+  }>;
+};
+
+type QuizAnswerCheckPayload = {
+  ok: true;
+  result: {
+    question: SessionQuestion;
+    selectedIndexes: number[];
+    correct: boolean;
+    correctIndex: number;
+    correctIndexes: number[];
+    explanation: string;
+  };
+};
+
+type ErrorPayload = {
+  error?: string;
+};
+
+function isErrorPayload(value: unknown): value is ErrorPayload {
+  return typeof value === "object" && value !== null && "error" in value;
+}
 
 export function QuizScreen() {
-  const auth = useAuthState();
   const { snapshot, loading, error, refresh } = useAppSnapshot();
-  const [questionCount, setQuestionCount] = useState<(typeof QUIZ_SESSION_SIZES)[number]>(10);
-  const [sessionSeed, setSessionSeed] = useState(1);
+  const [stageNumber, setStageNumber] = useState(1);
+  const [sessionVersion, setSessionVersion] = useState(1);
+  const [session, setSession] = useState<QuizSessionPayload | null>(null);
+  const [loadingSession, setLoadingSession] = useState(true);
+  const [sessionError, setSessionError] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [score, setScore] = useState(0);
-  const [submittedSessionKey, setSubmittedSessionKey] = useState<string | null>(null);
+  const [answers, setAnswers] = useState<number[][]>([]);
+  const [selectedIndexes, setSelectedIndexes] = useState<number[]>([]);
+  const [checkingAnswer, setCheckingAnswer] = useState(false);
+  const [answerFeedback, setAnswerFeedback] = useState<QuizAnswerCheckPayload["result"] | null>(null);
+  const [answerError, setAnswerError] = useState<string | null>(null);
   const [submittingResult, setSubmittingResult] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-
-  const session = useMemo(() => createQuizSession(questionCount, sessionSeed), [questionCount, sessionSeed]);
-  const currentQuestion = session[currentIndex];
-  const answered = selectedIndex !== null;
-  const finished = currentIndex >= session.length;
-  const categoryCount = new Set(QUIZ_QUESTIONS.map((question) => question.category)).size;
-  const sessionKey = `${questionCount}-${sessionSeed}`;
+  const [result, setResult] = useState<QuizResultPayload | null>(null);
+  const [sharePayload, setSharePayload] = useState<SharePayload | null>(null);
 
   useEffect(() => {
-    if (!finished || submittedSessionKey === sessionKey) {
+    if (loading || error || !snapshot || result) {
       return;
     }
 
     let cancelled = false;
 
-    async function submit() {
-      setSubmittingResult(true);
+    async function loadSession() {
+      setLoadingSession(true);
+      setSessionError(null);
       setSubmitError(null);
-      const response = await fetch("/api/quiz-results", {
+      setAnswerError(null);
+      setResult(null);
+      setCurrentIndex(0);
+      setSelectedIndexes([]);
+      setCheckingAnswer(false);
+      setAnswerFeedback(null);
+      setAnswers([]);
+
+      const response = await fetch("/api/quiz-sessions", {
         method: "POST",
-        headers: buildSupabaseAuthHeaders(auth.accessToken, { "Content-Type": "application/json" }),
-        body: JSON.stringify({
-          questionCount,
-          correctCount: score,
-        }),
+        headers: await buildFreshSupabaseAuthHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ stageNumber }),
       });
 
-      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      const payload = (await response.json().catch(() => null)) as QuizSessionPayload | ErrorPayload | null;
       if (cancelled) {
         return;
       }
 
-      if (!response.ok) {
-        setSubmitError(payload?.error ?? "クイズ結果の保存に失敗しました。");
+      if (!response.ok || !payload || isErrorPayload(payload)) {
+        setSessionError(isErrorPayload(payload) ? payload.error ?? "クイズセッションの作成に失敗しました。" : "クイズセッションの作成に失敗しました。");
+        setSession(null);
+        setLoadingSession(false);
+        return;
+      }
+
+      setSession(payload);
+      setLoadingSession(false);
+    }
+
+    void loadSession();
+    return () => {
+      cancelled = true;
+    };
+  }, [error, loading, refresh, result, sessionVersion, snapshot, stageNumber]);
+
+  useEffect(() => {
+    if (!session || result || sessionError || currentIndex < session.questions.length) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function submit(activeSession: QuizSessionPayload) {
+      setSubmittingResult(true);
+      setSubmitError(null);
+
+      const response = await fetch("/api/quiz-results", {
+        method: "POST",
+        headers: await buildFreshSupabaseAuthHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({
+          sessionId: activeSession.sessionId,
+          answers,
+        }),
+      });
+
+      const payload = (await response.json().catch(() => null)) as QuizResultPayload | ErrorPayload | null;
+      if (cancelled) {
+        return;
+      }
+
+      if (!response.ok || !payload || isErrorPayload(payload)) {
+        setSubmitError(isErrorPayload(payload) ? payload.error ?? "クイズ結果の保存に失敗しました。" : "クイズ結果の保存に失敗しました。");
         setSubmittingResult(false);
         return;
       }
 
-      setSubmittedSessionKey(sessionKey);
+      setResult(payload);
       setSubmittingResult(false);
       await refresh();
     }
 
-    void submit();
+    void submit(session);
     return () => {
       cancelled = true;
     };
-  }, [auth.accessToken, finished, questionCount, refresh, score, sessionKey, submittedSessionKey]);
+  }, [answers, currentIndex, refresh, result, session, sessionError]);
 
   if (loading) {
     return <ScreenState description="クイズデータを読み込んでいます。" title="読み込み中" />;
@@ -89,35 +196,116 @@ export function QuizScreen() {
     );
   }
 
-  function restart(nextCount = questionCount) {
-    setQuestionCount(nextCount);
-    setSessionSeed((value) => value + 1);
-    setCurrentIndex(0);
-    setSelectedIndex(null);
-    setScore(0);
-    setSubmittedSessionKey(null);
-    setSubmitError(null);
+  function restart(nextStageNumber = stageNumber) {
+    setResult(null);
+    setStageNumber(nextStageNumber);
+    setSessionVersion((value) => value + 1);
   }
 
-  function answer(index: number) {
-    if (answered || !currentQuestion) {
+  function toggleAnswer(index: number) {
+    if (checkingAnswer || answerFeedback) {
       return;
     }
 
-    setSelectedIndex(index);
-    if (index === currentQuestion.answerIndex) {
-      setScore((value) => value + 1);
+    setSelectedIndexes((current) =>
+      current.includes(index)
+        ? current.filter((value) => value !== index)
+        : [...current, index].sort((left, right) => left - right),
+    );
+  }
+
+  async function judgeAnswer() {
+    if (checkingAnswer || !session || !currentQuestion || selectedIndexes.length === 0) {
+      return;
     }
+
+    setCheckingAnswer(true);
+    setAnswerError(null);
+
+    const response = await fetch("/api/quiz-answer-check", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        sessionId: session.sessionId,
+        questionId: currentQuestion.id,
+        answerIndexes: selectedIndexes,
+        answerProof: currentQuestion.answerProof,
+      }),
+    });
+
+    const payload = (await response.json().catch(() => null)) as QuizAnswerCheckPayload | ErrorPayload | null;
+    if (!response.ok || !payload || isErrorPayload(payload)) {
+      setAnswerError(isErrorPayload(payload) ? payload.error ?? "回答の判定に失敗しました。" : "回答の判定に失敗しました。");
+      setCheckingAnswer(false);
+      return;
+    }
+
+    setAnswerFeedback(payload.result);
+    setCheckingAnswer(false);
   }
 
   function next() {
-    if (!currentQuestion) {
+    if (!answerFeedback) {
       return;
     }
 
-    setSelectedIndex(null);
+    setAnswers((current) => [...current, answerFeedback.selectedIndexes]);
+    setSelectedIndexes([]);
+    setCheckingAnswer(false);
+    setAnswerFeedback(null);
+    setAnswerError(null);
     setCurrentIndex((value) => value + 1);
   }
+
+  async function handleShareBonus(payload: SharePayload, channel: "x" | "line" | "instagram") {
+    if (!payload.bonusTarget) {
+      return;
+    }
+
+    const response = await fetch("/api/share-bonuses", {
+      method: "POST",
+      headers: await buildFreshSupabaseAuthHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({
+        targetType: payload.bonusTarget.targetType,
+        targetId: payload.bonusTarget.targetId,
+        channel,
+      }),
+    });
+    const resultPayload = (await response.json().catch(() => null)) as
+      | { error?: string; alreadyClaimed?: boolean; bonusCorrectAnswers?: number }
+      | null;
+
+    if (!response.ok) {
+      window.alert(resultPayload?.error ?? "シェアボーナスの記録に失敗しました。");
+      return;
+    }
+
+    if (resultPayload?.alreadyClaimed) {
+      window.alert("このクイズ結果のシェアボーナスは受取済みです。");
+      return;
+    }
+
+    await refresh();
+    window.alert(`正解数ボーナス +${formatCount(resultPayload?.bonusCorrectAnswers ?? 0)}問 を反映しました。`);
+  }
+
+  const questionTotal = session?.questionCount ?? 0;
+  const currentQuestion = session?.questions[currentIndex] ?? null;
+  const finished = Boolean(session) && currentIndex >= questionTotal;
+  const score = result?.score ?? 0;
+  const currentStage = getQuizStageConfig(stageNumber);
+  const unlockedStageNumbers = getUnlockedQuizStageNumbers({
+    correctByStage: snapshot.history.quizStageProgress.correctByStage,
+  });
+  const highestUnlockedStageNumber = getHighestUnlockedQuizStageNumber({
+    correctByStage: snapshot.history.quizStageProgress.correctByStage,
+  });
+  const stagePageStart = Math.floor((stageNumber - 1) / 10) * 10 + 1;
+  const visibleStages = QUIZ_STAGE_CONFIGS.slice(stagePageStart - 1, stagePageStart + 9);
+  const canMoveStagePageBackward = stagePageStart > 1;
+  const canMoveStagePageForward = stagePageStart + 10 <= QUIZ_STAGE_CONFIGS.length;
 
   return (
     <>
@@ -125,59 +313,120 @@ export function QuizScreen() {
       <Card glow>
         <div className="quiz-hero">
           <div>
-            <div className="summary-label">問題プール</div>
-            <div className="summary-value">{QUIZ_QUESTIONS.length}問</div>
+            <div className="summary-label">現在のステージ</div>
+            <div className="summary-title">{currentStage.stage}</div>
+            <div className="helper-text">{currentStage.title}</div>
           </div>
           <div>
-            <div className="summary-label">カテゴリ</div>
-            <div className="summary-title">{categoryCount}種類</div>
+            <div className="summary-label">難易度</div>
+            <div className="summary-value">{currentStage.difficultyLabel}</div>
           </div>
         </div>
         <p className="helper-text">
-          問題はローカル生成なのでアプリの負荷は軽いままです。称号は来店回数と累計正解数の両方で決まります。
+          1 ステージ 10 問固定です。各ステージ内で累計 10 問正解すると次のステージが開きます。問題内容はステージごとに切り替わり、後半ほど難しくなります。
         </p>
         <div className="quiz-hero quiz-stats-panel">
           <div>
             <div className="summary-label">累計正解</div>
-            <div className="summary-value">{snapshot.history.quizStats.totalCorrectAnswers}問</div>
+            <div className="summary-value">{formatCount(snapshot.history.quizStats.totalCorrectAnswers)}問</div>
           </div>
           <div>
-            <div className="summary-label">現在の称号</div>
-            <div className="summary-title">
-              {snapshot.history.currentTitle
-                ? `${snapshot.history.currentTitle.icon} ${snapshot.history.currentTitle.name}`
-                : "来店とクイズで解放"}
-            </div>
+            <div className="summary-label">最高到達</div>
+            <div className="summary-title">STAGE {highestUnlockedStageNumber}</div>
           </div>
         </div>
-        <div className="quiz-count-row">
-          {QUIZ_SESSION_SIZES.map((count) => (
+        <div className="quiz-stage-page">
+          <button
+            className="button-outline"
+            disabled={!canMoveStagePageBackward}
+            onClick={() => setStageNumber(Math.max(1, stagePageStart - 10))}
+            type="button"
+          >
+            前の10ステージ
+          </button>
+          <span className="helper-text">
+            STAGE {stagePageStart} - {Math.min(stagePageStart + 9, QUIZ_STAGE_CONFIGS.length)}
+          </span>
+          <button
+            className="button-outline"
+            disabled={!canMoveStagePageForward}
+            onClick={() => setStageNumber(Math.min(QUIZ_STAGE_CONFIGS.length, stagePageStart + 10))}
+            type="button"
+          >
+            次の10ステージ
+          </button>
+        </div>
+        <div className="quiz-stage-grid">
+          {visibleStages.map((stage) => (
             <button
-              className="button-choice"
-              data-active={questionCount === count}
-              key={count}
-              onClick={() => restart(count)}
+              className="button-choice quiz-stage-card"
+              data-active={stageNumber === stage.stageNumber}
+              data-locked={!isQuizStageUnlocked(stage.stageNumber, {
+                correctByStage: snapshot.history.quizStageProgress.correctByStage,
+              })}
+              disabled={!isQuizStageUnlocked(stage.stageNumber, {
+                correctByStage: snapshot.history.quizStageProgress.correctByStage,
+              })}
+              key={stage.stageNumber}
+              onClick={() => restart(stage.stageNumber)}
               type="button"
             >
-              {count}問
+              <span className="quiz-stage-label">{stage.stage}</span>
+              <span className="quiz-stage-count">{stage.title}</span>
+              <span className="quiz-stage-detail">
+                {unlockedStageNumbers.includes(stage.stageNumber)
+                  ? `${stage.detail} ・ 累計 ${formatCount(getStageProgressCount({ correctByStage: snapshot.history.quizStageProgress.correctByStage }, stage.stageNumber))} / ${QUIZ_SESSION_SIZE}`
+                  : `STAGE ${stage.stageNumber - 1} で累計 ${QUIZ_SESSION_SIZE} 問正解で開放`}
+              </span>
             </button>
           ))}
         </div>
       </Card>
 
-      {finished ? (
+      {loadingSession ? (
+        <Card>
+          <p className="helper-text">クイズセッションを準備しています...</p>
+        </Card>
+      ) : sessionError ? (
+        <Card>
+          <p className="helper-text">{sessionError}</p>
+          <button className="button-outline" onClick={() => restart()} type="button">
+            再試行
+          </button>
+        </Card>
+      ) : finished ? (
         <Card>
           <div className="quiz-result">
-            <div className="progress-big">{Math.round((score / Math.max(session.length, 1)) * 100)}%</div>
+            <div className="progress-big">{session ? Math.round((score / Math.max(session.questionCount, 1)) * 100) : 0}%</div>
             <p className="progress-caption">
-              {score} / {session.length} 問正解
+              {score} / {questionTotal} 問正解
             </p>
             <p className="helper-text">
-              累計 {snapshot.history.quizStats.totalCorrectAnswers} 問正解 / 来店 {snapshot.history.visitCount} 回
+              SNS でこの結果をシェアすると、今回の正解数は 1.2 倍で集計されます。ボーナスは1結果につき1回までです。
             </p>
             {submittingResult ? <p className="helper-text">結果を保存しています...</p> : null}
             {submitError ? <p className="helper-text">{submitError}</p> : null}
             <div className="quiz-result-actions">
+              <button
+                className="button-outline"
+                onClick={() => {
+                  if (!session) {
+                    return;
+                  }
+
+                  setSharePayload(
+                    buildQuizResultShare({
+                      sessionId: session.sessionId,
+                      score,
+                      questionCount: questionTotal,
+                      currentTitle: snapshot.history.currentTitle,
+                    }),
+                  );
+                }}
+                type="button"
+              >
+                シェアで1.2倍
+              </button>
               <button className="button-primary" onClick={() => restart()} type="button">
                 もう一度チャレンジ
               </button>
@@ -191,21 +440,28 @@ export function QuizScreen() {
         <Card>
           <div className="quiz-progress-row">
             <span className="pill">{currentQuestion.category}</span>
-            <span className="helper-text">
-              {currentIndex + 1} / {session.length}
-            </span>
+            <span className="helper-text">{currentIndex + 1} / {questionTotal}</span>
           </div>
           <h2 className="quiz-question">{currentQuestion.question}</h2>
+          <p className="helper-text">正解をすべて選んでから判定してください。</p>
           <div className="quiz-options">
             {currentQuestion.options.map((option, index) => {
-              const isCorrect = answered && index === currentQuestion.answerIndex;
-              const isWrong = answered && index === selectedIndex && index !== currentQuestion.answerIndex;
+              const optionStateClass = answerFeedback
+                ? answerFeedback.correctIndexes.includes(index)
+                  ? "correct"
+                  : answerFeedback.selectedIndexes.includes(index) && !answerFeedback.correct
+                    ? "wrong"
+                    : ""
+                : selectedIndexes.includes(index)
+                  ? "selected"
+                  : "";
+
               return (
                 <button
-                  className={`quiz-option ${answered ? "locked" : ""} ${isCorrect ? "correct" : ""} ${isWrong ? "wrong" : ""}`}
-                  disabled={answered}
+                  className={`quiz-option ${answerFeedback ? "locked" : ""} ${optionStateClass}`}
+                  disabled={Boolean(answerFeedback)}
                   key={`${currentQuestion.id}-${option}`}
-                  onClick={() => answer(index)}
+                  onClick={() => toggleAnswer(index)}
                   type="button"
                 >
                   <span className="quiz-option-label">{String.fromCharCode(65 + index)}</span>
@@ -214,19 +470,32 @@ export function QuizScreen() {
               );
             })}
           </div>
-          {answered ? (
+          {checkingAnswer ? <div className="quiz-answer-note">判定しています...</div> : null}
+          {answerError ? <p className="helper-text">{answerError}</p> : null}
+          {!answerFeedback ? (
+            <button
+              className="button-primary"
+              disabled={selectedIndexes.length === 0 || checkingAnswer}
+              onClick={() => void judgeAnswer()}
+              type="button"
+            >
+              この回答で判定
+            </button>
+          ) : null}
+          {answerFeedback ? (
             <>
-              <div className={`quiz-answer-note ${selectedIndex === currentQuestion.answerIndex ? "correct" : "wrong"}`}>
-                {selectedIndex === currentQuestion.answerIndex ? "正解です。" : "不正解です。"}
+              <div className={`quiz-answer-note ${answerFeedback.correct ? "correct" : "wrong"}`}>
+                {answerFeedback.correct ? "◯ 正解" : "✕ 不正解"}
               </div>
-              <p className="log-memo">{currentQuestion.explanation}</p>
+              <p className="helper-text">解説: {answerFeedback.explanation}</p>
               <button className="button-primary" onClick={next} type="button">
-                {currentIndex + 1 >= session.length ? "結果を見る" : "次の問題へ"}
+                {currentIndex + 1 >= questionTotal ? "結果を見る" : "次の問題へ"}
               </button>
             </>
           ) : null}
         </Card>
       ) : null}
+      <ShareModal onClose={() => setSharePayload(null)} onShareBonus={handleShareBonus} open={Boolean(sharePayload)} payload={sharePayload} />
     </>
   );
 }

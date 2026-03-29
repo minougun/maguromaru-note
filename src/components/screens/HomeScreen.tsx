@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { VisitLogCard } from "@/components/logs/VisitLogCard";
@@ -27,9 +28,13 @@ function storeStatusMeta(status: "open" | "busy" | "closing_soon" | "closed") {
   }
 }
 
-function menuItemStock(status: "open" | "busy" | "closing_soon" | "closed"): MenuStockStatus {
+function menuItemStock(
+  itemId: string,
+  status: "open" | "busy" | "closing_soon" | "closed",
+  menuItemStatuses: Record<string, MenuStockStatus>,
+): MenuStockStatus {
   if (status === "closed") return "soldout";
-  return "available";
+  return menuItemStatuses[itemId] ?? "available";
 }
 
 export function HomeScreen() {
@@ -79,6 +84,7 @@ export function HomeScreen() {
     hour12: false,
     timeZone: "Asia/Tokyo",
   }).format(new Date(snapshot.home.storeStatus.updated_at));
+  const yen = new Intl.NumberFormat("ja-JP");
 
   function openShare(log: VisitRecord) {
     setSharePayload(buildPastLogShare(log));
@@ -86,38 +92,48 @@ export function HomeScreen() {
 
   return (
     <>
-      <NorenBanner label="本日の入荷状況" />
-      <Card>
-        {snapshot.menuItems.map((item) => {
-          const stock = menuItemStock(snapshot.home.storeStatus.status);
-          const stockMeta = menuStockLabels[stock];
-          const isSoldout = stock === "soldout";
-          return (
-            <div className={`menu-row ${isSoldout ? "soldout-row" : ""}`} key={item.id}>
-              <div className="menu-name">{item.name}</div>
-              <span className={stockMeta.className}>{stockMeta.text}</span>
-            </div>
-          );
-        })}
-        <div className="menu-meta">更新 {updatedAt}</div>
-      </Card>
-
-      <div className="weather-bar">
-        <span>{weatherText}</span>
-        <span>{snapshot.home.storeStatus.weather_comment || "本町で営業中"}</span>
-      </div>
-
       <SectionTitle subtitle="Store status" title="営業状況" />
       <Card>
-        <div className="status-row">
-          <span className={status.className}>{status.label}</span>
-          <span className="helper-text">更新 {updatedAt}</span>
+        <div className="weather-bar weather-bar-merged">
+          <span>{weatherText}</span>
+          {snapshot.home.storeStatus.weather_comment ? (
+            <span>{snapshot.home.storeStatus.weather_comment}</span>
+          ) : (
+            <span className="status-summary">
+              <span className={status.className}>{status.label}</span>
+              <span className="status-updated-text">更新 {updatedAt}</span>
+            </span>
+          )}
         </div>
         {snapshot.home.storeStatus.status_note ? (
           <p className="status-note">{snapshot.home.storeStatus.status_note}</p>
         ) : (
           <p className="helper-text">混雑状況や売り切れ情報はここに表示されます。</p>
         )}
+      </Card>
+
+      <NorenBanner label="本日の入荷状況" />
+      <Card className="stock-card">
+        <div className="stock-card-head">
+          <div className="stock-store-mark">魚</div>
+          <div className="stock-updated-chip">更新 {updatedAt}</div>
+        </div>
+
+        {snapshot.menuItems.map((item) => {
+          const stock = menuItemStock(item.id, snapshot.home.storeStatus.status, snapshot.home.menuItemStatuses);
+          const stockMeta = menuStockLabels[stock];
+          const isSoldout = stock === "soldout";
+          return (
+            <div className={`stock-item ${isSoldout ? "soldout-row" : ""}`} key={item.id}>
+              <div>
+                <div className="stock-item-name">{item.name}</div>
+                <div className="stock-item-price">¥{yen.format(item.price)}</div>
+              </div>
+              <span className={stockMeta.className}>{stockMeta.text}</span>
+            </div>
+          );
+        })}
+        <p className="stock-footnote">※ 店舗スタッフが更新しています</p>
       </Card>
 
       {snapshot.home.storeStatus.recommendation ? (
@@ -141,6 +157,16 @@ export function HomeScreen() {
           <p className="helper-text">まだ記録がありません。今日の丼を記録するとここに並びます。</p>
         </Card>
       )}
+
+      <SectionTitle subtitle="Account" title="記録の引き継ぎ" />
+      <Card>
+        <p className="account-copy">
+          記録を別端末でも引き継ぎたい場合や、キャッシュ削除後も同じ記録を使いたい場合は、Google連携またはメール登録を設定してください。
+        </p>
+        <Link className="button-outline inline-button" href="/account">
+          アカウント設定を開く
+        </Link>
+      </Card>
       <ShareModal onClose={() => setSharePayload(null)} open={Boolean(sharePayload)} payload={sharePayload} />
     </>
   );

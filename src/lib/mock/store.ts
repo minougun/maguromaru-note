@@ -2,41 +2,73 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 
-import type { MenuStatusRow, Profile, VisitLog, VisitLogPart } from "@/lib/domain/types";
+import type {
+  MenuItemStatusRow,
+  QuizSessionRow,
+  QuizStatsRow,
+  ShareBonusEventRow,
+  StoreStatus,
+  VisitLog,
+  VisitLogPart,
+  ViewerContext,
+} from "@/lib/domain/types";
 import {
+  MOCK_ADMIN_EMAIL,
   MOCK_USER_ID,
   seededMenuItems,
-  seededMenuStatus,
+  seededMenuItemStatuses,
   seededParts,
-  seededProfiles,
-  seededTitles,
+  seededQuizSessions,
+  seededQuizStats,
+  seededShareBonusEvents,
+  seededStoreStatus,
   seededVisitLogParts,
   seededVisitLogs,
 } from "@/lib/domain/seed";
-import { isMockStaffEnabled } from "@/lib/env";
+import { isMockAdminEnabled } from "@/lib/env";
 
 const STORE_PATH = path.join("/tmp", "maguromaru-note-mock-db.json");
 
 export interface MockState {
-  profiles: Profile[];
+  menuItemStatuses: MenuItemStatusRow[];
+  quizSessions: QuizSessionRow[];
   visitLogs: VisitLog[];
   visitLogParts: VisitLogPart[];
-  menuStatus: MenuStatusRow[];
+  storeStatus: StoreStatus;
+  quizStats: QuizStatsRow[];
+  shareBonusEvents: ShareBonusEventRow[];
 }
 
 function createDefaultState(): MockState {
   return {
-    profiles: seededProfiles,
-    visitLogs: seededVisitLogs,
-    visitLogParts: seededVisitLogParts,
-    menuStatus: seededMenuStatus,
+    menuItemStatuses: seededMenuItemStatuses.map((entry) => ({ ...entry })),
+    quizSessions: seededQuizSessions.map((entry) => ({ ...entry })),
+    visitLogs: seededVisitLogs.map((entry) => ({ ...entry })),
+    visitLogParts: seededVisitLogParts.map((entry) => ({ ...entry })),
+    storeStatus: { ...seededStoreStatus },
+    quizStats: [{ ...seededQuizStats }],
+    shareBonusEvents: seededShareBonusEvents.map((entry) => ({ ...entry })),
+  };
+}
+
+function normalizeState(raw: Partial<MockState> | null | undefined): MockState {
+  const defaults = createDefaultState();
+
+  return {
+    menuItemStatuses: raw?.menuItemStatuses ?? defaults.menuItemStatuses,
+    quizSessions: raw?.quizSessions ?? defaults.quizSessions,
+    visitLogs: raw?.visitLogs ?? defaults.visitLogs,
+    visitLogParts: raw?.visitLogParts ?? defaults.visitLogParts,
+    storeStatus: raw?.storeStatus ?? defaults.storeStatus,
+    quizStats: raw?.quizStats ?? defaults.quizStats,
+    shareBonusEvents: raw?.shareBonusEvents ?? defaults.shareBonusEvents,
   };
 }
 
 export async function readMockState() {
   try {
     const content = await fs.readFile(STORE_PATH, "utf8");
-    return JSON.parse(content) as MockState;
+    return normalizeState(JSON.parse(content) as Partial<MockState>);
   } catch {
     const initialState = createDefaultState();
     await writeMockState(initialState);
@@ -48,30 +80,12 @@ export async function writeMockState(state: MockState) {
   await fs.writeFile(STORE_PATH, JSON.stringify(state, null, 2), "utf8");
 }
 
-export async function ensureMockProfile(userId: string) {
-  const state = await readMockState();
-  const existingProfile = state.profiles.find((profile) => profile.id === userId);
-
-  if (existingProfile) {
-    return existingProfile;
-  }
-
-  const profile: Profile = {
-    id: userId,
-    display_name: "匿名のまぐろ好き",
-    avatar_url: null,
-    created_at: new Date().toISOString(),
-  };
-
-  state.profiles.push(profile);
-  await writeMockState(state);
-  return profile;
-}
-
-export function createMockViewerContext() {
+export function createMockViewerContext(): ViewerContext {
+  const isAdmin = isMockAdminEnabled();
   return {
     userId: MOCK_USER_ID,
-    role: isMockStaffEnabled() ? ("staff" as const) : ("user" as const),
+    email: isAdmin ? MOCK_ADMIN_EMAIL : null,
+    role: isAdmin ? "admin" : "user",
     isMock: true,
   };
 }
@@ -82,6 +96,5 @@ export function createMockPhotoUrl() {
 
 export const mockMasterData = {
   parts: seededParts,
-  titles: seededTitles,
   menuItems: seededMenuItems,
 };

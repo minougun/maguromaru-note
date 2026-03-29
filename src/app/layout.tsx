@@ -6,7 +6,7 @@ import { TabBar } from "@/components/ui/TabBar";
 
 export const metadata: Metadata = {
   title: "まぐろ丸ノート",
-  description: "海鮮丼まぐろ丸の部位記録アプリ",
+  description: "海鮮丼まぐろ丸の公式Webアプリ",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

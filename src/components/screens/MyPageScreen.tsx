@@ -1,24 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
 
-import { ProfileCard } from "@/components/mypage/ProfileCard";
-import { StatsGrid } from "@/components/mypage/StatsGrid";
-import { TitlesList } from "@/components/mypage/TitlesList";
-import { ShareModal } from "@/components/share/ShareModal";
 import { Card } from "@/components/ui/Card";
 import { NorenBanner } from "@/components/ui/NorenBanner";
 import { ScreenState } from "@/components/ui/ScreenState";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import { useAppSnapshot } from "@/lib/hooks/use-app-snapshot";
-import { buildTitleShare, type SharePayload } from "@/lib/share/share";
+import { buildMyPageSummary } from "@/lib/mypage";
+import { formatCount } from "@/lib/utils/format";
 
 export function MyPageScreen() {
   const { snapshot, loading, error, refresh } = useAppSnapshot();
-  const [sharePayload, setSharePayload] = useState<SharePayload | null>(null);
 
   if (loading) {
-    return <ScreenState description="プロフィールを読み込んでいます。" title="読み込み中" />;
+    return <ScreenState description="マイページを読み込んでいます。" title="読み込み中" />;
   }
 
   if (error || !snapshot) {
@@ -35,21 +31,74 @@ export function MyPageScreen() {
     );
   }
 
+  const summary = buildMyPageSummary(snapshot);
+  const currentTitle = summary.currentTitle;
+  const heroTitle = currentTitle?.name ?? "まだ称号なし";
+  const heroIcon = currentTitle?.icon ?? "🔒";
+  const heroSubline =
+    currentTitle === null
+      ? "来店とクイズで称号を解放"
+      : `来店 ${formatCount(summary.visitCount)}回 ・ ${summary.collectedCount}部位コンプ`;
+
   return (
     <>
       <NorenBanner label="マイページ" />
-      <ProfileCard onShare={() => setSharePayload(buildTitleShare(snapshot.myPage))} summary={snapshot.myPage} />
-      <StatsGrid summary={snapshot.myPage} />
-      <SectionTitle subtitle="Titles" title="称号" />
-      <TitlesList summary={snapshot.myPage} />
-      <Card>
-        <p className="auth-note">
-          匿名ログインで即利用できます。
-          <br />
-          Supabase 接続時はメール / Google 連携用のセッション基盤も有効です。
-        </p>
+
+      <Card className="mypage-hero-card" glow>
+        <div className="mypage-hero-emblem">
+          <div className="mypage-hero-icon">{heroIcon}</div>
+        </div>
+        <h2 className="mypage-hero-title">{heroTitle}</h2>
+        <p className="mypage-hero-sub">{heroSubline}</p>
       </Card>
-      <ShareModal onClose={() => setSharePayload(null)} open={Boolean(sharePayload)} payload={sharePayload} />
+
+      <div className="stats-grid mypage-stats-grid">
+        <div className="stat-cell mypage-stat-cell">
+          <div className="mypage-stat-value">
+            <span className="stat-num">{formatCount(summary.visitCount)}</span>
+            <span className="mypage-stat-unit">回</span>
+          </div>
+          <div className="stat-label">来店回数</div>
+        </div>
+        <div className="stat-cell mypage-stat-cell">
+          <div className="mypage-stat-value">
+            <span className="stat-num">{summary.collectedCount}</span>
+            <span className="mypage-stat-unit">種</span>
+          </div>
+          <div className="stat-label">食べた部位</div>
+        </div>
+        <div className="stat-cell mypage-stat-cell">
+          <div className="mypage-stat-value">
+            <span className="stat-num">{summary.streakWeeks}</span>
+            <span className="mypage-stat-unit">週</span>
+          </div>
+          <div className="stat-label">連続来店</div>
+        </div>
+      </div>
+
+      <SectionTitle subtitle="Account" title="アカウント" />
+      <Card>
+        <p className="account-copy">
+          この記録を別のブラウザや別端末でも引き継げるように、Google 連携またはメールアカウント作成を設定できます。
+        </p>
+        <Link className="button-outline inline-button" href="/account">
+          アカウント設定を開く
+        </Link>
+      </Card>
+
+      <SectionTitle subtitle="Titles" title="称号" />
+      <Card>
+        {summary.titles.map((title) => (
+          <div className={`title-row ${title.current ? "current" : ""} ${title.unlocked ? "" : "locked"}`} key={title.id}>
+            <div className={`title-icon ${title.current ? "current" : ""}`}>{title.unlocked ? title.icon : "🔒"}</div>
+            <div className="title-copy">
+              <div className="title-name">{title.name}</div>
+              <div className="title-meta">{title.unlocked ? "解放済み" : title.requirementText}</div>
+            </div>
+            {title.current ? <span className="title-status-chip">使用中</span> : null}
+          </div>
+        ))}
+      </Card>
     </>
   );
 }

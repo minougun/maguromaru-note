@@ -186,20 +186,21 @@ with check (auth.uid() = user_id);
 
 insert into public.parts (id, name, area, rarity, description, color, sort_order)
 values
-  ('otoro', '大トロ', '腹部', 3, '最高級の脂のり', '#ff6b6b', 1),
-  ('chutoro', '中トロ', '腹部', 2, '脂と赤身のバランス', '#e85555', 2),
+  ('otoro', '大とろ', '腹部', 3, '最高級の脂のり', '#ff6b6b', 1),
+  ('chutoro', '中とろ', '腹部', 2, '脂と赤身のバランス', '#e85555', 2),
   ('akami', '赤身', '背部', 1, '旨味の王道', '#cc3333', 3),
-  ('noten', '脳天', '頭部', 3, '大トロ級のとろける食感', '#ff8585', 4),
+  ('noten', '脳天', '頭部', 3, '大とろ級のとろける食感', '#ff8585', 4),
   ('hoho', 'ほほ肉', '頭部', 3, '肉のような弾力と濃厚な旨味', '#d94444', 5),
-  ('kama', 'カマ', '胸部', 2, '脂がのった希少部位', '#f07070', 6),
-  ('haramo', 'ハラモ', '腹部', 2, '腹の大トロに近い部分', '#e06060', 7),
-  ('senaka', '背とろ', '背部', 2, '赤身に近い上品な脂', '#d35050', 8);
+  ('meura', '目裏', '頭部', 3, '目の裏側にある濃厚でとろける希少部位', '#f08d7d', 6),
+  ('kama', 'カマ', '胸部', 2, '脂がのった希少部位', '#f07070', 7),
+  ('haramo', 'ハラモ', '腹部', 2, '腹の大とろに近い部分', '#e06060', 8),
+  ('senaka', '中とろ', '背部', 2, '赤身に近い上品な脂', '#d35050', 9);
 
 insert into public.menu_items (id, name, price, sort_order)
 values
   ('maguro_don', 'まぐろ丼', 2000, 1),
   ('maguro_don_mini', 'まぐろ丼ミニ', 1500, 2),
-  ('tokujo_don', '特上まぐろ丼（大トロ入り）', 3000, 3),
+  ('tokujo_don', '特上まぐろ丼（大とろ入り）', 3000, 3),
   ('tokujo_don_mini', '特上まぐろ丼ミニ', 2500, 4);
 
 insert into public.store_status (id, recommendation, status, status_note, weather_comment)

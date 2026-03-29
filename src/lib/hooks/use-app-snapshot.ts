@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { useAuthState } from "@/components/providers/AuthProvider";
 import type { AppSnapshot } from "@/lib/domain/types";
-import { buildSupabaseAuthHeaders } from "@/lib/supabase/browser";
+import { buildSupabaseAuthHeaders, ensureSupabaseAccessToken } from "@/lib/supabase/browser";
 
 export function useAppSnapshot() {
   const auth = useAuthState();
@@ -19,9 +19,6 @@ export function useAppSnapshot() {
     }
 
     if (auth.usingSupabase && !auth.accessToken) {
-      if (auth.error) {
-        setLoading(false);
-      }
       return;
     }
 
@@ -31,10 +28,25 @@ export function useAppSnapshot() {
       setLoading(true);
       setError(null);
 
-      const response = await fetch("/api/app-snapshot", {
+      const initialToken = auth.usingSupabase
+        ? auth.accessToken ?? await ensureSupabaseAccessToken()
+        : auth.accessToken;
+
+      let response = await fetch("/api/app-snapshot", {
         cache: "no-store",
-        headers: buildSupabaseAuthHeaders(auth.accessToken),
+        headers: buildSupabaseAuthHeaders(initialToken),
       });
+
+      if (response.status === 401 && auth.usingSupabase) {
+        const retryToken = await ensureSupabaseAccessToken();
+        if (retryToken && retryToken !== initialToken) {
+          response = await fetch("/api/app-snapshot", {
+            cache: "no-store",
+            headers: buildSupabaseAuthHeaders(retryToken),
+          });
+        }
+      }
+
       if (cancelled) {
         return;
       }
@@ -57,13 +69,16 @@ export function useAppSnapshot() {
     };
   }, [auth.accessToken, auth.error, auth.ready, auth.usingSupabase, refreshToken]);
 
-  function refresh() {
+  const refresh = useCallback(() => {
     setRefreshToken((current) => current + 1);
-  }
+  }, []);
+
+  const loadingState =
+    auth.ready && auth.usingSupabase && !auth.accessToken ? !auth.error : loading;
 
   return {
     snapshot,
-    loading,
+    loading: loadingState,
     error: auth.error ?? error,
     refresh,
   };

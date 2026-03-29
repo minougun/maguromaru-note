@@ -1,68 +1,94 @@
 import type { Database } from "@/lib/database.types";
+import type { MenuStockStatus, TITLES } from "@/lib/domain/constants";
 
-export type PartId = Database["public"]["Tables"]["parts"]["Row"]["id"];
-export type MenuItemId = Database["public"]["Tables"]["menu_items"]["Row"]["id"];
-export type TitleId = Database["public"]["Tables"]["titles"]["Row"]["id"];
-export type MenuStatusValue = Database["public"]["Tables"]["menu_status"]["Row"]["status"];
-
-export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 export type Part = Database["public"]["Tables"]["parts"]["Row"];
+export type PartId = Part["id"];
+export type MenuItem = Database["public"]["Tables"]["menu_items"]["Row"];
+export type MenuItemId = MenuItem["id"];
 export type VisitLog = Database["public"]["Tables"]["visit_logs"]["Row"];
 export type VisitLogPart = Database["public"]["Tables"]["visit_log_parts"]["Row"];
-export type Title = Database["public"]["Tables"]["titles"]["Row"];
-export type MenuItem = Database["public"]["Tables"]["menu_items"]["Row"];
-export type MenuStatusRow = Database["public"]["Tables"]["menu_status"]["Row"];
+export type StoreStatus = Database["public"]["Tables"]["store_status"]["Row"];
+export type StoreStatusValue = StoreStatus["status"];
+export type MenuItemStatusRow = Database["public"]["Tables"]["menu_item_statuses"]["Row"];
+export type QuizStatsRow = Database["public"]["Tables"]["quiz_stats"]["Row"];
+export type QuizSessionRow = Database["public"]["Tables"]["quiz_sessions"]["Row"];
+export type ShareBonusEventRow = Database["public"]["Tables"]["share_bonus_events"]["Row"];
+
+export type Title = (typeof TITLES)[number];
+
+export interface ViewerContext {
+  userId: string;
+  email: string | null;
+  role: "user" | "admin";
+  isMock: boolean;
+}
 
 export interface VisitRecord {
   id: string;
   visitedAt: string;
+  createdAt: string;
   memo: string | null;
   photoUrl: string | null;
-  parts: Part[];
-  createdAt: string;
-}
-
-export interface MenuStatusEntry {
   menuItem: MenuItem;
-  status: MenuStatusValue;
-  updatedAt: string;
+  parts: Part[];
+  shareBonusClaimed: boolean;
 }
 
-export interface HomePageData {
-  menuStatus: MenuStatusEntry[];
+export interface WeatherSnapshot {
+  temperature: number;
+  code: number;
+  icon: string;
+  label: string;
+}
+
+export interface QuizStatsSummary {
+  totalCorrectAnswers: number;
+  totalAnsweredQuestions: number;
+  quizzesCompleted: number;
+  bestScore: number;
+  bestQuestionCount: number;
+  accuracyRate: number;
+}
+
+export interface ShareBonusSummary {
+  bonusVisitCount: number;
+  bonusCorrectAnswers: number;
+  sharedVisitLogIds: string[];
+  sharedQuizSessionIds: string[];
+}
+
+export interface QuizStageProgressSummary {
+  correctByStage: Record<number, number>;
+}
+
+export interface HomeData {
+  menuItemStatuses: Record<MenuItemId, MenuStockStatus>;
+  storeStatus: StoreStatus;
   recentLogs: VisitRecord[];
 }
 
-export interface ZukanSummary {
+export interface HistoryData {
+  visitCount: number;
+  quizStats: QuizStatsSummary;
+  quizStageProgress: QuizStageProgressSummary;
+  currentTitle: Title | null;
+  logs: VisitRecord[];
+  shareBonus: ShareBonusSummary;
+}
+
+export interface ZukanData {
+  collectedPartIds: PartId[];
   collectedCount: number;
   totalCount: number;
-  collectedPartIds: PartId[];
-}
-
-export interface MyPageSummary {
-  visitCount: number;
-  collectedCount: number;
-  streakWeeks: number;
-  currentTitle: Title;
-  titles: Array<
-    Title & {
-      unlocked: boolean;
-      current: boolean;
-    }
-  >;
-}
-
-export interface ViewerContext {
-  userId: string;
-  role: "user" | "staff";
-  isMock: boolean;
+  isComplete: boolean;
 }
 
 export interface AppSnapshot {
+  viewer: ViewerContext;
   parts: Part[];
-  titles: Title[];
   menuItems: MenuItem[];
-  home: HomePageData;
-  zukan: ZukanSummary;
-  myPage: MyPageSummary;
+  home: HomeData;
+  history: HistoryData;
+  zukan: ZukanData;
+  canManageAdmin: boolean;
 }

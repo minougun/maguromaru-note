@@ -8,21 +8,21 @@ import { Card } from "@/components/ui/Card";
 import { NorenBanner } from "@/components/ui/NorenBanner";
 import { ScreenState } from "@/components/ui/ScreenState";
 import { SectionTitle } from "@/components/ui/SectionTitle";
-import type { PartId } from "@/lib/domain/types";
+import { getDefaultPartIdsForMenuItem } from "@/lib/domain/menu-part-defaults";
+import type { MenuItemId, PartId, VisitRecord } from "@/lib/domain/types";
 import { useAppSnapshot } from "@/lib/hooks/use-app-snapshot";
 import { buildRecordShare, type SharePayload } from "@/lib/share/share";
+import { buildFreshSupabaseAuthHeaders } from "@/lib/supabase/browser";
+import { formatCount } from "@/lib/utils/format";
 import { resizeImageToDataUrl } from "@/lib/utils/image";
 
 function todayString() {
-  const now = new Date();
-  const formatter = new Intl.DateTimeFormat("sv-SE", {
-    timeZone: "Asia/Tokyo",
-  });
-  return formatter.format(now);
+  return new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
 }
 
 export function RecordScreen() {
   const { snapshot, loading, error, refresh } = useAppSnapshot();
+  const [selectedMenuItemId, setSelectedMenuItemId] = useState<MenuItemId | null>(null);
   const [selectedPartIds, setSelectedPartIds] = useState<Set<PartId>>(new Set());
   const [memo, setMemo] = useState("");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -31,10 +31,8 @@ export function RecordScreen() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [sharePayload, setSharePayload] = useState<SharePayload | null>(null);
 
-  const selectedParts = snapshot ? snapshot.parts.filter((part) => selectedPartIds.has(part.id)) : [];
-
   if (loading) {
-    return <ScreenState description="部位マスタを読み込んでいます。" title="読み込み中" />;
+    return <ScreenState description="記録画面を準備しています。" title="読み込み中" />;
   }
 
   if (error || !snapshot) {
@@ -50,6 +48,11 @@ export function RecordScreen() {
       />
     );
   }
+
+  const selectedMenuItem = selectedMenuItemId
+    ? snapshot.menuItems.find((item) => item.id === selectedMenuItemId) ?? null
+    : null;
+  const availablePartIds = new Set(snapshot.parts.map((part) => part.id));
 
   function togglePart(partId: PartId) {
     const next = new Set(selectedPartIds);
@@ -68,12 +71,17 @@ export function RecordScreen() {
     }
 
     const dataUrl = await resizeImageToDataUrl(file);
-    setPhotoDataUrl(dataUrl);
     setPreviewUrl(dataUrl);
+    setPhotoDataUrl(dataUrl);
+  }
+
+  function handleMenuSelection(menuItemId: MenuItemId) {
+    setSelectedMenuItemId(menuItemId);
+    setSelectedPartIds(new Set(getDefaultPartIdsForMenuItem(menuItemId).filter((partId) => availablePartIds.has(partId))));
   }
 
   async function handleSubmit() {
-    if (selectedParts.length === 0) {
+    if (!selectedMenuItemId) {
       return;
     }
 
@@ -82,30 +90,65 @@ export function RecordScreen() {
 
     const response = await fetch("/api/visit-logs", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: await buildFreshSupabaseAuthHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify({
         visitedAt: todayString(),
-        partIds: selectedParts.map((part) => part.id),
+        menuItemId: selectedMenuItemId,
+        partIds: [...selectedPartIds],
         memo,
         photoDataUrl,
       }),
     });
 
-    const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+    const payload = (await response.json().catch(() => null)) as { error?: string; record?: VisitRecord } | null;
     if (!response.ok) {
       setSubmitError(payload?.error ?? "記録に失敗しました。");
       setSubmitting(false);
       return;
     }
 
-    const nextSharePayload = buildRecordShare(selectedParts);
+    setSelectedMenuItemId(null);
     setSelectedPartIds(new Set());
     setMemo("");
-    setPhotoDataUrl(null);
     setPreviewUrl(null);
+    setPhotoDataUrl(null);
     setSubmitting(false);
     await refresh();
-    setSharePayload(nextSharePayload);
+    if (payload?.record) {
+      setSharePayload(buildRecordShare(payload.record));
+    }
+  }
+
+  async function handleShareBonus(payload: SharePayload, channel: "x" | "line" | "instagram") {
+    if (!payload.bonusTarget) {
+      return;
+    }
+
+    const response = await fetch("/api/share-bonuses", {
+      method: "POST",
+      headers: await buildFreshSupabaseAuthHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({
+        targetType: payload.bonusTarget.targetType,
+        targetId: payload.bonusTarget.targetId,
+        channel,
+      }),
+    });
+    const result = (await response.json().catch(() => null)) as
+      | { error?: string; alreadyClaimed?: boolean; bonusVisitCount?: number }
+      | null;
+
+    if (!response.ok) {
+      window.alert(result?.error ?? "シェアボーナスの記録に失敗しました。");
+      return;
+    }
+
+    if (result?.alreadyClaimed) {
+      window.alert("この記録のシェアボーナスは受取済みです。");
+      return;
+    }
+
+    await refresh();
+    window.alert(`来店回数ボーナス +${formatCount(result?.bonusVisitCount ?? 0)}回 を反映しました。`);
   }
 
   return (
@@ -114,7 +157,7 @@ export function RecordScreen() {
       <label className={`photo-zone ${previewUrl ? "has-img" : ""}`} htmlFor="don-photo">
         <input accept="image/*" capture="environment" hidden id="don-photo" onChange={handleFileChange} type="file" />
         {previewUrl ? (
-          <Image alt="丼のプレビュー" height={220} src={previewUrl} unoptimized width={360} />
+          <Image alt="丼のプレビュー" height={220} src={previewUrl} unoptimized width={380} />
         ) : (
           <span className="photo-hint">
             タップでカメラ / ギャラリー
@@ -123,7 +166,34 @@ export function RecordScreen() {
           </span>
         )}
       </label>
-      <SectionTitle subtitle="Parts in your bowl" title="入っていた部位" />
+
+      <SectionTitle subtitle="Menu" title="食べたメニュー" />
+      <div className="menu-choice-grid">
+        {snapshot.menuItems.map((item) => {
+          const active = selectedMenuItemId === item.id;
+          return (
+            <button
+              className={`menu-choice ${active ? "active" : ""}`}
+              key={item.id}
+              onClick={() => handleMenuSelection(item.id)}
+              type="button"
+            >
+              <strong>{item.name}</strong>
+              <span>{new Intl.NumberFormat("ja-JP").format(item.price)}円</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <SectionTitle subtitle="Parts" title="入っていた部位" />
+      <Card>
+        <p className="helper-text">
+          {selectedMenuItem
+            ? `${selectedMenuItem.name} の標準部位を自動で選択しています。実際に入っていた内容に合わせて修正してください。`
+            : "メニューを選ぶと、標準の部位セットを自動で入力します。"}
+        </p>
+        <p className="helper-text">トビコなど部位以外の具材は、この部位図鑑の自動選択には含めていません。</p>
+      </Card>
       <div className="parts-grid">
         {snapshot.parts.map((part) => {
           const selected = selectedPartIds.has(part.id);
@@ -143,6 +213,7 @@ export function RecordScreen() {
           );
         })}
       </div>
+
       <input
         className="memo-input"
         maxLength={120}
@@ -156,10 +227,10 @@ export function RecordScreen() {
           <p className="helper-text">{submitError}</p>
         </Card>
       ) : null}
-      <button className="button-primary" disabled={selectedParts.length === 0 || submitting} onClick={handleSubmit} type="button">
-        {selectedParts.length === 0 ? "部位を選んでください" : `${selectedParts.length}部位を記録する`}
+      <button className="button-primary" disabled={!selectedMenuItemId || submitting} onClick={handleSubmit} type="button">
+        {!selectedMenuItemId ? "メニューを選んでください" : submitting ? "保存中..." : "この内容で記録する"}
       </button>
-      <ShareModal onClose={() => setSharePayload(null)} open={Boolean(sharePayload)} payload={sharePayload} />
+      <ShareModal onClose={() => setSharePayload(null)} onShareBonus={handleShareBonus} open={Boolean(sharePayload)} payload={sharePayload} />
     </>
   );
 }

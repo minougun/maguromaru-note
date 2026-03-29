@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
 import {
+  ensureSupabaseAccessToken,
   ensureAnonymousSupabaseSession,
   getSupabaseBrowserClient,
   waitForSupabaseAccessToken,
@@ -46,9 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       try {
         const result = await ensureAnonymousSupabaseSession();
-        const accessToken =
-          result.accessToken ??
-          (result.authenticated ? await waitForSupabaseAccessToken() : null);
+        const accessToken = result.accessToken ?? (result.authenticated ? await waitForSupabaseAccessToken() : null);
 
         if (cancelled) {
           return;
@@ -96,6 +95,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (!session?.access_token) {
+          void (async () => {
+            try {
+              const fallbackToken = await ensureSupabaseAccessToken();
+              if (!cancelled) {
+                setState((current) => ({
+                  ...current,
+                  ready: true,
+                  usingSupabase: true,
+                  error: fallbackToken ? null : current.error,
+                  accessToken: fallbackToken,
+                }));
+              }
+            } catch (error) {
+              if (!cancelled) {
+                setState((current) => ({
+                  ...current,
+                  ready: true,
+                  usingSupabase: true,
+                  error: error instanceof Error ? error.message : "認証セッションの再確立に失敗しました。",
+                  accessToken: null,
+                }));
+              }
+            }
+          })();
           return;
         }
 
