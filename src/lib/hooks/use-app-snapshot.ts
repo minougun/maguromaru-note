@@ -7,6 +7,23 @@ import type { SnapshotScope } from "@/lib/domain/snapshot-scope";
 import type { AppSnapshot } from "@/lib/domain/types";
 import { buildSupabaseAuthHeaders, readSupabaseAccessToken } from "@/lib/supabase/browser";
 
+const SNAPSHOT_CLIENT_CACHE_TTL_MS = 25_000;
+
+type SnapshotCacheEntry = {
+  snapshot: AppSnapshot;
+  expiresAt: number;
+};
+
+const snapshotClientCache = new Map<string, SnapshotCacheEntry>();
+
+function clearAppSnapshotClientCache() {
+  snapshotClientCache.clear();
+}
+
+function snapshotCacheKey(scope: SnapshotScope, token: string | null | undefined, snapshotUrl: string) {
+  return `${snapshotUrl}\0${scope}\0${token ?? ""}`;
+}
+
 export function useAppSnapshot(options?: { scope?: SnapshotScope }) {
   const scope = options?.scope ?? "full";
   const auth = useAuthState();
@@ -32,7 +49,6 @@ export function useAppSnapshot(options?: { scope?: SnapshotScope }) {
     const abortController = new AbortController();
 
     async function loadSnapshot() {
-      setLoading(true);
       setError(null);
 
       const initialToken = auth.usingSupabase
@@ -41,6 +57,19 @@ export function useAppSnapshot(options?: { scope?: SnapshotScope }) {
 
       const snapshotUrl =
         scope === "full" ? "/api/app-snapshot" : `/api/app-snapshot?scope=${encodeURIComponent(scope)}`;
+
+      const cacheKey = snapshotCacheKey(scope, initialToken, snapshotUrl);
+      const cached = snapshotClientCache.get(cacheKey);
+      const now = Date.now();
+      if (cached && cached.expiresAt > now) {
+        if (!cancelled) {
+          setSnapshot(cached.snapshot);
+          setLoading(false);
+        }
+        return;
+      }
+
+      setLoading(true);
 
       const fetchInit = {
         cache: "no-store" as const,
@@ -87,6 +116,10 @@ export function useAppSnapshot(options?: { scope?: SnapshotScope }) {
       }
 
       const nextSnapshot = (await response.json()) as AppSnapshot;
+      snapshotClientCache.set(cacheKey, {
+        snapshot: nextSnapshot,
+        expiresAt: Date.now() + SNAPSHOT_CLIENT_CACHE_TTL_MS,
+      });
       setSnapshot(nextSnapshot);
       setLoading(false);
     }
@@ -99,6 +132,7 @@ export function useAppSnapshot(options?: { scope?: SnapshotScope }) {
   }, [auth.accessToken, auth.error, auth.ready, auth.signedIn, auth.usingSupabase, refreshToken, scope]);
 
   const refresh = useCallback(() => {
+    clearAppSnapshotClientCache();
     setRefreshToken((current) => current + 1);
   }, []);
 

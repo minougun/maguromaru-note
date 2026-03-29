@@ -331,12 +331,22 @@ async function listMasterData(client?: SupabaseClient<Database>) {
   return listMasterDataPartial(client, true, true);
 }
 
-async function listVisitData(client: SupabaseClient<Database>, userId: string) {
-  const { data: visitLogs, error: visitLogsError } = await fromAny(client, "visit_logs")
+async function listVisitData(
+  client: SupabaseClient<Database>,
+  userId: string,
+  options?: { limit?: number },
+) {
+  let query = fromAny(client, "visit_logs")
     .select("*")
     .eq("user_id", userId)
     .order("visited_at", { ascending: false })
     .order("created_at", { ascending: false });
+
+  if (options?.limit != null) {
+    query = query.limit(options.limit);
+  }
+
+  const { data: visitLogs, error: visitLogsError } = await query;
 
   if (visitLogsError || !visitLogs) {
     throw new AppServiceError(500, visitLogsError?.message ?? "来店記録の取得に失敗しました。");
@@ -444,6 +454,8 @@ type SnapshotFetchPlan = {
   quizSessions: boolean;
   shareBonus: boolean;
   visits: boolean;
+  /** ホーム「最近の記録」など、先頭 N 件だけでよいとき DB 側で LIMIT */
+  visitFetchLimit?: number;
 };
 
 const SNAPSHOT_FETCH_PLANS: Record<SnapshotScope, SnapshotFetchPlan> = {
@@ -462,20 +474,21 @@ const SNAPSHOT_FETCH_PLANS: Record<SnapshotScope, SnapshotFetchPlan> = {
     masterMenuItems: true,
     menuBundle: true,
     store: true,
-    quizStats: true,
+    quizStats: false,
     quizSessions: false,
     shareBonus: true,
     visits: true,
+    visitFetchLimit: 3,
   },
   admin: {
     masterParts: true,
     masterMenuItems: true,
     menuBundle: true,
     store: true,
-    quizStats: true,
+    quizStats: false,
     quizSessions: false,
-    shareBonus: true,
-    visits: true,
+    shareBonus: false,
+    visits: false,
   },
   history: {
     masterParts: true,
@@ -791,7 +804,7 @@ export async function getAppSnapshot(accessToken?: string, scope: SnapshotScope 
     const shareBonusEvents = plan.shareBonus
       ? state.shareBonusEvents.filter((entry) => entry.user_id === viewer.userId)
       : [];
-    const visitLogs = plan.visits
+    let visitLogs = plan.visits
       ? state.visitLogs
           .filter((visitLog) => visitLog.user_id === viewer.userId)
           .sort((left, right) => {
@@ -799,6 +812,9 @@ export async function getAppSnapshot(accessToken?: string, scope: SnapshotScope 
             return byDate !== 0 ? byDate : right.created_at.localeCompare(left.created_at);
           })
       : [];
+    if (plan.visitFetchLimit != null && visitLogs.length > plan.visitFetchLimit) {
+      visitLogs = visitLogs.slice(0, plan.visitFetchLimit);
+    }
     const visitLogIds = new Set(visitLogs.map((entry) => entry.id));
     const visitLogParts = plan.visits ? state.visitLogParts.filter((entry) => visitLogIds.has(entry.visit_log_id)) : [];
     const menuBundle = plan.menuBundle ? await getMenuItemStatuses(undefined) : defaultMenuStatusesBundle();
@@ -840,7 +856,13 @@ export async function getAppSnapshot(accessToken?: string, scope: SnapshotScope 
       plan.shareBonus && serviceRoleClient
         ? getShareBonusEvents(serviceRoleClient, viewer.userId)
         : Promise.resolve([] as ShareBonusEventRow[]),
-      plan.visits ? listVisitData(client, viewer.userId) : Promise.resolve(emptyVisits),
+      plan.visits
+        ? listVisitData(
+            client,
+            viewer.userId,
+            plan.visitFetchLimit != null ? { limit: plan.visitFetchLimit } : undefined,
+          )
+        : Promise.resolve(emptyVisits),
     ]);
 
   return buildSnapshotFromRecords(

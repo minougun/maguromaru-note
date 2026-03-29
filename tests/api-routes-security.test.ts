@@ -144,3 +144,8 @@ test("GET /api/app-snapshot?scope=invalid: 400", async () => {
   const body = (await res.json()) as { error?: string };
   assert.equal(body.error, "無効な scope です。");
 });
+
+test("GET /api/app-snapshot?scope=home: ハンドラが応答する（401 またはモック時 200）", async () => {
+  const res = await appSnapshotGet(new Request(api("/api/app-snapshot?scope=home")));
+  assert.ok(res.status === 401 || res.status === 200, `unexpected status ${res.status}`);
+});
