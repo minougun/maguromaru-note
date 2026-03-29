@@ -8,8 +8,8 @@ import { setRedirectLocation } from "@/lib/response";
 
 function resolveNextPath(request: NextRequest) {
   const raw = request.nextUrl.searchParams.get("next");
-  const parsed = authNextPathSchema.safeParse(raw ?? "/account");
-  return parsed.success ? parsed.data : "/account";
+  const parsed = authNextPathSchema.safeParse(raw ?? "/");
+  return parsed.success ? parsed.data : "/";
 }
 
 export async function GET(request: NextRequest) {

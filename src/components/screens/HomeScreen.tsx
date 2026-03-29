@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { VisitLogCard } from "@/components/logs/VisitLogCard";
@@ -158,15 +157,6 @@ export function HomeScreen() {
         </Card>
       )}
 
-      <SectionTitle subtitle="Account" title="記録の引き継ぎ" />
-      <Card>
-        <p className="account-copy">
-          記録を別端末でも引き継ぎたい場合や、キャッシュ削除後も同じ記録を使いたい場合は、Google連携またはメール登録を設定してください。
-        </p>
-        <Link className="button-outline inline-button" href="/account">
-          アカウント設定を開く
-        </Link>
-      </Card>
       <ShareModal onClose={() => setSharePayload(null)} open={Boolean(sharePayload)} payload={sharePayload} />
     </>
   );

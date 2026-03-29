@@ -712,10 +712,15 @@ const appQuestions: QuizQuestionSpec[] = [
   {
     idBase: "app-auth",
     category: "アプリ",
-    question: "このアプリは最初にどの方式で使い始める？",
-    options: ["匿名認証", "メール必須", "電話番号認証", "会員コード入力"],
+    question: "アプリの利用開始に関する説明として正しいのはどれ？",
+    options: [
+      "メールまたは Google アカウントでログインしてから使う",
+      "匿名のままですぐに全機能が使える",
+      "電話番号のSMS認証だけで始められる",
+      "会員コード入力のみで始められる",
+    ],
     answerIndex: 0,
-    explanation: "最初は匿名認証で即利用開始できます。",
+    explanation: "初回はログイン画面でメール登録・ログインまたは Google でサインインしてから利用します。",
   },
   {
     idBase: "app-weather",
@@ -1116,8 +1121,8 @@ const appTruthStatements: Statement[] = [
     id: "app-truth-1",
     category: "アプリ",
     subject: "認証",
-    text: "このアプリは最初は匿名認証で使い始めます。",
-    explanation: "このアプリは最初は匿名認証で使い始めます。",
+    text: "このアプリはメールまたは Google でログインしてから使い始めます。",
+    explanation: "このアプリはメールまたは Google でログインしてから使い始めます。",
   },
   {
     id: "app-truth-2",
@@ -1158,8 +1163,8 @@ const appTruthStatements: Statement[] = [
     id: "app-truth-7",
     category: "アプリ",
     subject: "引き継ぎ",
-    text: "記録を引き継ぐには Google 連携またはメール登録を使えます。",
-    explanation: "記録を引き継ぐには Google 連携またはメール登録を使えます。",
+    text: "別端末では、同じ Google またはメールアカウントでログインすると同じ記録にアクセスできます。",
+    explanation: "別端末では、同じ Google またはメールアカウントでログインすると同じ記録にアクセスできます。",
   },
   {
     id: "app-truth-8",
@@ -1189,8 +1194,8 @@ const appLieStatements: Statement[] = [
     id: "app-false-1",
     category: "アプリ",
     subject: "認証",
-    text: "このアプリは最初にメール登録が必須です。",
-    explanation: "このアプリは最初は匿名認証で使い始めます。",
+    text: "このアプリは匿名のままでログインせずに使い始められます。",
+    explanation: "メールまたは Google でログインしてから利用します。",
   },
   {
     id: "app-false-2",
@@ -1232,7 +1237,7 @@ const appLieStatements: Statement[] = [
     category: "アプリ",
     subject: "引き継ぎ",
     text: "記録の引き継ぎには電話認証しか使えません。",
-    explanation: "記録を引き継ぐには Google 連携またはメール登録を使えます。",
+    explanation: "ログインにメールまたは Google を使い、同じアカウントで別端末からアクセスします。",
   },
   {
     id: "app-false-8",

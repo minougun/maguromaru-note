@@ -1,16 +1,20 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 
+import { useAuthState } from "@/components/providers/AuthProvider";
 import { Card } from "@/components/ui/Card";
 import { NorenBanner } from "@/components/ui/NorenBanner";
 import { ScreenState } from "@/components/ui/ScreenState";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import { useAppSnapshot } from "@/lib/hooks/use-app-snapshot";
 import { buildMyPageSummary } from "@/lib/mypage";
+import { signOutSupabase } from "@/lib/supabase/browser";
 import { formatCount } from "@/lib/utils/format";
 
 export function MyPageScreen() {
+  const router = useRouter();
+  const auth = useAuthState();
   const { snapshot, loading, error, refresh } = useAppSnapshot();
 
   if (loading) {
@@ -76,16 +80,6 @@ export function MyPageScreen() {
         </div>
       </div>
 
-      <SectionTitle subtitle="Account" title="アカウント" />
-      <Card>
-        <p className="account-copy">
-          この記録を別のブラウザや別端末でも引き継げるように、Google 連携またはメールアカウント作成を設定できます。
-        </p>
-        <Link className="button-outline inline-button" href="/account">
-          アカウント設定を開く
-        </Link>
-      </Card>
-
       <SectionTitle subtitle="Titles" title="称号" />
       <Card>
         {summary.titles.map((title) => (
@@ -99,6 +93,25 @@ export function MyPageScreen() {
           </div>
         ))}
       </Card>
+
+      {auth.usingSupabase ? (
+        <Card>
+          <p className="account-copy">別のアカウントに切り替える場合はログアウトしてください。</p>
+          <button
+            className="button-outline inline-button"
+            onClick={() => {
+              void (async () => {
+                await signOutSupabase();
+                router.push("/");
+                router.refresh();
+              })();
+            }}
+            type="button"
+          >
+            ログアウト
+          </button>
+        </Card>
+      ) : null}
     </>
   );
 }

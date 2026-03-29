@@ -2,16 +2,12 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 
-import {
-  ensureSupabaseAccessToken,
-  ensureAnonymousSupabaseSession,
-  getSupabaseBrowserClient,
-  waitForSupabaseAccessToken,
-} from "@/lib/supabase/browser";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
-interface AuthContextValue {
+export interface AuthContextValue {
   ready: boolean;
   usingSupabase: boolean;
+  signedIn: boolean;
   error: string | null;
   accessToken: string | null;
 }
@@ -23,14 +19,44 @@ const SUPABASE_CONFIGURED = Boolean(
 const AuthContext = createContext<AuthContextValue>({
   ready: false,
   usingSupabase: SUPABASE_CONFIGURED,
+  signedIn: false,
   error: null,
   accessToken: null,
 });
+
+async function resolveInitialSupabaseSession(
+  client: NonNullable<ReturnType<typeof getSupabaseBrowserClient>>,
+): Promise<{ accessToken: string | null; signedIn: boolean }> {
+  const {
+    data: { session },
+  } = await client.auth.getSession();
+
+  if (!session?.access_token) {
+    return { accessToken: null, signedIn: false };
+  }
+
+  const {
+    data: { user },
+    error,
+  } = await client.auth.getUser();
+
+  if (error || !user) {
+    return { accessToken: null, signedIn: false };
+  }
+
+  if (user.is_anonymous) {
+    await client.auth.signOut();
+    return { accessToken: null, signedIn: false };
+  }
+
+  return { accessToken: session.access_token, signedIn: true };
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthContextValue>({
     ready: false,
     usingSupabase: SUPABASE_CONFIGURED,
+    signedIn: false,
     error: null,
     accessToken: null,
   });
@@ -41,32 +67,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     async function bootstrap() {
       if (!SUPABASE_CONFIGURED) {
-        setState({ ready: true, usingSupabase: false, error: null, accessToken: null });
+        setState({
+          ready: true,
+          usingSupabase: false,
+          signedIn: true,
+          error: null,
+          accessToken: null,
+        });
+        return;
+      }
+
+      if (!client) {
+        setState({
+          ready: true,
+          usingSupabase: true,
+          signedIn: false,
+          error: "Supabase クライアントを初期化できませんでした。",
+          accessToken: null,
+        });
         return;
       }
 
       try {
-        const result = await ensureAnonymousSupabaseSession();
-        const accessToken = result.accessToken ?? (result.authenticated ? await waitForSupabaseAccessToken() : null);
-
+        const { accessToken, signedIn } = await resolveInitialSupabaseSession(client);
         if (cancelled) {
           return;
-        }
-
-        if (!accessToken) {
-          console.error("[AuthProvider] token取得失敗", {
-            authenticated: result.authenticated,
-            accessToken: result.accessToken,
-            hasClient: Boolean(client),
-          });
         }
 
         setState({
           ready: true,
           usingSupabase: true,
-          error: !accessToken
-            ? `認証セッションの確立に失敗しました（auth:${result.authenticated}, token:${Boolean(result.accessToken)}, client:${Boolean(client)}）。再読み込みしてください。`
-            : null,
+          signedIn,
+          error: null,
           accessToken,
         });
       } catch (error) {
@@ -74,10 +106,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
         const msg = error instanceof Error ? error.message : "unknown";
-        console.error("[AuthProvider] 初期化例外", error);
         setState({
           ready: true,
           usingSupabase: true,
+          signedIn: false,
           error: `認証初期化に失敗しました: ${msg}`,
           accessToken: null,
         });
@@ -94,41 +126,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        if (!session?.access_token) {
-          void (async () => {
-            try {
-              const fallbackToken = await ensureSupabaseAccessToken();
-              if (!cancelled) {
-                setState((current) => ({
-                  ...current,
-                  ready: true,
-                  usingSupabase: true,
-                  error: fallbackToken ? null : current.error,
-                  accessToken: fallbackToken,
-                }));
-              }
-            } catch (error) {
-              if (!cancelled) {
-                setState((current) => ({
-                  ...current,
-                  ready: true,
-                  usingSupabase: true,
-                  error: error instanceof Error ? error.message : "認証セッションの再確立に失敗しました。",
-                  accessToken: null,
-                }));
-              }
-            }
-          })();
-          return;
-        }
+        void (async () => {
+          if (!session?.access_token) {
+            setState((current) => ({
+              ...current,
+              ready: true,
+              usingSupabase: true,
+              signedIn: false,
+              error: null,
+              accessToken: null,
+            }));
+            return;
+          }
 
-        setState((current) => ({
-          ...current,
-          ready: true,
-          usingSupabase: true,
-          error: null,
-          accessToken: session.access_token,
-        }));
+          if (session.user?.is_anonymous) {
+            await client.auth.signOut();
+            if (cancelled) {
+              return;
+            }
+            setState((current) => ({
+              ...current,
+              ready: true,
+              usingSupabase: true,
+              signedIn: false,
+              error: null,
+              accessToken: null,
+            }));
+            return;
+          }
+
+          setState((current) => ({
+            ...current,
+            ready: true,
+            usingSupabase: true,
+            signedIn: true,
+            accessToken: session.access_token,
+            error: null,
+          }));
+        })();
       }) ?? { data: { subscription: { unsubscribe() {} } } };
 
     return () => {

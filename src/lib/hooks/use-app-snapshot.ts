@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { useAuthState } from "@/components/providers/AuthProvider";
 import type { AppSnapshot } from "@/lib/domain/types";
-import { buildSupabaseAuthHeaders, ensureSupabaseAccessToken } from "@/lib/supabase/browser";
+import { buildSupabaseAuthHeaders, readSupabaseAccessToken } from "@/lib/supabase/browser";
 
 export function useAppSnapshot() {
   const auth = useAuthState();
@@ -18,7 +18,11 @@ export function useAppSnapshot() {
       return;
     }
 
-    if (auth.usingSupabase && !auth.accessToken) {
+    if (auth.usingSupabase && !auth.signedIn) {
+      return;
+    }
+
+    if (auth.usingSupabase && auth.signedIn && !auth.accessToken) {
       return;
     }
 
@@ -29,7 +33,7 @@ export function useAppSnapshot() {
       setError(null);
 
       const initialToken = auth.usingSupabase
-        ? auth.accessToken ?? await ensureSupabaseAccessToken()
+        ? auth.accessToken ?? (await readSupabaseAccessToken())
         : auth.accessToken;
 
       let response = await fetch("/api/app-snapshot", {
@@ -38,7 +42,7 @@ export function useAppSnapshot() {
       });
 
       if (response.status === 401 && auth.usingSupabase) {
-        const retryToken = await ensureSupabaseAccessToken();
+        const retryToken = await readSupabaseAccessToken();
         if (retryToken && retryToken !== initialToken) {
           response = await fetch("/api/app-snapshot", {
             cache: "no-store",
@@ -67,14 +71,19 @@ export function useAppSnapshot() {
     return () => {
       cancelled = true;
     };
-  }, [auth.accessToken, auth.error, auth.ready, auth.usingSupabase, refreshToken]);
+  }, [auth.accessToken, auth.error, auth.ready, auth.signedIn, auth.usingSupabase, refreshToken]);
 
   const refresh = useCallback(() => {
     setRefreshToken((current) => current + 1);
   }, []);
 
-  const loadingState =
-    auth.ready && auth.usingSupabase && !auth.accessToken ? !auth.error : loading;
+  const waitingForUserSession =
+    auth.ready &&
+    auth.usingSupabase &&
+    auth.signedIn &&
+    !auth.accessToken &&
+    !auth.error;
+  const loadingState = waitingForUserSession ? true : loading;
 
   return {
     snapshot,

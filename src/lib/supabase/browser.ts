@@ -43,56 +43,21 @@ export function getSupabaseBrowserClient() {
   return browserClient;
 }
 
-export async function ensureAnonymousSupabaseSession() {
-  const client = getSupabaseBrowserClient();
-
-  if (!client) {
-    return { ready: true, authenticated: false, accessToken: null };
-  }
-
-  const { data } = await client.auth.getSession();
-  if (data.session) {
-    return { ready: true, authenticated: true, accessToken: data.session.access_token };
-  }
-
-  const { data: signInData, error } = await client.auth.signInAnonymously();
-  if (error) {
-    throw error;
-  }
-
-  return {
-    ready: true,
-    authenticated: true,
-    accessToken: signInData.session?.access_token ?? null,
-  };
-}
-
-export async function waitForSupabaseAccessToken(retries = 20, delayMs = 250) {
+/** 既存セッションの access_token のみ返す（匿名サインインは行わない）。 */
+export async function readSupabaseAccessToken(): Promise<string | null> {
   const client = getSupabaseBrowserClient();
   if (!client) {
     return null;
   }
 
-  for (let attempt = 0; attempt < retries; attempt += 1) {
-    const {
-      data: { session },
-    } = await client.auth.getSession();
-
-    if (session?.access_token) {
-      return session.access_token;
-    }
-
-    await new Promise((resolve) => {
-      window.setTimeout(resolve, delayMs);
-    });
-  }
-
-  return null;
+  const {
+    data: { session },
+  } = await client.auth.getSession();
+  return session?.access_token ?? null;
 }
 
 export async function ensureSupabaseAccessToken() {
-  const result = await ensureAnonymousSupabaseSession();
-  return result.accessToken ?? (result.authenticated ? await waitForSupabaseAccessToken() : null);
+  return readSupabaseAccessToken();
 }
 
 export function buildSupabaseAuthHeaders(accessToken: string | null | undefined, headers: HeadersInit = {}) {
@@ -106,7 +71,7 @@ export function buildSupabaseAuthHeaders(accessToken: string | null | undefined,
 }
 
 export async function buildFreshSupabaseAuthHeaders(headers: HeadersInit = {}) {
-  const accessToken = await ensureSupabaseAccessToken();
+  const accessToken = await readSupabaseAccessToken();
   return buildSupabaseAuthHeaders(accessToken, headers);
 }
 
@@ -158,7 +123,7 @@ export async function getSupabaseAuthProfile(): Promise<BrowserAuthProfile> {
   };
 }
 
-export async function startGoogleLinkFlow(nextPath = "/account") {
+export async function startGoogleLinkFlow(nextPath = "/") {
   const client = getSupabaseBrowserClient();
   if (!client) {
     throw new Error("Supabase が設定されていません。");
@@ -180,7 +145,7 @@ export async function startGoogleLinkFlow(nextPath = "/account") {
   }
 }
 
-export async function startGoogleSignInFlow(nextPath = "/account") {
+export async function startGoogleSignInFlow(nextPath = "/") {
   const client = getSupabaseBrowserClient();
   if (!client) {
     throw new Error("Supabase が設定されていません。");
@@ -202,28 +167,35 @@ export async function startGoogleSignInFlow(nextPath = "/account") {
   }
 }
 
-export async function createEmailPasswordAccount(input: unknown, nextPath = "/account") {
+export async function signUpWithEmailPassword(input: unknown, nextPath = "/") {
   const client = getSupabaseBrowserClient();
   if (!client) {
     throw new Error("Supabase が設定されていません。");
   }
 
   const parsed = createEmailAccountInputSchema.parse(input);
-  const { data, error } = await client.auth.updateUser(
-    {
-      email: parsed.email,
-      password: parsed.password,
-    },
-    {
+  const { data, error } = await client.auth.signUp({
+    email: parsed.email,
+    password: parsed.password,
+    options: {
       emailRedirectTo: buildAuthCallbackUrl(nextPath),
     },
-  );
+  });
 
   if (error) {
     throw error;
   }
 
-  return data.user;
+  return data;
+}
+
+export async function signOutSupabase() {
+  const client = getSupabaseBrowserClient();
+  if (!client) {
+    return;
+  }
+
+  await client.auth.signOut();
 }
 
 export async function signInWithEmailPassword(input: unknown) {

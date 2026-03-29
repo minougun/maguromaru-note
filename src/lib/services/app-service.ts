@@ -218,6 +218,10 @@ async function getSupabaseViewerFromToken(
     throw new AppServiceError(401, "ログインが必要です。");
   }
 
+  if (user.is_anonymous) {
+    throw new AppServiceError(401, "ログインが必要です。メールまたは Google でログインしてください。");
+  }
+
   const adminEmail = getAdminEmail();
   const email = user.email?.toLowerCase() ?? null;
   const role = adminEmail && email === adminEmail ? "admin" : "user";
