@@ -199,9 +199,9 @@ function MockQuiz() {
         <div className="onboarding-mock-pbar">
           <div className="onboarding-mock-pbar-fill onboarding-mock-pbar-fill--aka" style={{ width: "12%" }} />
         </div>
-        <p className="onboarding-mock-cap">正解済みの問題数 24 / 200</p>
+        <p className="onboarding-mock-cap">正解済み24/200</p>
       </div>
-      <p className="onboarding-mock-quiz-hint">正解済みの問題数が10問になると次のステージが解放</p>
+      <p className="onboarding-mock-quiz-hint">各ステージ10問。全ての問題に正解すると次のステージが解放</p>
       <div className="onboarding-mock-quiz-nav">
         <span className="onboarding-mock-nav-dot">◀</span>
         <div className="onboarding-mock-quiz-stage-card">

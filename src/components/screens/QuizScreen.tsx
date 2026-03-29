@@ -323,13 +323,13 @@ export function QuizScreen() {
               <p className="progress-caption">
                 {reached
                   ? `${masterTitle.name}到達！おめでとうございます！`
-                  : `正解済みの問題数 ${formatCount(totalCorrect)} / ${formatCount(goal)}`}
+                  : `正解済み${formatCount(totalCorrect)}/${formatCount(goal)}`}
               </p>
             </div>
           );
         })()}
         <p className="helper-text quiz-unlock-hint">
-          各ステージは10問です。正解済みの問題数が10問に達すると次のステージが解放されます。
+          各ステージ10問。全ての問題に正解すると次のステージが解放されます。
         </p>
         <div className="quiz-stage-single">
           <button
@@ -352,7 +352,7 @@ export function QuizScreen() {
             <span className="quiz-stage-count">{viewingStage.title}</span>
             <span className="quiz-stage-detail">
               {isViewingLocked
-                ? `STAGE ${stageNumber - 1} で正解済みの問題数が ${QUIZ_SESSION_SIZE} 問に達すると開放`
+                ? `STAGE ${stageNumber - 1} で全ての問題に正解すると開放`
                 : `${viewingStage.detail} ・ 正解済み${formatCount(getStageProgressCount({ correctByStage: snapshot.history.quizStageProgress.correctByStage }, stageNumber))}/${QUIZ_SESSION_SIZE}`}
             </span>
           </button>
