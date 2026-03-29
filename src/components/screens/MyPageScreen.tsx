@@ -240,7 +240,7 @@ export function MyPageScreen() {
         />
       ) : null}
 
-      {auth.usingSupabase ? (
+      {auth.usingSupabase && profile && !profile.isAnonymous ? (
         <Card>
           <p className="account-copy">別のアカウントに切り替える場合はログアウトしてください。</p>
           <button
@@ -257,7 +257,7 @@ export function MyPageScreen() {
             ログアウト
           </button>
         </Card>
-      ) : (
+      ) : auth.usingSupabase ? null : (
         <Card>
           <p className="account-copy">初回の選択画面に戻ります（ローカル開発用）。</p>
           <button

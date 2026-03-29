@@ -137,12 +137,16 @@ export function AccountLinkSection({
 
       <div className="account-link-panel">
         <header className="account-link-header">
-          <h2 className="account-link-title">アカウント連携</h2>
-          <p className="account-link-subtitle">
-            {isSignIn
-              ? "アカウント連携と同じ手順で、Google・Apple・メールのいずれかにサインインできます。"
-              : "データのバックアップや引き継ぎができます"}
-          </p>
+          {isSignIn ? (
+            <>
+              <h2 className="account-link-title">アカウント連携</h2>
+              <p className="account-link-subtitle">
+                アカウント連携と同じ手順で、Google・Apple・メールのいずれかにサインインできます。
+              </p>
+            </>
+          ) : (
+            <h2 className="account-link-title account-link-title--solo">データのバックアップや引き継ぎができます</h2>
+          )}
         </header>
 
         <div className="account-link-list" role="list">
