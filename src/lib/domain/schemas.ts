@@ -40,6 +40,16 @@ export const authNextPathSchema = z
   .string()
   .trim()
   .refine((value) => value.startsWith("/") && !value.startsWith("//"), "遷移先が不正です。");
+
+/** メール確認コールバックの `type` クエリ（verifyOtp へそのまま渡す） */
+export const emailOtpCallbackTypeSchema = z.enum([
+  "signup",
+  "invite",
+  "magiclink",
+  "recovery",
+  "email_change",
+  "email",
+]);
 export const quizStageNumberSchema = z.number().int().min(1).max(quizStageCount);
 export const visitLogIdSchema = z.uuid();
 export const quizSessionIdSchema = z.uuid();
