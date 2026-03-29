@@ -1,23 +1,45 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { VisitLogCard } from "@/components/logs/VisitLogCard";
 import { ShareBonusCallout } from "@/components/share/ShareBonusCallout";
 import { ShareModalDynamic } from "@/components/share/ShareModalDynamic";
+import { useAuthState } from "@/components/providers/AuthProvider";
 import { Card } from "@/components/ui/Card";
 import { NorenBanner } from "@/components/ui/NorenBanner";
 import { ScreenState } from "@/components/ui/ScreenState";
-import type { VisitRecord } from "@/lib/domain/types";
+import type { AppSnapshot, VisitRecord } from "@/lib/domain/types";
 import { useAppSnapshot } from "@/lib/hooks/use-app-snapshot";
+import { FetchJsonError, fetchJsonWithAuth } from "@/lib/http/fetch-json";
+import { withAppBasePath } from "@/lib/public-path";
 import { buildPastLogShare, type SharePayload } from "@/lib/share/share";
-import { buildFreshSupabaseAuthHeaders } from "@/lib/supabase/browser";
 import { formatCount } from "@/lib/utils/format";
 
 export function HistoryScreen() {
+  const auth = useAuthState();
   const { snapshot, loading, error, refresh } = useAppSnapshot();
   const [sharePayload, setSharePayload] = useState<SharePayload | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [extraLogs, setExtraLogs] = useState<VisitRecord[]>([]);
+  const [nextHistoryPage, setNextHistoryPage] = useState(2);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
+
+  const pageMeta = snapshot?.history.visitLogsPage;
+  const baseLogs = useMemo(() => snapshot?.history.logs ?? [], [snapshot]);
+
+  useEffect(() => {
+    if (pageMeta?.page === 1) {
+      setExtraLogs([]);
+      setNextHistoryPage(2);
+      setLoadMoreError(null);
+    }
+  }, [pageMeta?.page, pageMeta?.totalCount, snapshot?.viewer.userId]);
+
+  const displayedLogs = useMemo(() => [...baseLogs, ...extraLogs], [baseLogs, extraLogs]);
+  const totalPages = pageMeta ? Math.max(1, Math.ceil(pageMeta.totalCount / pageMeta.pageSize)) : 1;
+  const hasMoreHistory = pageMeta != null && nextHistoryPage <= totalPages;
 
   if (loading) {
     return <ScreenState description="履歴を読み込んでいます。" title="読み込み中" />;
@@ -37,6 +59,42 @@ export function HistoryScreen() {
     );
   }
 
+  async function loadMoreHistory() {
+    if (!pageMeta || !hasMoreHistory || loadingMore || !auth.ready) {
+      return;
+    }
+
+    setLoadingMore(true);
+    setLoadMoreError(null);
+    try {
+      const params = new URLSearchParams();
+      params.set("scope", "history");
+      params.set("history_visit_page", String(nextHistoryPage));
+      params.set("history_visit_page_size", String(pageMeta.pageSize));
+      const url = `${withAppBasePath("/api/app-snapshot")}?${params.toString()}`;
+      const data = await fetchJsonWithAuth<AppSnapshot>(
+        url,
+        { method: "GET", cache: "no-store" },
+        { usingSupabase: auth.usingSupabase, accessToken: auth.accessToken },
+      );
+      setExtraLogs((prev) => {
+        const ids = new Set([...baseLogs, ...prev].map((entry) => entry.id));
+        const merged = [...prev];
+        for (const log of data.history.logs) {
+          if (!ids.has(log.id)) {
+            merged.push(log);
+          }
+        }
+        return merged;
+      });
+      setNextHistoryPage((p) => p + 1);
+    } catch (err) {
+      setLoadMoreError(err instanceof FetchJsonError ? err.message : "追加の履歴を読み込めませんでした。");
+    } finally {
+      setLoadingMore(false);
+    }
+  }
+
   async function handleDelete(log: VisitRecord) {
     const ok = window.confirm(`${log.visitedAt} の記録を削除しますか？`);
     if (!ok) {
@@ -44,17 +102,18 @@ export function HistoryScreen() {
     }
 
     setDeletingId(log.id);
-    const response = await fetch(`/api/visit-logs/${log.id}`, {
-      headers: await buildFreshSupabaseAuthHeaders(),
-      method: "DELETE",
-    });
-    const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-    setDeletingId(null);
-
-    if (!response.ok) {
-      window.alert(payload?.error ?? "削除に失敗しました。");
+    try {
+      await fetchJsonWithAuth<{ ok?: true }>(
+        withAppBasePath(`/api/visit-logs/${log.id}`),
+        { method: "DELETE", cache: "no-store" },
+        { usingSupabase: auth.usingSupabase, accessToken: auth.accessToken },
+      );
+    } catch (err) {
+      window.alert(err instanceof FetchJsonError ? err.message : "削除に失敗しました。");
+      setDeletingId(null);
       return;
     }
+    setDeletingId(null);
 
     await refresh();
   }
@@ -64,21 +123,29 @@ export function HistoryScreen() {
       return;
     }
 
-    const response = await fetch("/api/share-bonuses", {
-      method: "POST",
-      headers: await buildFreshSupabaseAuthHeaders({ "Content-Type": "application/json" }),
-      body: JSON.stringify({
-        targetType: payload.bonusTarget.targetType,
-        targetId: payload.bonusTarget.targetId,
-        channel,
-      }),
-    });
-    const result = (await response.json().catch(() => null)) as
-      | { error?: string; alreadyClaimed?: boolean; bonusVisitCount?: number; bonusCorrectAnswers?: number }
-      | null;
-
-    if (!response.ok) {
-      window.alert(result?.error ?? "シェアボーナスの記録に失敗しました。");
+    let result: {
+      error?: string;
+      alreadyClaimed?: boolean;
+      bonusVisitCount?: number;
+      bonusCorrectAnswers?: number;
+    };
+    try {
+      result = await fetchJsonWithAuth(
+        withAppBasePath("/api/share-bonuses"),
+        {
+          method: "POST",
+          cache: "no-store",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            targetType: payload.bonusTarget.targetType,
+            targetId: payload.bonusTarget.targetId,
+            channel,
+          }),
+        },
+        { usingSupabase: auth.usingSupabase, accessToken: auth.accessToken },
+      );
+    } catch (err) {
+      window.alert(err instanceof FetchJsonError ? err.message : "シェアボーナスの記録に失敗しました。");
       return;
     }
 
@@ -115,18 +182,33 @@ export function HistoryScreen() {
         </div>
         <ShareBonusCallout variant="visit" />
       </Card>
-      {snapshot.history.logs.length > 0 ? (
-        <div className="stack-list">
-          {snapshot.history.logs.map((log) => (
-            <VisitLogCard
-              deleting={deletingId === log.id}
-              key={log.id}
-              log={log}
-              onDelete={handleDelete}
-              onShare={(nextLog) => setSharePayload(buildPastLogShare(nextLog))}
-            />
-          ))}
-        </div>
+      {displayedLogs.length > 0 ? (
+        <>
+          <div className="stack-list">
+            {displayedLogs.map((log) => (
+              <VisitLogCard
+                deleting={deletingId === log.id}
+                key={log.id}
+                log={log}
+                onDelete={handleDelete}
+                onShare={(nextLog) => setSharePayload(buildPastLogShare(nextLog))}
+              />
+            ))}
+          </div>
+          {loadMoreError ? <p className="helper-text">{loadMoreError}</p> : null}
+          {hasMoreHistory ? (
+            <div className="history-load-more">
+              <button
+                className="button-outline"
+                disabled={loadingMore}
+                onClick={() => void loadMoreHistory()}
+                type="button"
+              >
+                {loadingMore ? "読み込み中…" : "さらに読む"}
+              </button>
+            </div>
+          ) : null}
+        </>
       ) : (
         <Card>
           <p className="helper-text">まだ履歴がありません。記録を作るとここに残ります。</p>

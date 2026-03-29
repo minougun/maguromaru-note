@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { useAuthState } from "@/components/providers/AuthProvider";
 import { ShareBonusCallout } from "@/components/share/ShareBonusCallout";
 import { ShareModalDynamic } from "@/components/share/ShareModalDynamic";
 import { Card } from "@/components/ui/Card";
@@ -16,9 +17,10 @@ import {
   getStageProgressCount,
   isQuizStageUnlocked,
 } from "@/lib/quiz-stages";
-import { buildQuizResultShare, type SharePayload } from "@/lib/share/share";
-import { buildFreshSupabaseAuthHeaders } from "@/lib/supabase/browser";
 import { TITLES } from "@/lib/domain/constants";
+import { FetchJsonError, fetchJsonWithAuth } from "@/lib/http/fetch-json";
+import { withAppBasePath } from "@/lib/public-path";
+import { buildQuizResultShare, type SharePayload } from "@/lib/share/share";
 import { formatCount } from "@/lib/utils/format";
 
 type SessionQuestion = {
@@ -72,6 +74,7 @@ function isErrorPayload(value: unknown): value is ErrorPayload {
 }
 
 export function QuizScreen() {
+  const auth = useAuthState();
   const { snapshot, loading, error, refresh } = useAppSnapshot();
   const [stageNumber, setStageNumber] = useState(1);
   const [sessionVersion, setSessionVersion] = useState(1);
@@ -108,18 +111,31 @@ export function QuizScreen() {
       setAnswerFeedback(null);
       setAnswers([]);
 
-      const response = await fetch("/api/quiz-sessions", {
-        method: "POST",
-        headers: await buildFreshSupabaseAuthHeaders({ "Content-Type": "application/json" }),
-        body: JSON.stringify({ stageNumber }),
-      });
-
-      const payload = (await response.json().catch(() => null)) as QuizSessionPayload | ErrorPayload | null;
+      let payload: QuizSessionPayload | ErrorPayload;
+      try {
+        payload = await fetchJsonWithAuth(
+          withAppBasePath("/api/quiz-sessions"),
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ stageNumber }),
+          },
+          { usingSupabase: auth.usingSupabase, accessToken: auth.accessToken },
+        );
+      } catch (err) {
+        if (cancelled) {
+          return;
+        }
+        setSessionError(err instanceof FetchJsonError ? err.message : "クイズセッションの作成に失敗しました。");
+        setSession(null);
+        setLoadingSession(false);
+        return;
+      }
       if (cancelled) {
         return;
       }
 
-      if (!response.ok || !payload || isErrorPayload(payload)) {
+      if (!payload || isErrorPayload(payload)) {
         setSessionError(isErrorPayload(payload) ? payload.error ?? "クイズセッションの作成に失敗しました。" : "クイズセッションの作成に失敗しました。");
         setSession(null);
         setLoadingSession(false);
@@ -134,7 +150,7 @@ export function QuizScreen() {
     return () => {
       cancelled = true;
     };
-  }, [error, loading, refresh, result, sessionVersion, snapshot, stageNumber]);
+  }, [auth.accessToken, auth.usingSupabase, error, loading, refresh, result, sessionVersion, snapshot, stageNumber]);
 
   useEffect(() => {
     if (!session || result || sessionError || currentIndex < session.questions.length) {
@@ -147,21 +163,33 @@ export function QuizScreen() {
       setSubmittingResult(true);
       setSubmitError(null);
 
-      const response = await fetch("/api/quiz-results", {
-        method: "POST",
-        headers: await buildFreshSupabaseAuthHeaders({ "Content-Type": "application/json" }),
-        body: JSON.stringify({
-          sessionId: activeSession.sessionId,
-          answers,
-        }),
-      });
-
-      const payload = (await response.json().catch(() => null)) as QuizResultPayload | ErrorPayload | null;
+      let payload: QuizResultPayload | ErrorPayload;
+      try {
+        payload = await fetchJsonWithAuth(
+          withAppBasePath("/api/quiz-results"),
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              sessionId: activeSession.sessionId,
+              answers,
+            }),
+          },
+          { usingSupabase: auth.usingSupabase, accessToken: auth.accessToken },
+        );
+      } catch (err) {
+        if (cancelled) {
+          return;
+        }
+        setSubmitError(err instanceof FetchJsonError ? err.message : "クイズ結果の保存に失敗しました。");
+        setSubmittingResult(false);
+        return;
+      }
       if (cancelled) {
         return;
       }
 
-      if (!response.ok || !payload || isErrorPayload(payload)) {
+      if (!payload || isErrorPayload(payload)) {
         setSubmitError(isErrorPayload(payload) ? payload.error ?? "クイズ結果の保存に失敗しました。" : "クイズ結果の保存に失敗しました。");
         setSubmittingResult(false);
         return;
@@ -176,7 +204,7 @@ export function QuizScreen() {
     return () => {
       cancelled = true;
     };
-  }, [answers, currentIndex, refresh, result, session, sessionError]);
+  }, [answers, auth.accessToken, auth.usingSupabase, currentIndex, refresh, result, session, sessionError]);
 
   if (loading) {
     return <ScreenState description="クイズデータを読み込んでいます。" title="読み込み中" />;
@@ -222,21 +250,29 @@ export function QuizScreen() {
     setCheckingAnswer(true);
     setAnswerError(null);
 
-    const response = await fetch("/api/quiz-answer-check", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        sessionId: session.sessionId,
-        questionId: currentQuestion.id,
-        answerIndexes: selectedIndexes,
-        answerProof: currentQuestion.answerProof,
-      }),
-    });
+    let payload: QuizAnswerCheckPayload | ErrorPayload;
+    try {
+      payload = await fetchJsonWithAuth(
+        withAppBasePath("/api/quiz-answer-check"),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sessionId: session.sessionId,
+            questionId: currentQuestion.id,
+            answerIndexes: selectedIndexes,
+            answerProof: currentQuestion.answerProof,
+          }),
+        },
+        { usingSupabase: auth.usingSupabase, accessToken: auth.accessToken },
+      );
+    } catch (err) {
+      setAnswerError(err instanceof FetchJsonError ? err.message : "回答の判定に失敗しました。");
+      setCheckingAnswer(false);
+      return;
+    }
 
-    const payload = (await response.json().catch(() => null)) as QuizAnswerCheckPayload | ErrorPayload | null;
-    if (!response.ok || !payload || isErrorPayload(payload)) {
+    if (!payload || isErrorPayload(payload)) {
       setAnswerError(isErrorPayload(payload) ? payload.error ?? "回答の判定に失敗しました。" : "回答の判定に失敗しました。");
       setCheckingAnswer(false);
       return;
@@ -264,21 +300,23 @@ export function QuizScreen() {
       return;
     }
 
-    const response = await fetch("/api/share-bonuses", {
-      method: "POST",
-      headers: await buildFreshSupabaseAuthHeaders({ "Content-Type": "application/json" }),
-      body: JSON.stringify({
-        targetType: payload.bonusTarget.targetType,
-        targetId: payload.bonusTarget.targetId,
-        channel,
-      }),
-    });
-    const resultPayload = (await response.json().catch(() => null)) as
-      | { error?: string; alreadyClaimed?: boolean; bonusCorrectAnswers?: number }
-      | null;
-
-    if (!response.ok) {
-      window.alert(resultPayload?.error ?? "シェアボーナスの記録に失敗しました。");
+    let resultPayload: { error?: string; alreadyClaimed?: boolean; bonusCorrectAnswers?: number };
+    try {
+      resultPayload = await fetchJsonWithAuth(
+        withAppBasePath("/api/share-bonuses"),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            targetType: payload.bonusTarget.targetType,
+            targetId: payload.bonusTarget.targetId,
+            channel,
+          }),
+        },
+        { usingSupabase: auth.usingSupabase, accessToken: auth.accessToken },
+      );
+    } catch (err) {
+      window.alert(err instanceof FetchJsonError ? err.message : "シェアボーナスの記録に失敗しました。");
       return;
     }
 

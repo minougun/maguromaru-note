@@ -72,6 +72,14 @@ export interface HomeData {
   recentLogs: VisitRecord[];
 }
 
+/** 履歴スコープのページネーション（他スコープでは未設定） */
+export interface HistoryVisitLogsPage {
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  hasMore: boolean;
+}
+
 export interface HistoryData {
   visitCount: number;
   quizStats: QuizStatsSummary;
@@ -79,6 +87,7 @@ export interface HistoryData {
   currentTitle: Title | null;
   logs: VisitRecord[];
   shareBonus: ShareBonusSummary;
+  visitLogsPage?: HistoryVisitLogsPage;
 }
 
 export interface ZukanData {

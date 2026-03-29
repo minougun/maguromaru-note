@@ -78,6 +78,22 @@ export async function buildFreshSupabaseAuthHeaders(headers: HeadersInit = {}) {
 }
 
 /**
+ * 既に `AuthProvider` が持つ `accessToken` を優先し、未取得のときだけ `getSession` する。
+ * 画面からの API 呼び出しでは `buildFreshSupabaseAuthHeaders` の代わりにこちらを使う。
+ */
+export async function getClientAuthHeadersForApi(
+  accessToken: string | null | undefined,
+  usingSupabase: boolean,
+  extra?: HeadersInit,
+): Promise<Headers> {
+  let token = accessToken ?? null;
+  if (!token && usingSupabase) {
+    token = await readSupabaseAccessToken();
+  }
+  return buildSupabaseAuthHeaders(token, extra);
+}
+
+/**
  * Google / Apple OAuth やメール確認の戻り先オリジン。
  * 本番ビルドでは `NEXT_PUBLIC_SITE_URL` に公開 URL（https://…）を必ず入れ、localhost へ飛ばないようにする。
  * 未設定時のみ `window.location.origin`（ローカル開発用）。

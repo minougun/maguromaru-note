@@ -1,8 +1,11 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
+import bundleAnalyzer from "@next/bundle-analyzer";
 import { loadEnvConfig } from "@next/env";
 import type { NextConfig } from "next";
+
+const withBundleAnalyzer = bundleAnalyzer({ enabled: process.env.ANALYZE === "true" });
 
 const projectDir = process.cwd();
 
@@ -82,4 +85,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withBundleAnalyzer(nextConfig);

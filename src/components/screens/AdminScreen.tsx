@@ -2,13 +2,15 @@
 
 import { useEffect, useState } from "react";
 
+import { useAuthState } from "@/components/providers/AuthProvider";
 import { Card } from "@/components/ui/Card";
 import { NorenBanner } from "@/components/ui/NorenBanner";
 import { ScreenState } from "@/components/ui/ScreenState";
 import type { MenuStockStatus } from "@/lib/domain/constants";
 import type { StoreStatus } from "@/lib/domain/types";
 import { useAppSnapshot } from "@/lib/hooks/use-app-snapshot";
-import { buildFreshSupabaseAuthHeaders } from "@/lib/supabase/browser";
+import { FetchJsonError, fetchJsonWithAuth } from "@/lib/http/fetch-json";
+import { withAppBasePath } from "@/lib/public-path";
 import { fetchOsakaHonmachiWeatherSafe } from "@/lib/weather";
 
 type AdminMenuStocks = {
@@ -30,6 +32,7 @@ function normalizeMenuStocks(menuStocks: Record<string, MenuStockStatus>): Admin
 }
 
 export function AdminScreen() {
+  const auth = useAuthState();
   const { snapshot, loading, error, refresh } = useAppSnapshot();
   const [draft, setDraft] = useState<{
     menuStocks: AdminMenuStocks;
@@ -87,27 +90,28 @@ export function AdminScreen() {
   async function handleSave() {
     setSaving(true);
 
-    const response = await fetch("/api/admin/status", {
-      method: "POST",
-      headers: await buildFreshSupabaseAuthHeaders({
-        "Content-Type": "application/json",
-      }),
-      body: JSON.stringify({
-        menuStocks: form.menuStocks,
-        recommendation: form.recommendation,
-        status: form.status,
-        statusNote: form.statusNote,
-        weatherComment: form.weatherComment,
-      }),
-    });
-
-    const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-    setSaving(false);
-
-    if (!response.ok) {
-      window.alert(payload?.error ?? "更新に失敗しました。");
+    try {
+      await fetchJsonWithAuth(
+        withAppBasePath("/api/admin/status"),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            menuStocks: form.menuStocks,
+            recommendation: form.recommendation,
+            status: form.status,
+            statusNote: form.statusNote,
+            weatherComment: form.weatherComment,
+          }),
+        },
+        { usingSupabase: auth.usingSupabase, accessToken: auth.accessToken },
+      );
+    } catch (err) {
+      setSaving(false);
+      window.alert(err instanceof FetchJsonError ? err.message : "更新に失敗しました。");
       return;
     }
+    setSaving(false);
 
     setDraft(null);
     await refresh();

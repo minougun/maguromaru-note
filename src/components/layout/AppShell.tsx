@@ -1,25 +1,33 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useLayoutEffect, useState } from "react";
 
 import { AppHeader } from "@/components/layout/AppHeader";
-import { OnboardingTutorial } from "@/components/onboarding/OnboardingTutorial";
 import { useAuthState } from "@/components/providers/AuthProvider";
 import { LoginScreen } from "@/components/screens/LoginScreen";
 import { ScreenState } from "@/components/ui/ScreenState";
 import { TabBar } from "@/components/ui/TabBar";
 import { markOnboardingDone, readOnboardingDone } from "@/lib/onboarding-storage";
 
+const OnboardingTutorial = dynamic(
+  () => import("@/components/onboarding/OnboardingTutorial").then((m) => ({ default: m.OnboardingTutorial })),
+  { ssr: false, loading: () => null },
+);
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const auth = useAuthState();
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   useLayoutEffect(() => {
+    /* localStorage と認証状態の同期。ルールは意図的に抑止 */
+    /* eslint-disable react-hooks/set-state-in-effect */
     if (!auth.ready || !auth.signedIn) {
       setShowOnboarding(false);
       return;
     }
     setShowOnboarding(!readOnboardingDone());
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [auth.ready, auth.signedIn]);
 
   if (!auth.ready) {

@@ -6,13 +6,24 @@
  * `NEXT_PUBLIC_*` は CI で未設定だとクライアントに埋め込まれないことがあるため、
  * Next が常に置き換える `__NEXT_ROUTER_BASEPATH`（= next.config の basePath）を優先する。
  */
-export function publicPath(path: string): string {
+function appRouterBasePrefix(): string {
   const fromRouter =
     typeof process.env.__NEXT_ROUTER_BASEPATH === "string"
       ? process.env.__NEXT_ROUTER_BASEPATH
       : "";
   const fromPublic = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
-  const base = (fromRouter || fromPublic).replace(/\/$/, "");
+  return (fromRouter || fromPublic).replace(/\/$/, "");
+}
+
+export function publicPath(path: string): string {
+  const base = appRouterBasePrefix();
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  return `${base}${normalized}`;
+}
+
+/** クライアントの `fetch` 用。`basePath` 配下でも `/api/...` が正しく解決される。 */
+export function withAppBasePath(path: string): string {
+  const base = appRouterBasePrefix();
   const normalized = path.startsWith("/") ? path : `/${path}`;
   return `${base}${normalized}`;
 }

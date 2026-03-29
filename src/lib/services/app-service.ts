@@ -33,7 +33,26 @@ import type {
 import { defaultMenuStockById, quizQuestionsPerStage, quizStageCount, type MenuStockStatus } from "@/lib/domain/constants";
 import { seededQuizStats, seededShareBonusEvents, seededStoreStatus } from "@/lib/domain/seed";
 import { applyCustomerFacingStoreAndStock } from "@/lib/domain/store-business-hours";
-import type { SnapshotScope } from "@/lib/domain/snapshot-scope";
+import {
+  HISTORY_SNAPSHOT_DEFAULT_PAGE_SIZE,
+  HISTORY_SNAPSHOT_MAX_PAGE_SIZE,
+  type SnapshotScope,
+} from "@/lib/domain/snapshot-scope";
+
+export type AppSnapshotLoadOptions = {
+  historyVisitPage?: number;
+  historyVisitPageSize?: number;
+};
+
+const VISIT_LOG_COLUMNS =
+  "id, user_id, visited_at, created_at, memo, photo_url, menu_item_id" as const;
+const VISIT_LOG_PART_COLUMNS = "id, visit_log_id, part_id" as const;
+const QUIZ_STATS_COLUMNS =
+  "user_id, total_correct_answers, total_answered_questions, quizzes_completed, best_score, best_question_count" as const;
+const SHARE_BONUS_COLUMNS = "target_type, target_id, bonus_visit_tenths, bonus_correct_tenths" as const;
+const QUIZ_SESSION_PROGRESS_COLUMNS =
+  "submitted_at, question_ids, correct_question_ids, score, question_count" as const;
+const MENU_ITEM_STATUS_COLUMNS = "menu_item_id, status, updated_at" as const;
 import { filterTrackedParts, isTrackedPartId } from "@/lib/domain/tracked-parts";
 import { getAdminEmail, getSupabaseEnv, getSupabaseServiceEnv, hasSupabaseEnv, isMockAllowed } from "@/lib/env";
 import { createMockPhotoUrl, createMockViewerContext, mockMasterData, readMockState, writeMockState } from "@/lib/mock/store";
@@ -336,38 +355,112 @@ async function listMasterData(client?: SupabaseClient<Database>) {
   return listMasterDataPartial(client, true, true);
 }
 
+async function countVisitLogsForUser(client: SupabaseClient<Database>, userId: string): Promise<number> {
+  const { count, error } = await fromAny(client, "visit_logs")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId);
+
+  if (error) {
+    throw new AppServiceError(500, error.message);
+  }
+
+  return count ?? 0;
+}
+
+async function listAllVisitLogPartsForUser(
+  client: SupabaseClient<Database>,
+  userId: string,
+): Promise<Database["public"]["Tables"]["visit_log_parts"]["Row"][]> {
+  const { data: idRows, error: idError } = await fromAny(client, "visit_logs").select("id").eq("user_id", userId);
+
+  if (idError) {
+    throw new AppServiceError(500, idError.message);
+  }
+
+  const ids = ((idRows as { id: string }[] | null) ?? []).map((row) => row.id);
+  if (ids.length === 0) {
+    return [];
+  }
+
+  const chunkSize = 200;
+  const chunks: Database["public"]["Tables"]["visit_log_parts"]["Row"][] = [];
+
+  for (let i = 0; i < ids.length; i += chunkSize) {
+    const slice = ids.slice(i, i + chunkSize);
+    const { data, error } = await fromAny(client, "visit_log_parts")
+      .select(VISIT_LOG_PART_COLUMNS)
+      .in("visit_log_id", slice);
+
+    if (error) {
+      throw new AppServiceError(500, error.message);
+    }
+
+    chunks.push(...((data as Database["public"]["Tables"]["visit_log_parts"]["Row"][] | null) ?? []));
+  }
+
+  return chunks;
+}
+
+type ListVisitDataOptions = {
+  limit?: number;
+  offset?: number;
+  includeTotalCount?: boolean;
+};
+
+type ListVisitDataResult = {
+  visitLogs: Database["public"]["Tables"]["visit_logs"]["Row"][];
+  visitLogParts: Database["public"]["Tables"]["visit_log_parts"]["Row"][];
+  totalCount?: number;
+};
+
 async function listVisitData(
   client: SupabaseClient<Database>,
   userId: string,
-  options?: { limit?: number },
-) {
-  let query = fromAny(client, "visit_logs")
-    .select("*")
+  options?: ListVisitDataOptions,
+): Promise<ListVisitDataResult> {
+  const offset = options?.offset ?? 0;
+  const limit = options?.limit;
+  const includeTotalCount = options?.includeTotalCount === true;
+
+  let listQuery = fromAny(client, "visit_logs")
+    .select(VISIT_LOG_COLUMNS)
     .eq("user_id", userId)
     .order("visited_at", { ascending: false })
     .order("created_at", { ascending: false });
 
-  if (options?.limit != null) {
-    query = query.limit(options.limit);
+  if (limit != null) {
+    const last = offset + limit - 1;
+    listQuery = listQuery.range(offset, last);
+  } else if (offset > 0) {
+    listQuery = listQuery.range(offset, offset + 50_000);
   }
 
-  const { data: visitLogs, error: visitLogsError } = await query;
+  const countPromise = includeTotalCount
+    ? fromAny(client, "visit_logs").select("id", { count: "exact", head: true }).eq("user_id", userId)
+    : Promise.resolve({ count: null, error: null } as { count: number | null; error: { message: string } | null });
+
+  const [{ data: visitLogs, error: visitLogsError }, countResult] = await Promise.all([listQuery, countPromise]);
 
   if (visitLogsError || !visitLogs) {
     throw new AppServiceError(500, visitLogsError?.message ?? "来店記録の取得に失敗しました。");
+  }
+
+  if (countResult.error) {
+    throw new AppServiceError(500, countResult.error.message);
   }
 
   const typedVisitLogs = visitLogs as Database["public"]["Tables"]["visit_logs"]["Row"][];
   const visitLogIds = typedVisitLogs.map((entry) => entry.id);
   if (visitLogIds.length === 0) {
     return {
-      visitLogs: [] as Database["public"]["Tables"]["visit_logs"]["Row"][],
-      visitLogParts: [] as Database["public"]["Tables"]["visit_log_parts"]["Row"][],
+      visitLogs: typedVisitLogs,
+      visitLogParts: [],
+      totalCount: includeTotalCount ? (countResult.count ?? 0) : undefined,
     };
   }
 
   const { data: visitLogParts, error: visitLogPartsError } = await fromAny(client, "visit_log_parts")
-    .select("*")
+    .select(VISIT_LOG_PART_COLUMNS)
     .in("visit_log_id", visitLogIds);
 
   if (visitLogPartsError || !visitLogParts) {
@@ -377,6 +470,7 @@ async function listVisitData(
   return {
     visitLogs: typedVisitLogs,
     visitLogParts: visitLogParts as Database["public"]["Tables"]["visit_log_parts"]["Row"][],
+    totalCount: includeTotalCount ? (countResult.count ?? 0) : undefined,
   };
 }
 
@@ -424,7 +518,7 @@ async function getMenuItemStatuses(client?: SupabaseClient<Database>): Promise<{
     };
   }
 
-  const { data, error } = await fromAny(client, "menu_item_statuses").select("*");
+  const { data, error } = await fromAny(client, "menu_item_statuses").select(MENU_ITEM_STATUS_COLUMNS);
   if (error) {
     throw new AppServiceError(500, error.message);
   }
@@ -568,7 +662,7 @@ async function getQuizStats(client: SupabaseClient<Database> | undefined, userId
   }
 
   const { data, error } = await fromAny(client, "quiz_stats")
-    .select("*")
+    .select(QUIZ_STATS_COLUMNS)
     .eq("user_id", userId)
     .maybeSingle();
 
@@ -576,7 +670,11 @@ async function getQuizStats(client: SupabaseClient<Database> | undefined, userId
     throw new AppServiceError(500, error.message);
   }
 
-  return (data as QuizStatsRow | null) ?? createEmptyQuizStats(userId);
+  const row = data as Partial<QuizStatsRow> | null;
+  if (!row) {
+    return createEmptyQuizStats(userId);
+  }
+  return { ...createEmptyQuizStats(userId), ...row, user_id: userId };
 }
 
 async function getShareBonusEvents(client: SupabaseClient<Database> | undefined, userId: string) {
@@ -586,7 +684,7 @@ async function getShareBonusEvents(client: SupabaseClient<Database> | undefined,
   }
 
   const { data, error } = await fromAny(client, "share_bonus_events")
-    .select("*")
+    .select(SHARE_BONUS_COLUMNS)
     .eq("user_id", userId);
 
   if (error) {
@@ -606,7 +704,7 @@ async function listQuizSessionsForUser(client: SupabaseClient<Database> | undefi
   }
 
   const { data, error } = await fromAny(client, "quiz_sessions")
-    .select("*")
+    .select(QUIZ_SESSION_PROGRESS_COLUMNS)
     .eq("user_id", userId);
 
   if (error) {
@@ -669,6 +767,15 @@ function buildQuizStageProgressSummary(quizSessions: QuizSessionRow[]) {
   };
 }
 
+type SnapshotBuildContext = {
+  /** ページングやホーム用 LIMIT 時の「実来店件数」。未指定時は `visitLogs` の件数を使う */
+  totalVisitLogCount?: number;
+  /** 図鑑集計用。未指定時は `visitLogParts`（＝今回ロードした来店に紐づく部位）を使う */
+  visitLogPartsForCollection?: Database["public"]["Tables"]["visit_log_parts"]["Row"][];
+  /** 履歴スコープのページ情報（1-based） */
+  visitLogsPage?: { page: number; pageSize: number; totalCount: number };
+};
+
 function buildSnapshotFromRecords(
   viewer: ViewerContext,
   parts: Part[],
@@ -681,6 +788,7 @@ function buildSnapshotFromRecords(
   shareBonusEvents: ShareBonusEventRow[],
   visitLogs: Database["public"]["Tables"]["visit_logs"]["Row"][],
   visitLogParts: Database["public"]["Tables"]["visit_log_parts"]["Row"][],
+  buildCtx?: SnapshotBuildContext,
 ): AppSnapshot {
   let homeMenuItemStatuses = menuItemStatuses;
   let homeMenuStockUpdatedAt = menuStockUpdatedAt;
@@ -704,21 +812,33 @@ function buildSnapshotFromRecords(
     new Set(shareBonus.sharedVisitLogIds),
   );
   const trackedParts = filterTrackedParts(parts);
+  const partsForCollection = buildCtx?.visitLogPartsForCollection ?? visitLogParts;
   const collectedPartIds = buildCollectedPartIds(
     trackedParts,
-    visitLogParts.filter((entry) => isTrackedPartId(entry.part_id)),
+    partsForCollection.filter((entry) => isTrackedPartId(entry.part_id)),
   );
   const baseQuizStats = toQuizStatsSummary(quizStatsRow);
   const quizStats = {
     ...baseQuizStats,
     totalCorrectAnswers: baseQuizStats.totalCorrectAnswers + shareBonus.bonusCorrectAnswers,
   };
-  const boostedVisitCount = visitRecords.length + shareBonus.bonusVisitCount;
+  const rawVisitTotal = buildCtx?.totalVisitLogCount ?? visitRecords.length;
+  const boostedVisitCount = rawVisitTotal + shareBonus.bonusVisitCount;
   const currentTitle = getCurrentTitle(
     boostedVisitCount,
     collectedPartIds.length,
     quizStats.totalCorrectAnswers,
   );
+
+  const visitLogsPage =
+    buildCtx?.visitLogsPage != null
+      ? {
+          page: buildCtx.visitLogsPage.page,
+          pageSize: buildCtx.visitLogsPage.pageSize,
+          totalCount: buildCtx.visitLogsPage.totalCount,
+          hasMore: buildCtx.visitLogsPage.page * buildCtx.visitLogsPage.pageSize < buildCtx.visitLogsPage.totalCount,
+        }
+      : undefined;
 
   return {
     viewer,
@@ -738,6 +858,7 @@ function buildSnapshotFromRecords(
       currentTitle,
       logs: visitRecords,
       shareBonus,
+      ...(visitLogsPage ? { visitLogsPage } : {}),
     },
     zukan: {
       collectedPartIds,
@@ -834,7 +955,11 @@ export async function getViewerContextSafe(): Promise<ViewerContext | null> {
   }
 }
 
-export async function getAppSnapshot(accessToken?: string, scope: SnapshotScope = "full"): Promise<AppSnapshot> {
+export async function getAppSnapshot(
+  accessToken?: string,
+  scope: SnapshotScope = "full",
+  options?: AppSnapshotLoadOptions,
+): Promise<AppSnapshot> {
   const plan = SNAPSHOT_FETCH_PLANS[scope];
 
   if (shouldUseMockBackend()) {
@@ -848,6 +973,7 @@ export async function getAppSnapshot(accessToken?: string, scope: SnapshotScope 
     const shareBonusEvents = plan.shareBonus
       ? state.shareBonusEvents.filter((entry) => entry.user_id === viewer.userId)
       : [];
+
     let visitLogs = plan.visits
       ? state.visitLogs
           .filter((visitLog) => visitLog.user_id === viewer.userId)
@@ -856,11 +982,42 @@ export async function getAppSnapshot(accessToken?: string, scope: SnapshotScope 
             return byDate !== 0 ? byDate : right.created_at.localeCompare(left.created_at);
           })
       : [];
-    if (plan.visitFetchLimit != null && visitLogs.length > plan.visitFetchLimit) {
-      visitLogs = visitLogs.slice(0, plan.visitFetchLimit);
+
+    let visitLogParts: Database["public"]["Tables"]["visit_log_parts"]["Row"][] = [];
+    let buildCtx: SnapshotBuildContext | undefined;
+
+    if (plan.visits && scope === "history") {
+      const pageSize = Math.min(
+        options?.historyVisitPageSize ?? HISTORY_SNAPSHOT_DEFAULT_PAGE_SIZE,
+        HISTORY_SNAPSHOT_MAX_PAGE_SIZE,
+      );
+      const page = Math.max(1, options?.historyVisitPage ?? 1);
+      const totalCount = visitLogs.length;
+      const offset = (page - 1) * pageSize;
+      const pageSlice = visitLogs.slice(offset, offset + pageSize);
+      const pageIds = new Set(pageSlice.map((entry) => entry.id));
+      visitLogs = pageSlice;
+      visitLogParts = state.visitLogParts.filter((entry) => pageIds.has(entry.visit_log_id));
+      buildCtx = {
+        totalVisitLogCount: totalCount,
+        visitLogsPage: { page, pageSize, totalCount },
+      };
+    } else if (plan.visits && plan.visitFetchLimit != null) {
+      const totalCount = visitLogs.length;
+      const allIds = new Set(visitLogs.map((entry) => entry.id));
+      const limited = visitLogs.slice(0, plan.visitFetchLimit);
+      const limitedIds = new Set(limited.map((entry) => entry.id));
+      visitLogs = limited;
+      visitLogParts = state.visitLogParts.filter((entry) => limitedIds.has(entry.visit_log_id));
+      buildCtx = {
+        totalVisitLogCount: totalCount,
+        visitLogPartsForCollection: state.visitLogParts.filter((entry) => allIds.has(entry.visit_log_id)),
+      };
+    } else if (plan.visits) {
+      const visitLogIds = new Set(visitLogs.map((entry) => entry.id));
+      visitLogParts = state.visitLogParts.filter((entry) => visitLogIds.has(entry.visit_log_id));
     }
-    const visitLogIds = new Set(visitLogs.map((entry) => entry.id));
-    const visitLogParts = plan.visits ? state.visitLogParts.filter((entry) => visitLogIds.has(entry.visit_log_id)) : [];
+
     const menuBundle = plan.menuBundle ? await getMenuItemStatuses(undefined) : defaultMenuStatusesBundle();
     const storeStatus = plan.store ? state.storeStatus : seededStoreStatus;
     return buildSnapshotFromRecords(
@@ -875,6 +1032,7 @@ export async function getAppSnapshot(accessToken?: string, scope: SnapshotScope 
       shareBonusEvents,
       visitLogs,
       visitLogParts,
+      buildCtx,
     );
   }
 
@@ -883,31 +1041,61 @@ export async function getAppSnapshot(accessToken?: string, scope: SnapshotScope 
     : await getSupabaseContext();
   const serviceRoleClient = snapshotPlanNeedsServiceRole(plan) ? createServiceRoleClient() : null;
 
-  const emptyVisits = {
-    visitLogs: [] as Database["public"]["Tables"]["visit_logs"]["Row"][],
-    visitLogParts: [] as Database["public"]["Tables"]["visit_log_parts"]["Row"][],
-  };
+  const [{ parts, menuItems }, menuBundle, storeStatus, quizStatsRow, quizSessions, shareBonusEvents] = await Promise.all([
+    listMasterDataPartial(client, plan.masterParts, plan.masterMenuItems),
+    plan.menuBundle ? getMenuItemStatuses(client) : Promise.resolve(defaultMenuStatusesBundle()),
+    plan.store ? getStoreStatus(client) : Promise.resolve(seededStoreStatus),
+    plan.quizStats ? getQuizStats(client, viewer.userId) : Promise.resolve(createEmptyQuizStats(viewer.userId)),
+    plan.quizSessions && serviceRoleClient
+      ? listQuizSessionsForUser(serviceRoleClient, viewer.userId)
+      : Promise.resolve([] as QuizSessionRow[]),
+    plan.shareBonus && serviceRoleClient
+      ? getShareBonusEvents(serviceRoleClient, viewer.userId)
+      : Promise.resolve([] as ShareBonusEventRow[]),
+  ]);
 
-  const [{ parts, menuItems }, menuBundle, storeStatus, quizStatsRow, quizSessions, shareBonusEvents, { visitLogs, visitLogParts }] =
-    await Promise.all([
-      listMasterDataPartial(client, plan.masterParts, plan.masterMenuItems),
-      plan.menuBundle ? getMenuItemStatuses(client) : Promise.resolve(defaultMenuStatusesBundle()),
-      plan.store ? getStoreStatus(client) : Promise.resolve(seededStoreStatus),
-      plan.quizStats ? getQuizStats(client, viewer.userId) : Promise.resolve(createEmptyQuizStats(viewer.userId)),
-      plan.quizSessions && serviceRoleClient
-        ? listQuizSessionsForUser(serviceRoleClient, viewer.userId)
-        : Promise.resolve([] as QuizSessionRow[]),
-      plan.shareBonus && serviceRoleClient
-        ? getShareBonusEvents(serviceRoleClient, viewer.userId)
-        : Promise.resolve([] as ShareBonusEventRow[]),
-      plan.visits
-        ? listVisitData(
-            client,
-            viewer.userId,
-            plan.visitFetchLimit != null ? { limit: plan.visitFetchLimit } : undefined,
-          )
-        : Promise.resolve(emptyVisits),
-    ]);
+  let visitLogs: Database["public"]["Tables"]["visit_logs"]["Row"][] = [];
+  let visitLogParts: Database["public"]["Tables"]["visit_log_parts"]["Row"][] = [];
+  let buildCtx: SnapshotBuildContext | undefined;
+
+  if (plan.visits) {
+    if (scope === "history") {
+      const pageSize = Math.min(
+        options?.historyVisitPageSize ?? HISTORY_SNAPSHOT_DEFAULT_PAGE_SIZE,
+        HISTORY_SNAPSHOT_MAX_PAGE_SIZE,
+      );
+      const page = Math.max(1, options?.historyVisitPage ?? 1);
+      const offset = (page - 1) * pageSize;
+      const bundle = await listVisitData(client, viewer.userId, {
+        limit: pageSize,
+        offset,
+        includeTotalCount: true,
+      });
+      visitLogs = bundle.visitLogs;
+      visitLogParts = bundle.visitLogParts;
+      const totalCount = bundle.totalCount ?? 0;
+      buildCtx = {
+        totalVisitLogCount: totalCount,
+        visitLogsPage: { page, pageSize, totalCount },
+      };
+    } else if (plan.visitFetchLimit != null) {
+      const [limitedBundle, totalCount, allParts] = await Promise.all([
+        listVisitData(client, viewer.userId, { limit: plan.visitFetchLimit }),
+        countVisitLogsForUser(client, viewer.userId),
+        listAllVisitLogPartsForUser(client, viewer.userId),
+      ]);
+      visitLogs = limitedBundle.visitLogs;
+      visitLogParts = limitedBundle.visitLogParts;
+      buildCtx = {
+        totalVisitLogCount: totalCount,
+        visitLogPartsForCollection: allParts,
+      };
+    } else {
+      const full = await listVisitData(client, viewer.userId);
+      visitLogs = full.visitLogs;
+      visitLogParts = full.visitLogParts;
+    }
+  }
 
   return buildSnapshotFromRecords(
     viewer,
@@ -921,6 +1109,7 @@ export async function getAppSnapshot(accessToken?: string, scope: SnapshotScope 
     shareBonusEvents,
     visitLogs,
     visitLogParts,
+    buildCtx,
   );
 }
 
@@ -1586,7 +1775,7 @@ export async function claimShareBonus(input: unknown, accessToken?: string) {
       bonus_correct_tenths: 0,
     };
   } else {
-    let quizSessionResult = await fromAny(client, "quiz_sessions")
+    const quizSessionResult = await fromAny(client, "quiz_sessions")
       .select("id, submitted_at, score")
       .eq("id", parsed.targetId)
       .eq("user_id", viewer.userId)

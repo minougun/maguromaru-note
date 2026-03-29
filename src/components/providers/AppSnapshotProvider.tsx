@@ -1,12 +1,27 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 import { useAuthState } from "@/components/providers/AuthProvider";
+import {
+  HISTORY_SNAPSHOT_DEFAULT_PAGE_SIZE,
+  snapshotScopeForPathname,
+} from "@/lib/domain/snapshot-scope";
 import type { AppSnapshot } from "@/lib/domain/types";
+import { withAppBasePath } from "@/lib/public-path";
 import { buildSupabaseAuthHeaders, readSupabaseAccessToken } from "@/lib/supabase/browser";
 
-const SNAPSHOT_URL = "/api/app-snapshot";
+function buildSnapshotRequestUrl(pathname: string | null): string {
+  const scope = snapshotScopeForPathname(pathname);
+  const params = new URLSearchParams();
+  params.set("scope", scope);
+  if (scope === "history") {
+    params.set("history_visit_page", "1");
+    params.set("history_visit_page_size", String(HISTORY_SNAPSHOT_DEFAULT_PAGE_SIZE));
+  }
+  return `${withAppBasePath("/api/app-snapshot")}?${params.toString()}`;
+}
 
 /** 連携完了など、フックの外からスナップショット再取得を依頼するときに使う */
 export const APP_SNAPSHOT_REFRESH_EVENT = "maguro-app-snapshot-refresh";
@@ -28,6 +43,7 @@ const AppSnapshotContext = createContext<AppSnapshotContextValue | null>(null);
 
 export function AppSnapshotProvider({ children }: { children: React.ReactNode }) {
   const auth = useAuthState();
+  const pathname = usePathname();
   const [snapshot, setSnapshot] = useState<AppSnapshot | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,6 +67,7 @@ export function AppSnapshotProvider({ children }: { children: React.ReactNode })
 
     let cancelled = false;
     const abortController = new AbortController();
+    const snapshotUrl = buildSnapshotRequestUrl(pathname);
 
     async function loadSnapshot() {
       setLoading(true);
@@ -69,7 +86,7 @@ export function AppSnapshotProvider({ children }: { children: React.ReactNode })
 
         let response: Response;
         try {
-          response = await fetch(SNAPSHOT_URL, fetchInit);
+          response = await fetch(snapshotUrl, fetchInit);
         } catch (err) {
           if (err instanceof DOMException && err.name === "AbortError") {
             return;
@@ -81,7 +98,7 @@ export function AppSnapshotProvider({ children }: { children: React.ReactNode })
           const retryToken = await readSupabaseAccessToken();
           if (retryToken && retryToken !== initialToken) {
             try {
-              response = await fetch(SNAPSHOT_URL, {
+              response = await fetch(snapshotUrl, {
                 ...fetchInit,
                 headers: buildSupabaseAuthHeaders(retryToken),
               });
@@ -129,7 +146,7 @@ export function AppSnapshotProvider({ children }: { children: React.ReactNode })
       cancelled = true;
       abortController.abort();
     };
-  }, [auth.accessToken, auth.error, auth.ready, auth.signedIn, auth.usingSupabase, refreshToken]);
+  }, [auth.accessToken, auth.error, auth.ready, auth.signedIn, auth.usingSupabase, pathname, refreshToken]);
 
   const refresh = useCallback(() => {
     setRefreshToken((current) => current + 1);
@@ -163,8 +180,8 @@ export function AppSnapshotProvider({ children }: { children: React.ReactNode })
   return <AppSnapshotContext.Provider value={value}>{children}</AppSnapshotContext.Provider>;
 }
 
-/** ログイン後にフルスナップショットを1回取得し、アプリ全体で共有する。`scope` は互換のため受け取れるが無視される。 */
-export function useAppSnapshot(_options?: { scope?: string }) {
+/** ログイン後にスナップショットを取得し共有する。`scope` は現在のパスから自動決定（`/api/app-snapshot?scope=`）。 */
+export function useAppSnapshot() {
   const ctx = useContext(AppSnapshotContext);
   if (!ctx) {
     throw new Error("useAppSnapshot は AppSnapshotProvider 内で使ってください。");

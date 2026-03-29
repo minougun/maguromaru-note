@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 
+import { useAuthState } from "@/components/providers/AuthProvider";
 import { ShareBonusCallout } from "@/components/share/ShareBonusCallout";
 import { ShareModalDynamic } from "@/components/share/ShareModalDynamic";
 import { Card } from "@/components/ui/Card";
@@ -12,8 +13,9 @@ import { SectionTitle } from "@/components/ui/SectionTitle";
 import { getDefaultPartIdsForMenuItem } from "@/lib/domain/menu-part-defaults";
 import type { MenuItemId, PartId, VisitRecord } from "@/lib/domain/types";
 import { useAppSnapshot } from "@/lib/hooks/use-app-snapshot";
+import { FetchJsonError, fetchJsonWithAuth } from "@/lib/http/fetch-json";
+import { withAppBasePath } from "@/lib/public-path";
 import { buildRecordShare, type SharePayload } from "@/lib/share/share";
-import { buildFreshSupabaseAuthHeaders } from "@/lib/supabase/browser";
 import { formatCount } from "@/lib/utils/format";
 import { resizeImageToDataUrl } from "@/lib/utils/image";
 
@@ -22,6 +24,7 @@ function todayString() {
 }
 
 export function RecordScreen() {
+  const auth = useAuthState();
   const { snapshot, loading, error, refresh } = useAppSnapshot();
   const [selectedMenuItemId, setSelectedMenuItemId] = useState<MenuItemId | null>(null);
   const [selectedPartIds, setSelectedPartIds] = useState<Set<PartId>>(new Set());
@@ -89,21 +92,25 @@ export function RecordScreen() {
     setSubmitting(true);
     setSubmitError(null);
 
-    const response = await fetch("/api/visit-logs", {
-      method: "POST",
-      headers: await buildFreshSupabaseAuthHeaders({ "Content-Type": "application/json" }),
-      body: JSON.stringify({
-        visitedAt: todayString(),
-        menuItemId: selectedMenuItemId,
-        partIds: [...selectedPartIds],
-        memo,
-        photoDataUrl,
-      }),
-    });
-
-    const payload = (await response.json().catch(() => null)) as { error?: string; record?: VisitRecord } | null;
-    if (!response.ok) {
-      setSubmitError(payload?.error ?? "記録に失敗しました。");
+    let payload: { error?: string; record?: VisitRecord };
+    try {
+      payload = await fetchJsonWithAuth(
+        withAppBasePath("/api/visit-logs"),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            visitedAt: todayString(),
+            menuItemId: selectedMenuItemId,
+            partIds: [...selectedPartIds],
+            memo,
+            photoDataUrl,
+          }),
+        },
+        { usingSupabase: auth.usingSupabase, accessToken: auth.accessToken },
+      );
+    } catch (err) {
+      setSubmitError(err instanceof FetchJsonError ? err.message : "記録に失敗しました。");
       setSubmitting(false);
       return;
     }
@@ -125,21 +132,23 @@ export function RecordScreen() {
       return;
     }
 
-    const response = await fetch("/api/share-bonuses", {
-      method: "POST",
-      headers: await buildFreshSupabaseAuthHeaders({ "Content-Type": "application/json" }),
-      body: JSON.stringify({
-        targetType: payload.bonusTarget.targetType,
-        targetId: payload.bonusTarget.targetId,
-        channel,
-      }),
-    });
-    const result = (await response.json().catch(() => null)) as
-      | { error?: string; alreadyClaimed?: boolean; bonusVisitCount?: number }
-      | null;
-
-    if (!response.ok) {
-      window.alert(result?.error ?? "シェアボーナスの記録に失敗しました。");
+    let result: { error?: string; alreadyClaimed?: boolean; bonusVisitCount?: number };
+    try {
+      result = await fetchJsonWithAuth(
+        withAppBasePath("/api/share-bonuses"),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            targetType: payload.bonusTarget.targetType,
+            targetId: payload.bonusTarget.targetId,
+            channel,
+          }),
+        },
+        { usingSupabase: auth.usingSupabase, accessToken: auth.accessToken },
+      );
+    } catch (err) {
+      window.alert(err instanceof FetchJsonError ? err.message : "シェアボーナスの記録に失敗しました。");
       return;
     }
 

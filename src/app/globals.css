@@ -341,6 +341,12 @@ body {
   gap: 14px;
 }
 
+.history-load-more {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+}
+
 .weather-bar {
   display: flex;
   justify-content: space-between;
