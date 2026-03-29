@@ -73,7 +73,7 @@ function isErrorPayload(value: unknown): value is ErrorPayload {
 }
 
 export function QuizScreen() {
-  const { snapshot, loading, error, refresh } = useAppSnapshot();
+  const { snapshot, loading, error, refresh } = useAppSnapshot({ scope: "quiz" });
   const [stageNumber, setStageNumber] = useState(1);
   const [sessionVersion, setSessionVersion] = useState(1);
   const [session, setSession] = useState<QuizSessionPayload | null>(null);

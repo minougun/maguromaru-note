@@ -3,10 +3,12 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { useAuthState } from "@/components/providers/AuthProvider";
+import type { SnapshotScope } from "@/lib/domain/snapshot-scope";
 import type { AppSnapshot } from "@/lib/domain/types";
 import { buildSupabaseAuthHeaders, readSupabaseAccessToken } from "@/lib/supabase/browser";
 
-export function useAppSnapshot() {
+export function useAppSnapshot(options?: { scope?: SnapshotScope }) {
+  const scope = options?.scope ?? "full";
   const auth = useAuthState();
   const [snapshot, setSnapshot] = useState<AppSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
@@ -36,7 +38,10 @@ export function useAppSnapshot() {
         ? auth.accessToken ?? (await readSupabaseAccessToken())
         : auth.accessToken;
 
-      let response = await fetch("/api/app-snapshot", {
+      const snapshotUrl =
+        scope === "full" ? "/api/app-snapshot" : `/api/app-snapshot?scope=${encodeURIComponent(scope)}`;
+
+      let response = await fetch(snapshotUrl, {
         cache: "no-store",
         headers: buildSupabaseAuthHeaders(initialToken),
       });
@@ -44,7 +49,7 @@ export function useAppSnapshot() {
       if (response.status === 401 && auth.usingSupabase) {
         const retryToken = await readSupabaseAccessToken();
         if (retryToken && retryToken !== initialToken) {
-          response = await fetch("/api/app-snapshot", {
+          response = await fetch(snapshotUrl, {
             cache: "no-store",
             headers: buildSupabaseAuthHeaders(retryToken),
           });
@@ -71,7 +76,7 @@ export function useAppSnapshot() {
     return () => {
       cancelled = true;
     };
-  }, [auth.accessToken, auth.error, auth.ready, auth.signedIn, auth.usingSupabase, refreshToken]);
+  }, [auth.accessToken, auth.error, auth.ready, auth.signedIn, auth.usingSupabase, refreshToken, scope]);
 
   const refresh = useCallback(() => {
     setRefreshToken((current) => current + 1);
