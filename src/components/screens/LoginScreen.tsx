@@ -86,14 +86,6 @@ export function LoginScreen() {
     return (
       <div className="login-launch">
         <div className="login-launch-inner">
-          <div className="login-launch-brand">
-            <div className="login-launch-logo" aria-hidden="true">
-              まぐろ
-              <br />
-              丸
-            </div>
-            <h1 className="login-launch-title">まぐろ丸ノート</h1>
-          </div>
           {(formError || notice) && (
             <p
               className={
