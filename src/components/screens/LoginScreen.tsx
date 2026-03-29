@@ -86,51 +86,53 @@ export function LoginScreen() {
   if (mode === "choose") {
     return (
       <div className="login-launch">
-        <div className="login-launch-icon-stage">
-          <div className="login-launch-mark-frame">
-            <Image
-              alt=""
-              className="login-launch-mark-img"
-              fill
-              priority
-              sizes="100vw"
-              src="/brand/login-launch-mark.webp"
-              style={{ objectFit: "contain" }}
-            />
+        <div className="login-launch-body">
+          <div className="login-launch-icon-stage">
+            <div className="login-launch-mark-frame">
+              <Image
+                alt=""
+                className="login-launch-mark-img"
+                fill
+                priority
+                sizes="100vw"
+                src="/brand/login-launch-mark.webp"
+                style={{ objectFit: "contain" }}
+              />
+            </div>
           </div>
-        </div>
-        <div className="login-launch-inner">
-          {(formError || notice) && (
-            <p
-              className={
-                formError ? "login-launch-flash login-launch-flash--error" : "login-launch-flash login-launch-flash--ok"
-              }
-              role={formError ? "alert" : "status"}
-            >
-              {formError ?? notice}
-            </p>
-          )}
-          <div className="login-launch-actions">
-            <button
-              className="login-launch-btn login-launch-btn--primary"
-              disabled={pendingAction !== null}
-              onClick={() => void handleStartAnonymous()}
-              type="button"
-            >
-              {pendingAction === "anonymous" ? "準備中…" : "今すぐはじめる"}
-            </button>
-            <button
-              className="login-launch-btn login-launch-btn--secondary"
-              disabled={pendingAction !== null}
-              onClick={() => {
-                setMode("signin");
-                setNotice(null);
-                setFormError(null);
-              }}
-              type="button"
-            >
-              サインイン
-            </button>
+          <div className="login-launch-inner">
+            {(formError || notice) && (
+              <p
+                className={
+                  formError ? "login-launch-flash login-launch-flash--error" : "login-launch-flash login-launch-flash--ok"
+                }
+                role={formError ? "alert" : "status"}
+              >
+                {formError ?? notice}
+              </p>
+            )}
+            <div className="login-launch-actions">
+              <button
+                className="login-launch-btn login-launch-btn--primary"
+                disabled={pendingAction !== null}
+                onClick={() => void handleStartAnonymous()}
+                type="button"
+              >
+                {pendingAction === "anonymous" ? "準備中…" : "今すぐはじめる"}
+              </button>
+              <button
+                className="login-launch-btn login-launch-btn--secondary"
+                disabled={pendingAction !== null}
+                onClick={() => {
+                  setMode("signin");
+                  setNotice(null);
+                  setFormError(null);
+                }}
+                type="button"
+              >
+                サインイン
+              </button>
+            </div>
           </div>
         </div>
       </div>
