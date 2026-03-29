@@ -11,6 +11,7 @@ import {
   clearAuthCallbackQueryParams,
   readAuthCallbackErrorMessage,
   readAuthCallbackNotice,
+  readLinkedFlowMessages,
 } from "@/lib/auth-callback-ui";
 import {
   requestEmailSignInOtp,
@@ -47,8 +48,14 @@ export function LoginScreen() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (readAuthCallbackNotice(params) === "linked") {
-      setNotice("アカウント連携が完了しました。");
-      setFormError(null);
+      const { notice, error } = readLinkedFlowMessages(params);
+      if (error) {
+        setFormError(error);
+        setNotice(null);
+      } else if (notice) {
+        setNotice(notice);
+        setFormError(null);
+      }
       clearAuthCallbackQueryParams();
       return;
     }

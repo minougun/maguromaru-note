@@ -230,19 +230,20 @@ export function readStoredAnonymousLinkNonce(): string | null {
   }
 }
 
-async function prepareAnonymousLinkNonceOnServer(accessToken: string): Promise<string> {
+/** 匿名連携用 nonce を HttpOnly Cookie に載せる（OAuth / メール確認のコールバックで complete する）。 */
+async function ensureAnonymousLinkPrepareCookie(accessToken: string): Promise<void> {
   const res = await fetch(`${window.location.origin}/api/auth/anonymous-link/prepare`, {
     method: "POST",
+    credentials: "include",
     headers: buildSupabaseAuthHeaders(accessToken, { "Cache-Control": "no-store" }),
   });
-  const body = (await res.json().catch(() => ({}))) as { nonce?: string; error?: string };
+  const body = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
   if (!res.ok) {
     throw new Error(body.error ?? "連携の準備に失敗しました。");
   }
-  if (!body.nonce) {
+  if (body.ok !== true) {
     throw new Error("連携の準備に失敗しました。");
   }
-  return body.nonce;
 }
 
 /**
@@ -265,8 +266,7 @@ export async function startAnonymousGoogleLinkFlow(nextPath = "/") {
     throw new Error("匿名セッションでのみこの手順を使えます。");
   }
 
-  const nonce = await prepareAnonymousLinkNonceOnServer(session.access_token);
-  sessionStorage.setItem(ANON_LINK_NONCE_STORAGE_KEY, nonce);
+  await ensureAnonymousLinkPrepareCookie(session.access_token);
 
   const { data, error } = await client.auth.signInWithOAuth({
     provider: "google",
@@ -302,8 +302,7 @@ export async function startAnonymousAppleLinkFlow(nextPath = "/") {
     throw new Error("匿名セッションでのみこの手順を使えます。");
   }
 
-  const nonce = await prepareAnonymousLinkNonceOnServer(session.access_token);
-  sessionStorage.setItem(ANON_LINK_NONCE_STORAGE_KEY, nonce);
+  await ensureAnonymousLinkPrepareCookie(session.access_token);
 
   const { data, error } = await client.auth.signInWithOAuth({
     provider: "apple",
@@ -452,6 +451,13 @@ export async function requestEmailLinkConfirmation(email: string, nextPath = "/m
   const client = getSupabaseBrowserClient();
   if (!client) {
     throw new Error("Supabase が設定されていません。");
+  }
+
+  const {
+    data: { session },
+  } = await client.auth.getSession();
+  if (session?.user.is_anonymous && session.access_token) {
+    await ensureAnonymousLinkPrepareCookie(session.access_token);
   }
 
   const parsed = parseAuthEmail(email);

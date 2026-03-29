@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/Card";
 import { NorenBanner } from "@/components/ui/NorenBanner";
 import { ScreenState } from "@/components/ui/ScreenState";
 import { SectionTitle } from "@/components/ui/SectionTitle";
+import { clearAuthCallbackQueryParams } from "@/lib/auth-callback-ui";
 import { menuStockLabels, type MenuStockStatus } from "@/lib/domain/constants";
 import type { VisitRecord } from "@/lib/domain/types";
 import { useAppSnapshot } from "@/lib/hooks/use-app-snapshot";
@@ -47,7 +48,7 @@ export function HomeScreen() {
     const params = new URLSearchParams(window.location.search);
     const auth = params.get("auth");
     if (auth === "linked" || auth === "error") {
-      window.history.replaceState({}, "", window.location.pathname);
+      clearAuthCallbackQueryParams();
     }
   }, []);
 

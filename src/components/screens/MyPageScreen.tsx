@@ -9,14 +9,16 @@ import { requestAppSnapshotRefresh } from "@/components/providers/AppSnapshotPro
 import { useAuthState } from "@/components/providers/AuthProvider";
 import { Card } from "@/components/ui/Card";
 import { NorenBanner } from "@/components/ui/NorenBanner";
-import { clearAuthCallbackQueryParams, readAuthCallbackErrorMessage } from "@/lib/auth-callback-ui";
+import {
+  clearAuthCallbackQueryParams,
+  readAuthCallbackErrorMessage,
+  readLinkedFlowMessages,
+} from "@/lib/auth-callback-ui";
 import { formatSupabaseAuthError } from "@/lib/supabase/auth-errors";
 import {
   type BrowserAuthProfile,
   clearStoredAnonymousLinkNonce,
   getSupabaseAuthProfile,
-  readStoredAnonymousLinkNonce,
-  readSupabaseAccessToken,
   requestEmailLinkConfirmation,
   signOutSupabase,
   startAnonymousAppleLinkFlow,
@@ -69,58 +71,23 @@ export function MyPageScreen() {
 
     if (authResult === "error") {
       setLinkError(readAuthCallbackErrorMessage(params) ?? "認証のコールバックに失敗しました。");
+      clearStoredAnonymousLinkNonce();
       clearAuthCallbackQueryParams();
       return;
     }
 
-    void (async () => {
-      const nonce = readStoredAnonymousLinkNonce();
-      window.history.replaceState({}, "", window.location.pathname);
-
-      if (nonce) {
-        let token: string | null = null;
-        for (let attempt = 0; attempt < 6; attempt++) {
-          token = await readSupabaseAccessToken();
-          if (token) {
-            break;
-          }
-          await new Promise((r) => setTimeout(r, 120));
-        }
-
-        if (!token) {
-          setLinkError("セッションの確立を待てませんでした。再読み込みしてください。");
-          clearStoredAnonymousLinkNonce();
-        } else {
-          try {
-            const res = await fetch(`${window.location.origin}/api/auth/anonymous-link/complete`, {
-              body: JSON.stringify({ nonce }),
-              headers: {
-                Authorization: `Bearer ${token}`,
-                "Cache-Control": "no-store",
-                "Content-Type": "application/json",
-              },
-              method: "POST",
-            });
-            const body = (await res.json().catch(() => ({}))) as { error?: string };
-            if (!res.ok) {
-              throw new Error(body.error ?? "データの引き継ぎに失敗しました。");
-            }
-            setLinkNotice("アカウント連携が完了しました。");
-            setLinkError(null);
-          } catch (err) {
-            setLinkError(profileErrorMessage(err));
-          } finally {
-            clearStoredAnonymousLinkNonce();
-          }
-        }
-      } else {
-        setLinkNotice("アカウント連携が完了しました。");
-        setLinkError(null);
-      }
-
-      void loadProfile();
-      requestAppSnapshotRefresh();
-    })();
+    const { notice, error } = readLinkedFlowMessages(params);
+    if (error) {
+      setLinkError(error);
+      setLinkNotice(null);
+    } else if (notice) {
+      setLinkNotice(notice);
+      setLinkError(null);
+    }
+    clearStoredAnonymousLinkNonce();
+    clearAuthCallbackQueryParams();
+    void loadProfile();
+    requestAppSnapshotRefresh();
   }, [loadProfile]);
 
   useEffect(() => {

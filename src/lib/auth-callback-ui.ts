@@ -3,10 +3,35 @@
  * Supabase は失敗時に `error` / `error_description` を付けることがある。
  */
 
-const AUTH_QUERY_KEYS = ["auth", "auth_err", "error", "error_description", "error_code"] as const;
+const AUTH_QUERY_KEYS = [
+  "auth",
+  "auth_err",
+  "anon_link_warn",
+  "error",
+  "error_description",
+  "error_code",
+] as const;
 
 export function readAuthCallbackNotice(params: URLSearchParams): "linked" | null {
   return params.get("auth") === "linked" ? "linked" : null;
+}
+
+/** `auth=linked` 時の表示文言（クエリ掃除前に呼ぶ）。 */
+export function readLinkedFlowMessages(params: URLSearchParams): {
+  notice: string | null;
+  error: string | null;
+} {
+  if (params.get("auth") !== "linked") {
+    return { notice: null, error: null };
+  }
+  if (params.get("anon_link_warn") === "migration_failed") {
+    return {
+      notice: null,
+      error:
+        "サインインは完了しましたが、以前のデータの引き継ぎに失敗しました。お手数ですがサポートまでご連絡ください。",
+    };
+  }
+  return { notice: "アカウント連携が完了しました。", error: null };
 }
 
 export function readAuthCallbackErrorMessage(params: URLSearchParams): string | null {

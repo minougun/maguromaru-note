@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { setAnonLinkNonceCookie } from "@/lib/anonymous-link-cookie";
 import { hasSupabaseServiceEnv, verifyCsrfOrigin } from "@/lib/env";
 import { prepareAnonymousLinkNonce } from "@/lib/services/anonymous-link-service";
 import { getAccessTokenFromRequest, toRouteError } from "@/lib/services/app-service";
@@ -18,12 +19,17 @@ export async function POST(request: Request) {
     }
 
     const token = getAccessTokenFromRequest(request);
-    const result = await prepareAnonymousLinkNonce(token);
-    return NextResponse.json(result, {
-      headers: {
-        "Cache-Control": "no-store",
+    const { nonce } = await prepareAnonymousLinkNonce(token);
+    const res = NextResponse.json(
+      { ok: true as const },
+      {
+        headers: {
+          "Cache-Control": "no-store",
+        },
       },
-    });
+    );
+    setAnonLinkNonceCookie(res, nonce);
+    return res;
   } catch (error) {
     const routeError = toRouteError(error);
     return NextResponse.json({ error: routeError.message }, { status: routeError.status });
