@@ -14,7 +14,7 @@ import { useAppSnapshot } from "@/lib/hooks/use-app-snapshot";
 import { buildPastLogShare, type SharePayload } from "@/lib/share/share";
 import { fetchOsakaHonmachiWeatherSafe } from "@/lib/weather";
 
-function storeStatusMeta(status: "open" | "busy" | "closing_soon" | "closed") {
+function storeStatusMeta(status: "open" | "busy" | "closing_soon" | "closed" | "unset") {
   switch (status) {
     case "open":
       return { label: "営業中", className: "badge badge-open" };
@@ -24,16 +24,18 @@ function storeStatusMeta(status: "open" | "busy" | "closing_soon" | "closed") {
       return { label: "まもなく終了", className: "badge badge-closing" };
     case "closed":
       return { label: "本日終了", className: "badge badge-closed" };
+    case "unset":
+      return { label: "未設定", className: "badge badge-unset" };
   }
 }
 
 function menuItemStock(
   itemId: string,
-  status: "open" | "busy" | "closing_soon" | "closed",
+  status: "open" | "busy" | "closing_soon" | "closed" | "unset",
   menuItemStatuses: Record<string, MenuStockStatus>,
 ): MenuStockStatus {
   if (status === "closed") return "soldout";
-  return menuItemStatuses[itemId] ?? "available";
+  return menuItemStatuses[itemId] ?? "unset";
 }
 
 export function HomeScreen() {

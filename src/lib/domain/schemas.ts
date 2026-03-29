@@ -30,7 +30,7 @@ function isValidIsoDate(value: string) {
 export const menuItemIdSchema = z.enum(menuItemIds);
 export const partIdSchema = z.enum(partIds);
 export const storeStatusSchema = z.enum(storeStatuses);
-export const menuStockStatusSchema = z.enum(["available", "few", "soldout"]);
+export const menuStockStatusSchema = z.enum(["available", "few", "soldout", "unset"]);
 export const authEmailSchema = z.email("メールアドレスの形式が不正です。").trim().max(254);
 export const authPasswordSchema = z
   .string()

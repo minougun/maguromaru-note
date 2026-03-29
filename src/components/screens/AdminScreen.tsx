@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { NorenBanner } from "@/components/ui/NorenBanner";
 import { ScreenState } from "@/components/ui/ScreenState";
 import type { MenuStockStatus } from "@/lib/domain/constants";
+import type { StoreStatus } from "@/lib/domain/types";
 import { useAppSnapshot } from "@/lib/hooks/use-app-snapshot";
 import { buildFreshSupabaseAuthHeaders } from "@/lib/supabase/browser";
 import { fetchOsakaHonmachiWeatherSafe } from "@/lib/weather";
@@ -19,10 +20,10 @@ type AdminMenuStocks = {
 
 function normalizeMenuStocks(menuStocks: Record<string, MenuStockStatus>): AdminMenuStocks {
   return {
-    maguro_don: menuStocks.maguro_don ?? "available",
-    maguro_don_mini: menuStocks.maguro_don_mini ?? "available",
-    tokujo_don: menuStocks.tokujo_don ?? "few",
-    tokujo_don_mini: menuStocks.tokujo_don_mini ?? "soldout",
+    maguro_don: menuStocks.maguro_don ?? "unset",
+    maguro_don_mini: menuStocks.maguro_don_mini ?? "unset",
+    tokujo_don: menuStocks.tokujo_don ?? "unset",
+    tokujo_don_mini: menuStocks.tokujo_don_mini ?? "unset",
   };
 }
 
@@ -31,7 +32,7 @@ export function AdminScreen() {
   const [draft, setDraft] = useState<{
     menuStocks: AdminMenuStocks;
     recommendation: string;
-    status: "open" | "busy" | "closing_soon" | "closed";
+    status: StoreStatus["status"];
     statusNote: string;
     weatherComment: string;
   } | null>(null);
@@ -130,6 +131,7 @@ export function AdminScreen() {
           営業状況
           <div className="admin-actions">
             {[
+              { value: "unset", label: "未設定" },
               { value: "open", label: "営業中" },
               { value: "busy", label: "混雑中" },
               { value: "closing_soon", label: "まもなく終了" },
@@ -139,7 +141,7 @@ export function AdminScreen() {
                 className="button-choice"
                 data-active={form.status === item.value}
                 key={item.value}
-                onClick={() => setDraft({ ...form, status: item.value as typeof form.status })}
+                onClick={() => setDraft({ ...form, status: item.value as StoreStatus["status"] })}
                 type="button"
               >
                 {item.label}
@@ -169,6 +171,7 @@ export function AdminScreen() {
                   {(() => {
                     const menuItemId = item.id as keyof AdminMenuStocks;
                     return [
+                      { value: "unset", label: "未設定" },
                       { value: "available", label: "あり" },
                       { value: "few", label: "残りわずか" },
                       { value: "soldout", label: "終了" },

@@ -26,22 +26,23 @@ export const menuItemIds = [
   "tokujo_don_mini",
 ] as const;
 
-export type MenuStockStatus = "available" | "few" | "soldout";
+export type MenuStockStatus = "available" | "few" | "soldout" | "unset";
 
 export const menuStockLabels: Record<MenuStockStatus, { text: string; className: string }> = {
   available: { text: "◎ あり", className: "badge badge-available" },
   few: { text: "△ 残りわずか", className: "badge badge-few" },
   soldout: { text: "✕ 終了", className: "badge badge-soldout" },
+  unset: { text: "— 未設定", className: "badge badge-unset" },
 };
 
 export const defaultMenuStockById: Record<(typeof menuItemIds)[number], MenuStockStatus> = {
-  maguro_don: "available",
-  maguro_don_mini: "available",
-  tokujo_don: "few",
-  tokujo_don_mini: "soldout",
+  maguro_don: "unset",
+  maguro_don_mini: "unset",
+  tokujo_don: "unset",
+  tokujo_don_mini: "unset",
 };
 
-export const storeStatuses = ["open", "busy", "closing_soon", "closed"] as const;
+export const storeStatuses = ["open", "busy", "closing_soon", "closed", "unset"] as const;
 export const quizQuestionsPerStage = 10;
 export const quizStageCount = 100;
 export const quizStagesPerTier = 20;

@@ -257,6 +257,11 @@ body {
   color: #bbb;
 }
 
+.badge-unset {
+  background: #5a5347;
+  color: #e8e4dc;
+}
+
 .badge-open {
   background: #1e6b3a;
   color: #e8ffe8;

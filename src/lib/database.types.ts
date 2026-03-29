@@ -42,12 +42,12 @@ export interface Database {
       menu_item_statuses: {
         Row: {
           menu_item_id: string;
-          status: "available" | "few" | "soldout";
+          status: "available" | "few" | "soldout" | "unset";
           updated_at: string;
         };
         Insert: {
           menu_item_id: string;
-          status?: "available" | "few" | "soldout";
+          status?: "available" | "few" | "soldout" | "unset";
           updated_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["menu_item_statuses"]["Insert"]>;
@@ -93,7 +93,7 @@ export interface Database {
         Row: {
           id: number;
           recommendation: string;
-          status: "open" | "busy" | "closing_soon" | "closed";
+          status: "open" | "busy" | "closing_soon" | "closed" | "unset";
           status_note: string;
           weather_comment: string;
           updated_at: string;
@@ -101,7 +101,7 @@ export interface Database {
         Insert: {
           id?: number;
           recommendation?: string;
-          status?: "open" | "busy" | "closing_soon" | "closed";
+          status?: "open" | "busy" | "closing_soon" | "closed" | "unset";
           status_note?: string;
           weather_comment?: string;
           updated_at?: string;

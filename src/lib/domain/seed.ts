@@ -34,19 +34,15 @@ export const seededMenuItems: MenuItem[] = [
 
 export const seededStoreStatus: StoreStatus = {
   id: 1,
-  recommendation: "今日はまぐろ丼の赤身の状態がかなり良いです。",
-  status: "open",
-  status_note: "赤身たっぷりで営業中",
-  weather_comment: "本町で営業中",
+  recommendation: "",
+  status: "unset",
+  status_note: "",
+  weather_comment: "",
   updated_at: "2026-03-28T12:34:00.000Z",
 };
 
-export const seededMenuItemStatuses: MenuItemStatusRow[] = [
-  { menu_item_id: "maguro_don", status: "available", updated_at: "2026-03-28T12:34:00.000Z" },
-  { menu_item_id: "maguro_don_mini", status: "available", updated_at: "2026-03-28T12:34:00.000Z" },
-  { menu_item_id: "tokujo_don", status: "few", updated_at: "2026-03-28T12:34:00.000Z" },
-  { menu_item_id: "tokujo_don_mini", status: "soldout", updated_at: "2026-03-28T12:34:00.000Z" },
-];
+/** モックでは DB と同様、行が無い＝defaultMenuStockById（すべて unset）で解決 */
+export const seededMenuItemStatuses: MenuItemStatusRow[] = [];
 
 export const seededQuizStats: QuizStatsRow = {
   user_id: MOCK_USER_ID,
