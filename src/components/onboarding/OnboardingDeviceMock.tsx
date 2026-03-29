@@ -207,7 +207,7 @@ function MockQuiz() {
         <div className="onboarding-mock-quiz-stage-card">
           <span className="onboarding-mock-qsl">STAGE 1</span>
           <span className="onboarding-mock-qst">入門</span>
-          <span className="onboarding-mock-qsd">4択10問 ・ 正解済みの問題数 3 / 10</span>
+          <span className="onboarding-mock-qsd">4択10問 ・ 正解済み3/10</span>
         </div>
         <span className="onboarding-mock-nav-dot">▶</span>
       </div>

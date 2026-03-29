@@ -353,7 +353,7 @@ export function QuizScreen() {
             <span className="quiz-stage-detail">
               {isViewingLocked
                 ? `STAGE ${stageNumber - 1} で正解済みの問題数が ${QUIZ_SESSION_SIZE} 問に達すると開放`
-                : `${viewingStage.detail} ・ 正解済みの問題数 ${formatCount(getStageProgressCount({ correctByStage: snapshot.history.quizStageProgress.correctByStage }, stageNumber))} / ${QUIZ_SESSION_SIZE}`}
+                : `${viewingStage.detail} ・ 正解済み${formatCount(getStageProgressCount({ correctByStage: snapshot.history.quizStageProgress.correctByStage }, stageNumber))}/${QUIZ_SESSION_SIZE}`}
             </span>
           </button>
           <button
