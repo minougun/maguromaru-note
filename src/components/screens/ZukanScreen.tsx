@@ -69,7 +69,7 @@ export function ZukanScreen() {
             <article className={`part-list-card ${collected ? "collected" : "missing"}`} key={part.id}>
               <div className="part-name">{collected ? part.name : `？ ${part.name}`}</div>
               <div className="part-area">
-                {part.area} / {"★".repeat(part.rarity) + "☆".repeat(3 - part.rarity)}
+                {part.area} / レア度: {"★".repeat(part.rarity) + "☆".repeat(3 - part.rarity)}
               </div>
               <div className="plist-desc">{collected ? part.description : "まだ食べていません"}</div>
             </article>

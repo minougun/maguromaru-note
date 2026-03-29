@@ -219,7 +219,9 @@ export function RecordScreen() {
               <span className="part-check">✓</span>
               <div className="part-name">{part.name}</div>
               <div className="part-area">{part.area}</div>
-              <div className="part-rarity">{"★".repeat(part.rarity) + "☆".repeat(3 - part.rarity)}</div>
+              <div className="part-rarity">
+                レア度: {"★".repeat(part.rarity) + "☆".repeat(3 - part.rarity)}
+              </div>
             </button>
           );
         })}

@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 
-import tunaMapBackground from "@/assets/zukan-tuna-map.webp";
-
 import type { Part, PartId } from "@/lib/domain/types";
+import { publicPath } from "@/lib/public-path";
 
 interface MapRegionDef {
   /** React の key（同一 partId を複数領域に使うため必須） */
@@ -28,7 +27,7 @@ interface MapRegionDef {
 }
 
 /**
- * viewBox 1365×768。背景は `src/assets/zukan-tuna-map.webp`（幅 1365 に最適化済み）。
+ * viewBox 1365×768。背景は `public/zukan-tuna-map.webp`（`publicPath` で basePath 対応）。
  * 腹部は前後2領域：前＝大トロのみ、後＝大トロ・中トロ（記録は部位ごと）。
  * 中とろは背のブロック＋腹の後方の両方でハイライトされる。
  */
@@ -124,7 +123,7 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
           </defs>
 
           <image
-            href={tunaMapBackground.src}
+            href={publicPath("/zukan-tuna-map.webp")}
             width="1365"
             height="768"
             preserveAspectRatio="xMidYMid meet"
@@ -244,7 +243,9 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
                   {part.name}
                 </span>
                 <span className="map-detail-area">{part.area}</span>
-                <span className="map-detail-rarity">{"★".repeat(part.rarity) + "☆".repeat(3 - part.rarity)}</span>
+                <span className="map-detail-rarity">
+                  レア度: {"★".repeat(part.rarity) + "☆".repeat(3 - part.rarity)}
+                </span>
               </div>
               <p className="map-detail-desc">{isCollected ? part.description : "まだ食べていません"}</p>
               {isCollected ? (
@@ -259,11 +260,6 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
 
       {selectedRegion && selectedRegion.partIds.length > 1 ? (
         <div className="map-detail-card map-detail-card--multi">
-          <p className="map-detail-desc map-detail-multi-lead">
-            {selectedRegion.key === "belly-otoro-chutoro-rear"
-              ? "後方の腹はマップ上「大トロ・中トロ」と表示しています。記録は大トロ・中トロそれぞれで管理されます。"
-              : "この領域に含まれる部位の記録状況は下記のとおりです。"}
-          </p>
           <ul className="map-detail-multi-list">
             {selectedRegion.partIds.map((pid) => {
               const part = partsById.get(pid);
@@ -276,7 +272,9 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
                       {part.name}
                     </span>
                     <span className="map-detail-area">{part.area}</span>
-                    <span className="map-detail-rarity">{"★".repeat(part.rarity) + "☆".repeat(3 - part.rarity)}</span>
+                    <span className="map-detail-rarity">
+                      レア度: {"★".repeat(part.rarity) + "☆".repeat(3 - part.rarity)}
+                    </span>
                   </div>
                   <p className="map-detail-desc">{isCollected ? part.description : "まだ食べていません"}</p>
                   {isCollected ? (
