@@ -84,7 +84,7 @@ export type AccountLinkSectionProps = {
   emailStep: "idle" | "sent";
   /**
    * `otp`: ログインはメールの確認コード入力まで。
-   * `magic_link`: マイページは確認メール送信のみ（リンクで確定）。
+   * `magic_link`: アカウント連携は確認メール送信のみ（リンクで確定）。
    */
   emailFlow: "otp" | "magic_link";
   onApple: () => void;
@@ -140,7 +140,7 @@ export function AccountLinkSection({
           <h2 className="account-link-title">アカウント連携</h2>
           <p className="account-link-subtitle">
             {isSignIn
-              ? "マイページと同じ手順で、Google・Apple・メールのいずれかにサインインできます。"
+              ? "アカウント連携と同じ手順で、Google・Apple・メールのいずれかにサインインできます。"
               : "データのバックアップや引き継ぎができます"}
           </p>
         </header>

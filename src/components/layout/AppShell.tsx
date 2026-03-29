@@ -1,13 +1,26 @@
 "use client";
 
-import { useAuthState } from "@/components/providers/AuthProvider";
+import { useLayoutEffect, useState } from "react";
+
 import { AppHeader } from "@/components/layout/AppHeader";
+import { OnboardingTutorial } from "@/components/onboarding/OnboardingTutorial";
+import { useAuthState } from "@/components/providers/AuthProvider";
 import { LoginScreen } from "@/components/screens/LoginScreen";
 import { ScreenState } from "@/components/ui/ScreenState";
 import { TabBar } from "@/components/ui/TabBar";
+import { markOnboardingDone, readOnboardingDone } from "@/lib/onboarding-storage";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const auth = useAuthState();
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  useLayoutEffect(() => {
+    if (!auth.ready || !auth.signedIn) {
+      setShowOnboarding(false);
+      return;
+    }
+    setShowOnboarding(!readOnboardingDone());
+  }, [auth.ready, auth.signedIn]);
 
   if (!auth.ready) {
     return (
@@ -44,6 +57,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <AppHeader />
       <main className="screen-main">{children}</main>
       <TabBar />
+      {showOnboarding ? (
+        <OnboardingTutorial
+          onComplete={() => {
+            markOnboardingDone();
+            setShowOnboarding(false);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

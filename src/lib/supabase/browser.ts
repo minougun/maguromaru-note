@@ -247,7 +247,7 @@ async function prepareAnonymousLinkNonceOnServer(accessToken: string): Promise<s
 
 /**
  * 匿名ユーザーが Google アカウントへ「昇格」する（Manual linking 不要）。
- * OAuth 完了後、マイページで complete API が走り DB 上の user_id を引き継ぎます。
+ * OAuth 完了後、アカウント連携画面で complete API が走り DB 上の user_id を引き継ぎます。
  */
 export async function startAnonymousGoogleLinkFlow(nextPath = "/") {
   const client = getSupabaseBrowserClient();

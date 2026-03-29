@@ -135,7 +135,7 @@ export function MyPageScreen() {
 
   return (
     <>
-      <NorenBanner label="マイページ" />
+      <NorenBanner label="アカウント連携" />
 
       {auth.usingSupabase ? (
         <AccountLinkSection
