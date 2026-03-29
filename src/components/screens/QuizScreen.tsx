@@ -329,7 +329,7 @@ export function QuizScreen() {
           );
         })()}
         <p className="helper-text quiz-unlock-hint">
-          各ステージは10問です。間違えた問題はあとからやり直して正解すると正解済みの問題数が増えます。すでに正解した問題をもう一度正解しても増えません。正解済みの問題数が10問に達すると次のステージが解放されます。
+          各ステージは10問です。正解済みの問題数が10問に達すると次のステージが解放されます。
         </p>
         <div className="quiz-stage-single">
           <button
