@@ -11,9 +11,10 @@
  *
  * - **dev もキャプチャも WSL 内**なら既定の http://127.0.0.1:3000 でよいことが多い。
  * - **dev が Windows 側**でキャプチャだけ WSL から叩く場合、127.0.0.1 では届かないことがある。
- *   その場合は **自動で** /etc/resolv.conf の nameserver（Windows ホスト IP）へ再試行する（WSL 検出時・127.0.0.1/localhost のとき）。
- * - 先に Windows 向けに固定したい: CAPTURE_USE_WSL_WINDOWS_HOST=1
- * - 自動再試行を切る: CAPTURE_NO_WSL_AUTO_FALLBACK=1
+ *   その場合は **自動で** ip route の default via、続けてプライベート帯の nameserver を試す（100.64–100.127 の DNS は VPN 用として除外）。
+ * - nameserver が 100.x だけ等で自動候補が空のとき: CAPTURE_WINDOWS_HOST_CANDIDATES=（Windows で ipconfig した IPv4）
+ * - 先に Windows 向け固定: CAPTURE_USE_WSL_WINDOWS_HOST=1
+ * - 自動再試行オフ: CAPTURE_NO_WSL_AUTO_FALLBACK=1
  *
  * ## 環境変数
  *
@@ -22,6 +23,7 @@
  * | CAPTURE_BASE_URL | http://127.0.0.1:3000 | オリジン |
  * | CAPTURE_USE_WSL_WINDOWS_HOST | （未設定） | 1 なら最初から nameserver IP を使う |
  * | CAPTURE_NO_WSL_AUTO_FALLBACK | （未設定） | 1 なら 127.0.0.1 失敗時の自動 Windows ホスト再試行をしない |
+ * | CAPTURE_WINDOWS_HOST_CANDIDATES | （未設定） | カンマ区切り IPv4。自動試行の先頭に追加（例 Windows の ipconfig IPv4） |
  * | CAPTURE_KEEP_LOCALHOST | （未設定） | 1 なら hostname を localhost のままにする |
  * | NEXT_PUBLIC_BASE_PATH | （未設定） | next.config の basePath と揃える |
  * | CAPTURE_OUTPUT_DIR | public/onboarding/capture | 出力ディレクトリ |
@@ -35,6 +37,7 @@
  * 参照: ローカル /mnt/c/Users/minou/maguromaru-note/scripts/capture-onboarding-screens.ts
  */
 
+import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import http from "node:http";
@@ -106,20 +109,111 @@ function normalizeCaptureOrigin(raw: string): string {
   }
 }
 
-/** WSL2: Windows ホストの IP は多くの環境で resolv.conf の nameserver と一致する */
-function readWslWindowsHostIp(): string | null {
+/** 100.64.0.0/10（Tailscale の DNS 等）。Windows ホストではないことが多い */
+function isCgnat100Block(ip: string): boolean {
+  const p = ip.split(".").map((x) => Number.parseInt(x, 10));
+  if (p.length !== 4 || p.some((n) => !Number.isFinite(n) || n < 0 || n > 255)) {
+    return false;
+  }
+  if (p[0] !== 100) {
+    return false;
+  }
+  return p[1] >= 64 && p[1] <= 127;
+}
+
+function isPrivateLanIpv4(ip: string): boolean {
+  const p = ip.split(".").map((x) => Number.parseInt(x, 10));
+  if (p.length !== 4 || p.some((n) => !Number.isFinite(n) || n < 0 || n > 255)) {
+    return false;
+  }
+  if (p[0] === 10) {
+    return true;
+  }
+  if (p[0] === 172 && p[1] >= 16 && p[1] <= 31) {
+    return true;
+  }
+  if (p[0] === 192 && p[1] === 168) {
+    return true;
+  }
+  return false;
+}
+
+/** WSL2 では default via が Windows ホストであることが多い（resolv の先頭 nameserver は VPN 100.x になり得る） */
+function parseDefaultGatewayFromIpRoute(): string | null {
+  try {
+    const out = execSync("ip route show default", {
+      encoding: "utf8",
+      maxBuffer: 32 * 1024,
+    });
+    const m = /^default\s+via\s+(\d{1,3}(?:\.\d{1,3}){3})\b/m.exec(out);
+    const ip = m?.[1];
+    if (!ip || ip.startsWith("127.")) {
+      return null;
+    }
+    return ip;
+  } catch {
+    return null;
+  }
+}
+
+function parseFilteredResolvNameservers(): string[] {
+  const ips: string[] = [];
   try {
     const text = readFileSync("/etc/resolv.conf", "utf8");
     for (const line of text.split("\n")) {
       const m = /^nameserver\s+(\d{1,3}(?:\.\d{1,3}){3})\s*$/.exec(line.trim());
-      if (m?.[1]) {
-        return m[1];
+      const ip = m?.[1];
+      if (!ip || ip.startsWith("127.")) {
+        continue;
       }
+      if (isCgnat100Block(ip)) {
+        continue;
+      }
+      if (!isPrivateLanIpv4(ip)) {
+        continue;
+      }
+      ips.push(ip);
     }
   } catch {
-    /* 非 Linux / 権限など */
+    /* */
   }
-  return null;
+  return ips;
+}
+
+function extraCandidatesFromEnv(): string[] {
+  const raw = process.env.CAPTURE_WINDOWS_HOST_CANDIDATES?.trim();
+  if (!raw) {
+    return [];
+  }
+  return raw
+    .split(/[,;\s]+/)
+    .map((s) => s.trim())
+    .filter((s) => /^\d{1,3}(?:\.\d{1,3}){3}$/.test(s));
+}
+
+/** Windows ホストへ向けうる IPv4 を優先順で列挙（重複なし） */
+function listWslWindowsHostCandidates(): string[] {
+  const out: string[] = [];
+  for (const ip of extraCandidatesFromEnv()) {
+    if (!out.includes(ip)) {
+      out.push(ip);
+    }
+  }
+  const gw = parseDefaultGatewayFromIpRoute();
+  if (gw && !out.includes(gw)) {
+    out.push(gw);
+  }
+  for (const ip of parseFilteredResolvNameservers()) {
+    if (!out.includes(ip)) {
+      out.push(ip);
+    }
+  }
+  return out;
+}
+
+function primaryWslWindowsHostIp(): string | null {
+  const list = listWslWindowsHostCandidates();
+  return list[0] ?? null;
 }
 
 function rewriteOriginHostname(origin: string, hostname: string): string {
@@ -133,10 +227,10 @@ function maybeUseWslWindowsHost(origin: string): string {
   if (process.env.CAPTURE_USE_WSL_WINDOWS_HOST !== "1") {
     return origin;
   }
-  const ip = readWslWindowsHostIp();
+  const ip = primaryWslWindowsHostIp();
   if (!ip) {
     console.info(
-      "[capture] CAPTURE_USE_WSL_WINDOWS_HOST=1 ですが /etc/resolv.conf から nameserver を読めませんでした（手動で CAPTURE_BASE_URL を指定してください）",
+      "[capture] CAPTURE_USE_WSL_WINDOWS_HOST=1 ですが Windows ホスト候補が得られませんでした。CAPTURE_WINDOWS_HOST_CANDIDATES または CAPTURE_BASE_URL を指定してください",
     );
     return origin;
   }
@@ -201,44 +295,57 @@ function buildConnectError(failedUrl: string): Error {
       failedUrl +
       "\n- npm run dev を起動し、ポート（例 3002）を CAPTURE_BASE_URL に合わせる" +
       "\n- 手動: CAPTURE_BASE_URL=http://（到達できるIP）:ポート" +
-      "\n- WSL で自動フォールバックを無効化: CAPTURE_NO_WSL_AUTO_FALLBACK=1",
+      "\n- WSL で自動フォールバックを無効化: CAPTURE_NO_WSL_AUTO_FALLBACK=1" +
+      "\n- Windows の IPv4 を列挙: CAPTURE_WINDOWS_HOST_CANDIDATES=172.x.x.x（ipconfig で確認）",
   );
 }
 
-/** 接続できるオリジンを確定（WSL では 127.0.0.1 失敗後に Windows ホストを自動試行） */
+/** 接続できるオリジンを確定（WSL では 127.0.0.1 失敗後に Windows ホスト候補を順に試行） */
 async function resolveReachableOrigin(origin: string): Promise<string> {
   const timeoutMs = envInt("CAPTURE_PROBE_TIMEOUT_MS", 5000);
 
-  const probeOnce = async (o: string) => {
+  const tryProbe = async (o: string): Promise<boolean> => {
     const p = appUrl(o, "/");
     console.info("[capture] 接続確認: " + p + " （タイムアウト " + timeoutMs + "ms）");
-    await httpProbe(p, timeoutMs);
+    try {
+      await httpProbe(p, timeoutMs);
+      return true;
+    } catch {
+      return false;
+    }
   };
 
-  try {
-    await probeOnce(origin);
+  if (await tryProbe(origin)) {
     console.info("[capture] 接続 OK");
     return origin;
-  } catch {
-    if (!canWslAutoFallbackToWindowsHost(origin)) {
-      throw buildConnectError(appUrl(origin, "/"));
-    }
-    const ip = readWslWindowsHostIp();
-    if (!ip) {
-      throw buildConnectError(appUrl(origin, "/"));
-    }
-    const next = rewriteOriginHostname(origin, ip);
+  }
+
+  if (!canWslAutoFallbackToWindowsHost(origin)) {
+    throw buildConnectError(appUrl(origin, "/"));
+  }
+
+  const candidates = listWslWindowsHostCandidates();
+  if (candidates.length === 0) {
     console.info(
-      "[capture] 127.0.0.1 に届かないため、WSL の nameserver（Windows ホスト）で再試行: " + next,
+      "[capture] Windows ホスト候補がありません（ip route default またはプライベート nameserver）。CAPTURE_WINDOWS_HOST_CANDIDATES に ipconfig の IPv4 を入れてください。",
     );
-    try {
-      await probeOnce(next);
-      console.info("[capture] 接続 OK");
+    throw buildConnectError(appUrl(origin, "/"));
+  }
+
+  console.info("[capture] 127.0.0.1 に届かないため、候補を順に試します: " + candidates.join(", "));
+
+  for (const ip of candidates) {
+    const next = rewriteOriginHostname(origin, ip);
+    if (originHostname(next) === originHostname(origin)) {
+      continue;
+    }
+    if (await tryProbe(next)) {
+      console.info("[capture] 接続 OK → " + next);
       return next;
-    } catch {
-      throw buildConnectError(appUrl(next, "/"));
     }
   }
+
+  throw buildConnectError(appUrl(origin, "/"));
 }
 
 /** Next dev は HMR 等で window.load が遅延・未発火になり得るため、load は短めに試して諦める */
