@@ -3105,17 +3105,19 @@ body {
   align-self: stretch;
 }
 
-.onboarding-mock-tab[data-active="true"]::after {
+/* 選択タブ: 帯の上側に水色ドット（実機タブのイメージに合わせる。モックは縮小のためやや小さめ） */
+.onboarding-mock-tab[data-active="true"]::before {
   content: "";
   position: absolute;
-  bottom: 3px;
+  top: 4px;
   left: 50%;
   transform: translateX(-50%);
-  width: 18px;
-  height: 2px;
+  width: 5px;
+  height: 5px;
   border-radius: 999px;
-  background: rgba(92, 219, 239, 0.85);
+  background: #5cdbef;
   pointer-events: none;
+  box-shadow: 0 0 4px rgba(92, 219, 239, 0.65);
 }
 
 .onboarding-art-img {
