@@ -172,7 +172,7 @@ export function LoginScreen() {
               setPendingAction("apple-signin");
               setFormError(null);
               setNotice(null);
-              await startAppleSignInFlow("/mypage");
+              await startAppleSignInFlow("/");
             } catch (error) {
               setFormError(authErrorMessage(error));
               setPendingAction(null);
@@ -191,7 +191,7 @@ export function LoginScreen() {
               setPendingAction("google-signin");
               setFormError(null);
               setNotice(null);
-              await startGoogleSignInFlow("/mypage");
+              await startGoogleSignInFlow("/");
             } catch (error) {
               setFormError(authErrorMessage(error));
               setPendingAction(null);
@@ -227,7 +227,7 @@ export function LoginScreen() {
               setPhoneStep("idle");
               setPhoneOtp("");
               setPhonePanelOpen(false);
-              router.push("/mypage");
+              router.push("/");
               router.refresh();
             } catch (error) {
               setFormError(authErrorMessage(error));

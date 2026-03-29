@@ -44,6 +44,14 @@ export function HomeScreen() {
   const [weatherText, setWeatherText] = useState("天気を取得中...");
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const auth = params.get("auth");
+    if (auth === "linked" || auth === "error") {
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
 
     async function loadWeather() {
