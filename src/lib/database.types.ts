@@ -138,6 +138,7 @@ export interface Database {
           question_count: number;
           question_ids: string[];
           score: number;
+          correct_question_ids: string[] | null;
           submitted_at: string | null;
           created_at: string;
           expires_at: string;
@@ -148,6 +149,7 @@ export interface Database {
           question_count: number;
           question_ids: string[];
           score?: number;
+          correct_question_ids?: string[] | null;
           submitted_at?: string | null;
           created_at?: string;
           expires_at: string;

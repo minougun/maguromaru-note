@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  MOCK_USER_ID,
   seededMenuItemStatuses,
   seededQuizSessions,
   seededQuizStats,
@@ -11,6 +12,7 @@ import {
   seededVisitLogs,
 } from "@/lib/domain/seed";
 import { createMockViewerContext, writeMockState } from "@/lib/mock/store";
+import { QUIZ_QUESTIONS } from "@/lib/quiz";
 import { getUnlockedQuizStageNumbers, isQuizStageUnlocked } from "@/lib/quiz-stages";
 import { getCurrentTitle } from "@/lib/titles";
 import {
@@ -188,19 +190,40 @@ test("quiz session is server-scored and cannot be submitted twice", async () => 
   );
 });
 
-function pickWrongQuizSelection(correctIndexes: number[]): number[] {
-  const sorted = [...correctIndexes].sort((a, b) => a - b);
-  if (sorted.length >= 2) {
-    return [sorted[0]!];
-  }
-  const c = sorted[0] ?? 0;
-  return [(c + 1) % 4];
-}
+test("quiz stage 2 unlocks when 10 distinct stage-1 questions were cleared across two sessions", async () => {
+  const stage1QuestionIds = QUIZ_QUESTIONS.filter((q) => q.stageNumber === 1)
+    .slice(0, 10)
+    .map((q) => q.id);
+  assert.equal(stage1QuestionIds.length, 10);
+  const now = new Date().toISOString();
+  const exp = new Date(Date.now() + 86400000).toISOString();
 
-test("quiz stage 2 stays locked when stage 1 only scored 5/10 in two separate sessions", async () => {
   await writeMockState({
     menuItemStatuses: seededMenuItemStatuses.map((entry) => ({ ...entry })),
-    quizSessions: seededQuizSessions.map((entry) => ({ ...entry })),
+    quizSessions: [
+      {
+        id: "00000000-0000-4000-8000-000000000011",
+        user_id: MOCK_USER_ID,
+        question_count: 10,
+        question_ids: stage1QuestionIds,
+        score: 5,
+        correct_question_ids: stage1QuestionIds.slice(0, 5),
+        submitted_at: now,
+        created_at: now,
+        expires_at: exp,
+      },
+      {
+        id: "00000000-0000-4000-8000-000000000012",
+        user_id: MOCK_USER_ID,
+        question_count: 10,
+        question_ids: stage1QuestionIds,
+        score: 5,
+        correct_question_ids: stage1QuestionIds.slice(5, 10),
+        submitted_at: now,
+        created_at: now,
+        expires_at: exp,
+      },
+    ],
     visitLogs: seededVisitLogs.map((entry) => ({ ...entry })),
     visitLogParts: seededVisitLogParts.map((entry) => ({ ...entry })),
     storeStatus: { ...seededStoreStatus },
@@ -208,28 +231,55 @@ test("quiz stage 2 stays locked when stage 1 only scored 5/10 in two separate se
     shareBonusEvents: seededShareBonusEvents.map((entry) => ({ ...entry })),
   });
 
-  for (let round = 0; round < 2; round++) {
-    const s = await createQuizSessionForViewer({ stageNumber: 1 });
-    const answers: number[][] = [];
-    for (let i = 0; i < s.questions.length; i++) {
-      const q = s.questions[i]!;
-      const probe = await checkQuizAnswer({
-        sessionId: s.sessionId,
-        questionId: q.id,
-        answerProof: q.answerProof,
-        answerIndexes: [0],
-      });
-      const correctIdxs = probe.result.correctIndexes;
-      answers.push(i < 5 ? [...correctIdxs] : pickWrongQuizSelection(correctIdxs));
-    }
-    const sub = await submitQuizSession({ sessionId: s.sessionId, answers });
-    assert.equal(sub.score, 5);
-  }
-
-  await assert.rejects(() => createQuizSessionForViewer({ stageNumber: 2 }), /前のステージを10問すべて正解/);
+  const s2 = await createQuizSessionForViewer({ stageNumber: 2 });
+  assert.equal(s2.stageNumber, 2);
 });
 
-test("quiz stages unlock only after a perfect clear (10/10) on the previous stage", () => {
+test("quiz stage 2 stays locked when only 5 distinct stage-1 questions were ever cleared", async () => {
+  const stage1QuestionIds = QUIZ_QUESTIONS.filter((q) => q.stageNumber === 1)
+    .slice(0, 10)
+    .map((q) => q.id);
+  const now = new Date().toISOString();
+  const exp = new Date(Date.now() + 86400000).toISOString();
+  const sameFive = stage1QuestionIds.slice(0, 5);
+
+  await writeMockState({
+    menuItemStatuses: seededMenuItemStatuses.map((entry) => ({ ...entry })),
+    quizSessions: [
+      {
+        id: "00000000-0000-4000-8000-000000000021",
+        user_id: MOCK_USER_ID,
+        question_count: 10,
+        question_ids: stage1QuestionIds,
+        score: 5,
+        correct_question_ids: sameFive,
+        submitted_at: now,
+        created_at: now,
+        expires_at: exp,
+      },
+      {
+        id: "00000000-0000-4000-8000-000000000022",
+        user_id: MOCK_USER_ID,
+        question_count: 10,
+        question_ids: stage1QuestionIds,
+        score: 5,
+        correct_question_ids: sameFive,
+        submitted_at: now,
+        created_at: now,
+        expires_at: exp,
+      },
+    ],
+    visitLogs: seededVisitLogs.map((entry) => ({ ...entry })),
+    visitLogParts: seededVisitLogParts.map((entry) => ({ ...entry })),
+    storeStatus: { ...seededStoreStatus },
+    quizStats: [{ ...seededQuizStats }],
+    shareBonusEvents: seededShareBonusEvents.map((entry) => ({ ...entry })),
+  });
+
+  await assert.rejects(() => createQuizSessionForViewer({ stageNumber: 2 }), /正解済みの問題が10問に達していない/);
+});
+
+test("quiz stages unlock only after 10 mastered questions on the previous stage", () => {
   assert.deepEqual(getUnlockedQuizStageNumbers({ correctByStage: { 1: 0, 2: 0, 3: 0 } }), [1]);
   assert.equal(isQuizStageUnlocked(2, { correctByStage: { 1: 10, 2: 0, 3: 0 } }), true);
   assert.equal(isQuizStageUnlocked(2, { correctByStage: { 1: 5, 2: 0, 3: 0 } }), false);
@@ -250,7 +300,7 @@ test("createQuizSessionForViewer rejects locked stages", async () => {
 
   await assert.rejects(
     () => createQuizSessionForViewer({ stageNumber: 100 }),
-    /前のステージを10問すべて正解していないため/,
+    /正解済みの問題が10問に達していない/,
   );
 });
 

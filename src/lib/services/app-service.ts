@@ -30,7 +30,7 @@ import type {
   ViewerContext,
   VisitRecord,
 } from "@/lib/domain/types";
-import { defaultMenuStockById, quizQuestionsPerStage, type MenuStockStatus } from "@/lib/domain/constants";
+import { defaultMenuStockById, quizQuestionsPerStage, quizStageCount, type MenuStockStatus } from "@/lib/domain/constants";
 import { seededQuizStats, seededShareBonusEvents, seededStoreStatus } from "@/lib/domain/seed";
 import type { SnapshotScope } from "@/lib/domain/snapshot-scope";
 import { filterTrackedParts, isTrackedPartId } from "@/lib/domain/tracked-parts";
@@ -56,6 +56,10 @@ function isMissingShareBonusSchemaError(message: string | undefined) {
 
 function isMissingQuizSessionScoreColumnError(message: string | undefined) {
   return Boolean(message && message.includes("score"));
+}
+
+function isMissingQuizSessionCorrectQuestionIdsColumnError(message: string | undefined) {
+  return Boolean(message && message.includes("correct_question_ids"));
 }
 
 function shouldUseMockBackend() {
@@ -612,11 +616,11 @@ async function listQuizSessionsForUser(client: SupabaseClient<Database> | undefi
 }
 
 /**
- * ステージ解放用の進捗。セッションごとの正解数の最大値（同じ問題を何度解いても、最良の1回分のみが効く）。
- * シェアボーナスによる加算はここには含めない（解放条件は「その回の10問の内訳」に一致させる）。
+ * ステージ解放用の進捗。同一ステージ内で「一度でも正解した設問 ID」のユニーク数（同一問題を複数回正解しても1問分）。
+ * correct_question_ids 未保存の旧行は、score >= question_count のときのみ当該セッションの全問を正解済みとみなす。
  */
 function buildQuizStageProgressSummary(quizSessions: QuizSessionRow[]) {
-  const correctByStage = createEmptyQuizStageProgress();
+  const masteredByStage = new Map<number, Set<string>>();
 
   for (const session of quizSessions) {
     if (!session.submitted_at) {
@@ -627,9 +631,36 @@ function buildQuizStageProgressSummary(quizSessions: QuizSessionRow[]) {
     const inferredStageNumber =
       getStageNumberFromQuestionId(questionIds[0] ?? "") ??
       Math.max(1, Math.ceil(session.question_count / quizQuestionsPerStage));
-    const sessionScore = session.score ?? 0;
-    const prev = correctByStage[inferredStageNumber] ?? 0;
-    correctByStage[inferredStageNumber] = Math.max(prev, sessionScore);
+
+    let idSet = masteredByStage.get(inferredStageNumber);
+    if (!idSet) {
+      idSet = new Set<string>();
+      masteredByStage.set(inferredStageNumber, idSet);
+    }
+
+    const rawCorrectIds = session.correct_question_ids;
+    if (Array.isArray(rawCorrectIds) && rawCorrectIds.every((id) => typeof id === "string")) {
+      for (const id of rawCorrectIds) {
+        if (questionIds.includes(id)) {
+          idSet.add(id);
+        }
+      }
+      continue;
+    }
+
+    const sc = session.score ?? 0;
+    if (sc >= session.question_count && questionIds.length > 0) {
+      for (const id of questionIds) {
+        idSet.add(id);
+      }
+    }
+  }
+
+  const correctByStage = createEmptyQuizStageProgress();
+  for (const [stageNum, set] of masteredByStage) {
+    if (stageNum >= 1 && stageNum <= quizStageCount) {
+      correctByStage[stageNum] = set.size;
+    }
   }
 
   return {
@@ -1205,7 +1236,7 @@ export async function createQuizSessionForViewer(input: unknown, accessToken?: s
     ) {
       throw new AppServiceError(
         403,
-        "前のステージを10問すべて正解していないため、このステージはまだ開放されていません。",
+        "前のステージで、正解済みの問題が10問に達していないため、このステージはまだ開放されていません。",
       );
     }
     const recentQuestionIds = collectRecentQuizQuestionIds(
@@ -1219,6 +1250,7 @@ export async function createQuizSessionForViewer(input: unknown, accessToken?: s
       question_count: QUIZ_SESSION_SIZE,
       question_ids: questionIds,
       score: 0,
+      correct_question_ids: null,
       submitted_at: null,
       created_at: new Date().toISOString(),
       expires_at: expiresAt,
@@ -1248,7 +1280,7 @@ export async function createQuizSessionForViewer(input: unknown, accessToken?: s
   ) {
     throw new AppServiceError(
       403,
-      "前のステージを10問すべて正解していないため、このステージはまだ開放されていません。",
+      "前のステージで、正解済みの問題が10問に達していないため、このステージはまだ開放されていません。",
     );
   }
   const { data: recentSessionRows, error: recentSessionError } = await fromAny(client, "quiz_sessions")
@@ -1269,13 +1301,20 @@ export async function createQuizSessionForViewer(input: unknown, accessToken?: s
     question_count: QUIZ_SESSION_SIZE,
     question_ids: questionIds,
     score: 0,
+    correct_question_ids: null,
     submitted_at: null,
     expires_at: expiresAt,
   };
 
-  let insertResult = await fromAny(client, "quiz_sessions").insert(payload).select("*").single();
+  let insertPayload: Database["public"]["Tables"]["quiz_sessions"]["Insert"] = payload;
+  let insertResult = await fromAny(client, "quiz_sessions").insert(insertPayload).select("*").single();
+  if (insertResult.error && isMissingQuizSessionCorrectQuestionIdsColumnError(insertResult.error.message)) {
+    const { correct_question_ids: _cids, ...legacyPayloadNoCids } = insertPayload;
+    insertPayload = legacyPayloadNoCids;
+    insertResult = await fromAny(client, "quiz_sessions").insert(insertPayload).select("*").single();
+  }
   if (insertResult.error && isMissingQuizSessionScoreColumnError(insertResult.error.message)) {
-    const { score: _score, ...legacyPayload } = payload;
+    const { score: _score, ...legacyPayload } = insertPayload;
     insertResult = await fromAny(client, "quiz_sessions").insert(legacyPayload).select("*").single();
   }
   const { data, error } = insertResult;
@@ -1310,6 +1349,7 @@ export async function submitQuizSession(input: unknown, accessToken?: string) {
     const questionIds = parseQuestionIds(session.question_ids);
     const results = scoreQuizAnswers(questionIds, parsed.answers);
     const correctCount = results.filter((entry) => entry.correct).length;
+    const correctQuestionIds = results.filter((entry) => entry.correct).map((entry) => entry.question.id);
     const existing =
       state.quizStats.find((entry) => entry.user_id === viewer.userId) ?? createEmptyQuizStats(viewer.userId);
     const updatedQuizStats: QuizStatsRow = {
@@ -1317,6 +1357,7 @@ export async function submitQuizSession(input: unknown, accessToken?: string) {
     };
     session.submitted_at = new Date().toISOString();
     session.score = correctCount;
+    session.correct_question_ids = correctQuestionIds;
     state.quizStats = [...state.quizStats.filter((entry) => entry.user_id !== viewer.userId), updatedQuizStats];
     state.quizSessions = state.quizSessions.map((entry) => (entry.id === session.id ? session : entry));
     await writeMockState(state);
@@ -1356,13 +1397,27 @@ export async function submitQuizSession(input: unknown, accessToken?: string) {
   const questionIds = parseQuestionIds(session.question_ids);
   const results = scoreQuizAnswers(questionIds, parsed.answers);
   const correctCount = results.filter((entry) => entry.correct).length;
+  const correctQuestionIds = results.filter((entry) => entry.correct).map((entry) => entry.question.id);
 
   let submitResult = await fromAny(client, "quiz_sessions")
-    .update({ submitted_at: new Date().toISOString(), score: correctCount })
+    .update({
+      submitted_at: new Date().toISOString(),
+      score: correctCount,
+      correct_question_ids: correctQuestionIds,
+    })
     .eq("id", session.id)
     .eq("user_id", viewer.userId)
     .is("submitted_at", null)
     .select("id");
+
+  if (submitResult.error && isMissingQuizSessionCorrectQuestionIdsColumnError(submitResult.error.message)) {
+    submitResult = await fromAny(client, "quiz_sessions")
+      .update({ submitted_at: new Date().toISOString(), score: correctCount })
+      .eq("id", session.id)
+      .eq("user_id", viewer.userId)
+      .is("submitted_at", null)
+      .select("id");
+  }
 
   if (submitResult.error && isMissingQuizSessionScoreColumnError(submitResult.error.message)) {
     submitResult = await fromAny(client, "quiz_sessions")

@@ -58,7 +58,7 @@ export interface ShareBonusSummary {
 }
 
 export interface QuizStageProgressSummary {
-  /** ステージごとの「1回の提出での正解数」の最大（解放は全問正解＝10 相当） */
+  /** ステージごとに「一度でも正解した設問」のユニーク数（同一問題は1問分） */
   correctByStage: Record<number, number>;
 }
 

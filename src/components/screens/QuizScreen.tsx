@@ -323,13 +323,13 @@ export function QuizScreen() {
               <p className="progress-caption">
                 {reached
                   ? `${masterTitle.name}到達！おめでとうございます！`
-                  : `通算 ${formatCount(totalCorrect)} / ${formatCount(goal)} 問正解`}
+                  : `累計 ${formatCount(totalCorrect)} / ${formatCount(goal)} 問正解`}
               </p>
             </div>
           );
         })()}
         <p className="helper-text quiz-unlock-hint">
-          各ステージは10問です。1回のチャレンジで全問正解すると次のステージが解放されます。何度プレイしても正解数は足し算されず、これまでで最も良い1回の結果だけがステージ進行に使われます。
+          各ステージは10問です。間違えた問題はあとからやり直して正解するとカウントが増えます。すでに正解した問題をもう一度正解しても増えません。ユニークに10問ぶん正解すると次のステージが解放されます。
         </p>
         <div className="quiz-stage-single">
           <button
@@ -352,8 +352,8 @@ export function QuizScreen() {
             <span className="quiz-stage-count">{viewingStage.title}</span>
             <span className="quiz-stage-detail">
               {isViewingLocked
-                ? `STAGE ${stageNumber - 1} を1回で全問正解すると開放`
-                : `${viewingStage.detail} ・ ベスト ${formatCount(getStageProgressCount({ correctByStage: snapshot.history.quizStageProgress.correctByStage }, stageNumber))} / ${QUIZ_SESSION_SIZE}`}
+                ? `STAGE ${stageNumber - 1} で正解済みが ${QUIZ_SESSION_SIZE} 問に達すると開放`
+                : `${viewingStage.detail} ・ 累計（同一問題は1回） ${formatCount(getStageProgressCount({ correctByStage: snapshot.history.quizStageProgress.correctByStage }, stageNumber))} / ${QUIZ_SESSION_SIZE}`}
             </span>
           </button>
           <button
