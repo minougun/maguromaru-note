@@ -87,15 +87,17 @@ export function LoginScreen() {
     return (
       <div className="login-launch">
         <div className="login-launch-icon-stage">
-          <Image
-            alt=""
-            className="login-launch-mark-img"
-            height={544}
-            priority
-            sizes="(max-width: 420px) 72vw, 280px"
-            src="/brand/login-launch-mark.webp"
-            width={560}
-          />
+          <div className="login-launch-mark-frame">
+            <Image
+              alt=""
+              className="login-launch-mark-img"
+              fill
+              priority
+              sizes="100vw"
+              src="/brand/login-launch-mark.webp"
+              style={{ objectFit: "contain" }}
+            />
+          </div>
         </div>
         <div className="login-launch-inner">
           {(formError || notice) && (
