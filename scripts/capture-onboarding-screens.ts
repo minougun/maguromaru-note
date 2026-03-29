@@ -4,8 +4,9 @@
  * ## 使い方
  *
  * 1. 初回のみ Chromium を入れる: npx playwright install chromium
- * 2. 別ターミナルで npm run dev（WSL から Windows 上の dev に繋ぐときは npm run dev:host）
- * 3. npm run capture:onboarding
+ * 2. npm run capture:onboarding
+ *    - 既に dev が動いていればそこへ接続。どこにも繋がらなければ **このリポジトリで next dev を自動起動**（終了時に停止）
+ * 3. 自動起動を止めたいとき: CAPTURE_AUTO_START_DEV=0（別ターミナルで npm run dev 必須）
  *
  * ### WSL の注意
  *
@@ -31,17 +32,21 @@
  * | CAPTURE_VIEWPORT_HEIGHT | 932 | 高さ |
  * | CAPTURE_DEVICE_SCALE_FACTOR | 1 | 2 で高解像度 |
  * | CAPTURE_PROBE_TIMEOUT_MS | 5000 | 接続確認のタイムアウト |
+ * | CAPTURE_AUTO_START_DEV | （既定: 有効） | 0 で既存サーバー必須（自動 next dev オフ） |
+ * | CAPTURE_AUTO_DEV_PORT | （未設定） | 指定時はそのポートで自動起動。未指定は空きポート |
+ * | CAPTURE_AUTO_DEV_WAIT_MS | 180000 | 自動起動 dev の待ち上限 |
  *
  * 出力: home.png record.png zukan.png quiz.png titles.png account.png
  *
  * 参照: ローカル /mnt/c/Users/minou/maguromaru-note/scripts/capture-onboarding-screens.ts
  */
 
-import { execSync } from "node:child_process";
+import { execSync, spawn, type ChildProcess } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import http from "node:http";
 import https from "node:https";
+import { createServer } from "node:net";
 import path from "node:path";
 
 import { chromium, type Page } from "playwright";
@@ -289,6 +294,122 @@ function httpProbe(urlStr: string, timeoutMs: number): Promise<void> {
   });
 }
 
+async function findFreePort(): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const s = createServer();
+    s.once("error", reject);
+    s.listen(0, "127.0.0.1", () => {
+      const addr = s.address();
+      s.close((err) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        if (addr && typeof addr === "object" && typeof addr.port === "number") {
+          resolve(addr.port);
+        } else {
+          reject(new Error("空きポートを取得できませんでした"));
+        }
+      });
+    });
+  });
+}
+
+async function stopDevChild(child: ChildProcess): Promise<void> {
+  if (child.exitCode !== null || child.signalCode !== null) {
+    return;
+  }
+  console.info("[capture] 自動起動した next dev を終了します…");
+  await new Promise<void>((resolve) => {
+    const killTimer = setTimeout(() => {
+      try {
+        child.kill("SIGKILL");
+      } catch {
+        /* */
+      }
+      resolve();
+    }, 10_000);
+    child.once("exit", () => {
+      clearTimeout(killTimer);
+      resolve();
+    });
+    try {
+      child.kill("SIGTERM");
+    } catch {
+      clearTimeout(killTimer);
+      resolve();
+    }
+  });
+}
+
+/** 既存サーバーが無いとき、この cwd で next dev を立ち上げる（127.0.0.1 のみ bind） */
+async function startEmbeddedNextDev(cwd: string): Promise<{ child: ChildProcess; origin: string }> {
+  const port = process.env.CAPTURE_AUTO_DEV_PORT?.trim()
+    ? envInt("CAPTURE_AUTO_DEV_PORT", 3099)
+    : await findFreePort();
+
+  console.info("[capture] npx next dev を起動します（ポート " + port + ", 127.0.0.1）…");
+
+  const child = spawn("npx", ["next", "dev", "-p", String(port), "-H", "127.0.0.1"], {
+    cwd,
+    stdio: ["ignore", "pipe", "pipe"],
+    env: { ...process.env },
+  });
+
+  let stderrTail = "";
+  child.stderr?.on("data", (buf: Buffer) => {
+    stderrTail = (stderrTail + buf.toString()).slice(-6000);
+  });
+  child.stdout?.on("data", (buf: Buffer) => {
+    stderrTail = (stderrTail + buf.toString()).slice(-6000);
+  });
+
+  const origin = "http://127.0.0.1:" + port;
+  const probeUrl = appUrl(origin, "/");
+
+  await sleep(800);
+
+  const maxWait = envInt("CAPTURE_AUTO_DEV_WAIT_MS", 180_000);
+  const deadline = Date.now() + maxWait;
+  const poll = 1500;
+
+  while (Date.now() < deadline) {
+    if (child.exitCode !== null) {
+      throw new Error(
+        "next dev が起動直後に終了しました（exit " +
+          String(child.exitCode) +
+          "）。ログ抜粋:\n" +
+          stderrTail.slice(-2000),
+      );
+    }
+    try {
+      await httpProbe(probeUrl, 5000);
+      console.info("[capture] 自動起動 dev が応答しました → " + origin);
+      return { child, origin };
+    } catch {
+      await sleep(poll);
+    }
+  }
+
+  try {
+    child.kill("SIGTERM");
+  } catch {
+    /* */
+  }
+  await sleep(1500);
+  try {
+    child.kill("SIGKILL");
+  } catch {
+    /* */
+  }
+  throw new Error(
+    "next dev の起動待ちが " +
+      maxWait +
+      "ms でタイムアウトしました。ログ抜粋:\n" +
+      stderrTail.slice(-2000),
+  );
+}
+
 function buildConnectError(triedProbeUrls: string[]): Error {
   const list = triedProbeUrls.map((u) => "  - " + u).join("\n");
   return new Error(
@@ -459,38 +580,56 @@ async function main() {
   console.info("[capture] output: " + outDir);
 
   await mkdir(outDir, { recursive: true });
-  origin = await resolveReachableOrigin(origin);
-  console.info("[capture] base URL（確定）: " + origin + (basePrefix() || ""));
 
-  const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext({
-    viewport: { width, height },
-    deviceScaleFactor,
-    locale: "ja-JP",
-    timezoneId: "Asia/Tokyo",
-    reducedMotion: "reduce",
-  });
-  const page = await context.newPage();
-
+  let embeddedDev: ChildProcess | null = null;
   try {
-    await ensureSignedIn(page, origin);
-    await waitForNoBlockingSpinner(page);
+    try {
+      origin = await resolveReachableOrigin(origin);
+    } catch (err) {
+      if (process.env.CAPTURE_AUTO_START_DEV === "0") {
+        throw err;
+      }
+      console.info("[capture] 既存 URL に繋がらないため、このリポジトリで next dev を自動起動します（CAPTURE_AUTO_START_DEV=0 で無効）");
+      const started = await startEmbeddedNextDev(process.cwd());
+      embeddedDev = started.child;
+      origin = started.origin;
+    }
+    console.info("[capture] base URL（確定）: " + origin + (basePrefix() || ""));
 
-    for (const { file, path: routePath } of ROUTES) {
-      const target = appUrl(origin, routePath);
-      await gotoSettle(page, target, routePath || "/");
+    const browser = await chromium.launch({ headless: true });
+    const context = await browser.newContext({
+      viewport: { width, height },
+      deviceScaleFactor,
+      locale: "ja-JP",
+      timezoneId: "Asia/Tokyo",
+      reducedMotion: "reduce",
+    });
+    const page = await context.newPage();
+
+    try {
+      await ensureSignedIn(page, origin);
       await waitForNoBlockingSpinner(page);
 
-      const outPath = path.join(outDir, file);
-      await page.screenshot({
-        path: outPath,
-        fullPage: false,
-        animations: "disabled",
-      });
-      console.info("[capture] wrote " + outPath);
+      for (const { file, path: routePath } of ROUTES) {
+        const target = appUrl(origin, routePath);
+        await gotoSettle(page, target, routePath || "/");
+        await waitForNoBlockingSpinner(page);
+
+        const outPath = path.join(outDir, file);
+        await page.screenshot({
+          path: outPath,
+          fullPage: false,
+          animations: "disabled",
+        });
+        console.info("[capture] wrote " + outPath);
+      }
+    } finally {
+      await browser.close();
     }
   } finally {
-    await browser.close();
+    if (embeddedDev) {
+      await stopDevChild(embeddedDev);
+    }
   }
 }
 
