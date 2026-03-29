@@ -1,7 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import { useCallback, useState } from "react";
+
+import { publicPath } from "@/lib/public-path";
 
 type Step = {
   imageSrc: string;
@@ -72,12 +73,13 @@ export function OnboardingTutorial({ onComplete }: OnboardingTutorialProps) {
 
       <div className="onboarding-panel">
         <div className="onboarding-art onboarding-art--mock" aria-hidden="true">
-          <Image
+          {/* next/image の SVG は環境によって壊れるため img + basePath 補正に統一 */}
+          <img
             alt=""
             className="onboarding-mock-img"
+            decoding="async"
             height={MOCK_HEIGHT}
-            src={step.imageSrc}
-            unoptimized
+            src={publicPath(step.imageSrc)}
             width={MOCK_WIDTH}
           />
         </div>
