@@ -35,7 +35,8 @@ function menuItemStock(
 ): MenuStockStatus {
   if (status === "closed") return "soldout";
   const row = menuItemStatuses[itemId];
-  if (!row || row === "unset") return "available";
+  if (row === "unset") return "unset";
+  if (row == null) return "available";
   return row;
 }
 

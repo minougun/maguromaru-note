@@ -32,6 +32,7 @@ import type {
 } from "@/lib/domain/types";
 import { defaultMenuStockById, quizQuestionsPerStage, quizStageCount, type MenuStockStatus } from "@/lib/domain/constants";
 import { seededQuizStats, seededShareBonusEvents, seededStoreStatus } from "@/lib/domain/seed";
+import { applyCustomerFacingStoreAndStock } from "@/lib/domain/store-business-hours";
 import type { SnapshotScope } from "@/lib/domain/snapshot-scope";
 import { filterTrackedParts, isTrackedPartId } from "@/lib/domain/tracked-parts";
 import { getAdminEmail, getSupabaseEnv, getSupabaseServiceEnv, hasSupabaseEnv, isMockAllowed } from "@/lib/env";
@@ -681,6 +682,16 @@ function buildSnapshotFromRecords(
   visitLogs: Database["public"]["Tables"]["visit_logs"]["Row"][],
   visitLogParts: Database["public"]["Tables"]["visit_log_parts"]["Row"][],
 ): AppSnapshot {
+  let homeMenuItemStatuses = menuItemStatuses;
+  let homeMenuStockUpdatedAt = menuStockUpdatedAt;
+  let homeStoreStatus = storeStatus;
+  if (viewer.role !== "admin") {
+    const masked = applyCustomerFacingStoreAndStock(storeStatus, menuItemStatuses, menuStockUpdatedAt, new Date());
+    homeStoreStatus = masked.storeStatus;
+    homeMenuItemStatuses = masked.menuItemStatuses;
+    homeMenuStockUpdatedAt = masked.menuStockUpdatedAt;
+  }
+
   const shareBonus = buildShareBonusSummary(shareBonusEvents);
   const quizStageProgress = buildQuizStageProgressSummary(quizSessions);
   const visitRecords = buildVisitRecords(
@@ -712,9 +723,9 @@ function buildSnapshotFromRecords(
     parts: trackedParts,
     menuItems,
     home: {
-      menuItemStatuses,
-      menuStockUpdatedAt,
-      storeStatus,
+      menuItemStatuses: homeMenuItemStatuses,
+      menuStockUpdatedAt: homeMenuStockUpdatedAt,
+      storeStatus: homeStoreStatus,
       recentLogs: visitRecords.slice(0, 3),
     },
     history: {
