@@ -302,10 +302,10 @@ export function QuizScreen() {
   const highestUnlockedStageNumber = getHighestUnlockedQuizStageNumber({
     correctByStage: snapshot.history.quizStageProgress.correctByStage,
   });
-  const stagePageStart = Math.floor((stageNumber - 1) / 10) * 10 + 1;
-  const visibleStages = QUIZ_STAGE_CONFIGS.slice(stagePageStart - 1, stagePageStart + 9);
+  const stagePageStart = Math.floor((stageNumber - 1) / 5) * 5 + 1;
+  const visibleStages = QUIZ_STAGE_CONFIGS.slice(stagePageStart - 1, stagePageStart + 4);
   const canMoveStagePageBackward = stagePageStart > 1;
-  const canMoveStagePageForward = stagePageStart + 10 <= QUIZ_STAGE_CONFIGS.length;
+  const canMoveStagePageForward = stagePageStart + 5 <= QUIZ_STAGE_CONFIGS.length;
 
   return (
     <>
@@ -339,21 +339,21 @@ export function QuizScreen() {
           <button
             className="button-outline"
             disabled={!canMoveStagePageBackward}
-            onClick={() => setStageNumber(Math.max(1, stagePageStart - 10))}
+            onClick={() => setStageNumber(Math.max(1, stagePageStart - 5))}
             type="button"
           >
-            前の10ステージ
+            前の5ステージ
           </button>
           <span className="helper-text">
-            STAGE {stagePageStart} - {Math.min(stagePageStart + 9, QUIZ_STAGE_CONFIGS.length)}
+            STAGE {stagePageStart} - {Math.min(stagePageStart + 4, QUIZ_STAGE_CONFIGS.length)}
           </span>
           <button
             className="button-outline"
             disabled={!canMoveStagePageForward}
-            onClick={() => setStageNumber(Math.min(QUIZ_STAGE_CONFIGS.length, stagePageStart + 10))}
+            onClick={() => setStageNumber(Math.min(QUIZ_STAGE_CONFIGS.length, stagePageStart + 5))}
             type="button"
           >
-            次の10ステージ
+            次の5ステージ
           </button>
         </div>
         <div className="quiz-stage-grid">
