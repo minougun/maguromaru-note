@@ -20,7 +20,7 @@ interface MapRegionDef {
   label: {
     x: number;
     y: number;
-    /** 未指定なら partIds から名称を結合 */
+    /** 未指定なら partIds[0] の名前 */
     text?: string;
   };
   /** ラベル枠の幅（長い文言用） */
@@ -29,105 +29,45 @@ interface MapRegionDef {
 
 /**
  * viewBox 1365×768。背景は `src/assets/zukan-tuna-map.webp`（幅 1365 に最適化済み）。
- * ラベル・楕円位置は参考解剖図（714×429px、例: Downloads/655546.jpg）を縦横それぞれ線形スケールして合わせている。
- * 腹は前から「大トロ」「大トロ・中トロ」「中とろ（後腹）」。中とろは背のブロックでもハイライト。
+ * 腹部は前後2領域：前＝大トロのみ、後＝大トロ・中トロ（記録は部位ごと）。
+ * 中とろは背のブロック＋腹の後方の両方でハイライトされる。
  */
-const REF_W = 714;
-const REF_H = 429;
-const VB_W = 1365;
-const VB_H = 768;
-
-function sx(x: number): number {
-  return (x * VB_W) / REF_W;
-}
-function sy(y: number): number {
-  return (y * VB_H) / REF_H;
-}
-
 const MAP_REGIONS: MapRegionDef[] = [
-  {
-    key: "noten",
-    partIds: ["noten"],
-    type: "ellipse",
-    cx: sx(182),
-    cy: sy(110),
-    rx: sx(34),
-    ry: sy(22),
-    label: { x: sx(90), y: sy(56) },
-  },
-  {
-    key: "hoho",
-    partIds: ["hoho"],
-    type: "ellipse",
-    cx: sx(120),
-    cy: sy(235),
-    rx: sx(46),
-    ry: sy(36),
-    label: { x: sx(60), y: sy(278) },
-  },
-  {
-    key: "meura",
-    partIds: ["meura"],
-    type: "ellipse",
-    cx: sx(200),
-    cy: sy(162),
-    rx: sx(38),
-    ry: sy(30),
-    label: { x: sx(138), y: sy(128) },
-  },
+  { key: "noten", partIds: ["noten"], type: "ellipse", cx: 292, cy: 178, rx: 48, ry: 30, label: { x: 228, y: 92 } },
+  { key: "hoho", partIds: ["hoho"], type: "ellipse", cx: 206, cy: 426, rx: 52, ry: 40, label: { x: 92, y: 486 } },
+  { key: "meura", partIds: ["meura"], type: "ellipse", cx: 238, cy: 342, rx: 42, ry: 32, label: { x: 158, y: 262 } },
   {
     key: "chutoro-back",
     partIds: ["chutoro"],
     type: "ellipse",
-    cx: sx(400),
-    cy: sy(118),
-    rx: sx(128),
-    ry: sy(40),
-    label: { x: sx(357), y: sy(52) },
+    cx: 712,
+    cy: 248,
+    rx: 208,
+    ry: 70,
+    label: { x: 668, y: 82 },
   },
+  { key: "akami", partIds: ["akami"], type: "ellipse", cx: 718, cy: 394, rx: 238, ry: 90, label: { x: 1040, y: 336 } },
   {
-    key: "akami",
-    partIds: ["akami"],
+    key: "belly-otoro-chutoro-rear",
+    partIds: ["otoro", "chutoro"],
     type: "ellipse",
-    cx: sx(392),
-    cy: sy(208),
-    rx: sx(152),
-    ry: sy(50),
-    label: { x: sx(450), y: sy(210) },
-    labelWidth: 168,
+    cx: 738,
+    cy: 548,
+    rx: 132,
+    ry: 52,
+    label: { x: 926, y: 628, text: "大トロ・中トロ" },
+    labelWidth: 248,
   },
   {
     key: "belly-otoro-front",
     partIds: ["otoro"],
     type: "ellipse",
-    cx: sx(285),
-    cy: sy(320),
-    rx: sx(74),
-    ry: sy(36),
-    label: { x: sx(272), y: sy(398), text: "大トロ" },
+    cx: 438,
+    cy: 556,
+    rx: 112,
+    ry: 48,
+    label: { x: 352, y: 692, text: "大トロ" },
     labelWidth: 132,
-  },
-  {
-    key: "belly-otoro-chutoro-mid",
-    partIds: ["otoro", "chutoro"],
-    type: "ellipse",
-    cx: sx(432),
-    cy: sy(315),
-    rx: sx(86),
-    ry: sy(34),
-    label: { x: sx(448), y: sy(392), text: "大トロ・中トロ" },
-    labelWidth: 248,
-  },
-  {
-    key: "belly-chutoro-rear",
-    partIds: ["chutoro"],
-    type: "ellipse",
-    cx: sx(538),
-    cy: sy(308),
-    rx: sx(70),
-    ry: sy(32),
-    label: { x: sx(548), y: sy(382) },
-    labelWidth: 168,
   },
 ];
 
@@ -201,10 +141,12 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
             const isSelected = selectedRegionKey === r.key;
             const fill = eaten ? primary.color : "transparent";
             const fillOpacity = eaten ? (isSelected ? 0.6 : 0.4) : 0;
-            const stroke = eaten ? primary.color : "#000000";
-            const strokeDasharray = eaten ? "none" : "6 5";
-            const strokeWidth = eaten ? (isSelected ? 3 : 2) : isSelected ? 5.25 : 4.5;
+            const stroke = eaten ? primary.color : "rgba(0,0,0,0.6)";
+            const strokeDasharray = eaten ? "none" : "4 4";
+            const strokeWidth = isSelected ? 3 : 2;
             const filterAttr = eaten ? "url(#glowF)" : undefined;
+
+            const lw = (r.labelWidth ?? 152) / 2;
 
             return (
               <g
@@ -249,51 +191,37 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
                 ) : (
                   <ellipse cx={r.cx} cy={r.cy} rx={(r.rx ?? 30) + 10} ry={(r.ry ?? 20) + 10} fill="transparent" />
                 )}
-              </g>
-            );
-          })}
-          {MAP_REGIONS.map((r) => {
-            const hasAllParts = r.partIds.every((id) => partsById.has(id));
-            if (!hasAllParts) return null;
-
-            const eaten = regionEaten(r, collected);
-            const primary = regionPrimaryPart(r, partsById, collected);
-            if (!primary) return null;
-
-            const lw = (r.labelWidth ?? 152) / 2;
-            const labelText = labelForRegion(r);
-            if (!labelText) return null;
-
-            return (
-              <g key={`${r.key}-labels`} aria-hidden="true" onClick={() => handleTapRegion(r)} style={{ cursor: "pointer" }}>
                 <line
-                  className="map-label-leader"
                   x1={r.label.x}
                   y1={r.label.y + 18}
                   x2={r.cx}
                   y2={r.cy}
+                  stroke="rgba(92,63,45,0.72)"
+                  strokeWidth="4"
+                  opacity="0.9"
+                  fill="none"
                 />
                 <rect
-                  className={eaten ? "map-label-pill map-label-pill--eaten" : "map-label-pill"}
                   x={r.label.x - lw}
                   y={r.label.y - 26}
                   rx="22"
                   ry="22"
                   width={lw * 2}
                   height="52"
-                  fill={eaten ? primary.color : undefined}
-                  stroke={eaten ? primary.color : undefined}
+                  fill={eaten ? primary.color : "rgba(55,38,32,0.92)"}
+                  stroke={eaten ? primary.color : "rgba(196,168,120,0.45)"}
+                  strokeWidth="2"
                 />
                 <text
-                  className={eaten ? "map-label-text map-label-text--eaten" : "map-label-text"}
                   x={r.label.x}
                   y={r.label.y + 8}
                   textAnchor="middle"
                   fontSize={r.label.text && r.label.text.length > 5 ? 22 : 28}
                   fontWeight="700"
+                  fill={eaten ? "#0d0805" : "#f2e4c7"}
                   fontFamily="Noto Sans JP, sans-serif"
                 >
-                  {labelText}
+                  {labelForRegion(r)}
                 </text>
               </g>
             );
@@ -331,6 +259,11 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
 
       {selectedRegion && selectedRegion.partIds.length > 1 ? (
         <div className="map-detail-card map-detail-card--multi">
+          <p className="map-detail-desc map-detail-multi-lead">
+            {selectedRegion.key === "belly-otoro-chutoro-rear"
+              ? "後方の腹はマップ上「大トロ・中トロ」と表示しています。記録は大トロ・中トロそれぞれで管理されます。"
+              : "この領域に含まれる部位の記録状況は下記のとおりです。"}
+          </p>
           <ul className="map-detail-multi-list">
             {selectedRegion.partIds.map((pid) => {
               const part = partsById.get(pid);

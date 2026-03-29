@@ -1280,8 +1280,7 @@ body {
 }
 
 .map-wrap {
-  /* ラベルが viewBox 端に寄るときに切れないよう clip しない（角丸は SVG 側で十分） */
-  overflow: visible;
+  overflow: hidden;
   border-radius: 22px;
   border: 1px solid var(--wood-mid);
   background: linear-gradient(180deg, #fffdf8, #f4efe5);
@@ -1295,32 +1294,6 @@ body {
   width: 100%;
   height: auto;
   border-radius: 16px;
-  overflow: visible;
-}
-
-.map-label-leader {
-  stroke: rgba(55, 40, 30, 0.88);
-  stroke-width: 3.5px;
-  fill: none;
-  vector-effect: non-scaling-stroke;
-}
-
-.map-label-pill {
-  fill: rgba(55, 38, 32, 0.95);
-  stroke: rgba(196, 168, 120, 0.55);
-  stroke-width: 2px;
-}
-
-.map-label-text {
-  fill: #fff8e8 !important;
-  paint-order: stroke fill;
-  stroke: rgba(0, 0, 0, 0.22);
-  stroke-width: 0.4px;
-}
-
-.map-label-text--eaten {
-  fill: #120a08 !important;
-  stroke: rgba(255, 255, 255, 0.2);
 }
 
 .map-hint {
@@ -1367,6 +1340,13 @@ body {
   font-size: 13px;
   color: var(--cream-dark);
   line-height: 1.5;
+}
+
+.map-detail-card--multi .map-detail-multi-lead {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: var(--cream-dark);
+  line-height: 1.55;
 }
 
 .map-detail-multi-list {
