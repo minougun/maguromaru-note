@@ -169,7 +169,7 @@ body {
   width: 4px;
   height: 22px;
   border-radius: 2px;
-  background: var(--navy);
+  background: linear-gradient(180deg, var(--aka-light), var(--aka-bold));
 }
 
 .section-title {
