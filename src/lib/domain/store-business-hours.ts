@@ -2,10 +2,10 @@ import { menuItemIds } from "@/lib/domain/constants";
 import type { MenuStockStatus } from "@/lib/domain/constants";
 import type { MenuItemId, StoreStatus } from "@/lib/domain/types";
 
-/** 店舗案内の営業時間（`STORE_INFO.hours`）に合わせ、東京時間 10:00〜24:00 を営業中とみなす */
-const OPEN_MINUTES_FROM_MIDNIGHT_JST = 10 * 60;
-const CLOSE_MINUTES_FROM_MIDNIGHT_JST = 24 * 60;
-/** 閉店 24:00 の 1 時間前（東京 23:00 から） */
+/** 店舗案内の営業時間（`STORE_INFO.hours`）に合わせ、東京時間 11:00〜21:00 を営業中とみなす（21:00 締め＝20:59 まで営業扱い） */
+const OPEN_MINUTES_FROM_MIDNIGHT_JST = 11 * 60;
+const CLOSE_MINUTES_FROM_MIDNIGHT_JST = 21 * 60;
+/** 閉店 1 時間前（東京 20:00〜20:59） */
 const ONE_HOUR_BEFORE_CLOSE_MINUTES_JST = CLOSE_MINUTES_FROM_MIDNIGHT_JST - 60;
 
 /**
@@ -32,7 +32,7 @@ export function minutesFromMidnightJst(now: Date): number {
 }
 
 /**
- * 案内営業時間内か（東京 10:00 以上 24:00 未満＝翌0:00まで）
+ * 案内営業時間内か（東京 11:00 以上 21:00 未満）
  */
 export function isWithinStoreBusinessHoursJst(now: Date): boolean {
   const mins = minutesFromMidnightJst(now);
@@ -40,7 +40,7 @@ export function isWithinStoreBusinessHoursJst(now: Date): boolean {
 }
 
 /**
- * 閉店 1 時間前の帯か（東京 23:00〜23:59。案内の 24:00 閉店に準拠）
+ * 閉店 1 時間前の帯か（東京 20:00〜20:59。案内の 21:00 閉店に準拠）
  */
 export function isWithinOneHourBeforeCloseJst(now: Date): boolean {
   const mins = minutesFromMidnightJst(now);
@@ -101,7 +101,7 @@ function closingSoonStoreDisplay(base: StoreStatus, clearCopy: boolean): StoreSt
 
 /**
  * 一般ユーザー向けホーム表示用に、案内営業時間外は営業状況を本日終了（closed）・入荷は未設定へ、
- * 閉店 1 時間前（東京 23:00〜）は「まもなく終了」（closing_soon）、
+ * 閉店 1 時間前（東京 20:00〜20:59）は「まもなく終了」（closing_soon）、
  * 営業時間内かつ本日未更新なら入荷を ◎ あり相当へ寄せる。
  * 管理画面用はマスクしない（`viewer.role === "admin"` のときスキップ）。
  */

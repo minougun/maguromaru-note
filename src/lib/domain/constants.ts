@@ -60,7 +60,7 @@ export const STORE_INFO = {
   facility: "HUB KITCHEN内",
   address: "大阪府大阪市中央区久太郎町3-1-27 ヒグチビル 1F",
   access: "大阪メトロ本町駅12番出口 徒歩1-2分",
-  hours: "10:00〜24:00（売り切れ次第終了）",
+  hours: "11:00〜21:00（売り切れ次第終了）",
   instagram: "@maguromaru_honten",
   lat: 34.6851,
   lng: 135.5006,

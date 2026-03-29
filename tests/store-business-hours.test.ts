@@ -28,14 +28,17 @@ test("isWithinStoreBusinessHoursJst: 03:00 JST is closed", () => {
   assert.equal(isWithinStoreBusinessHoursJst(new Date("2026-03-30T03:00:00+09:00")), false);
 });
 
-test("isWithinStoreBusinessHoursJst: 12:00 JST is open", () => {
+test("isWithinStoreBusinessHoursJst: 10:00 JST is closed, 12:00 JST is open, 21:00 JST is closed", () => {
+  assert.equal(isWithinStoreBusinessHoursJst(new Date("2026-03-30T10:00:00+09:00")), false);
   assert.equal(isWithinStoreBusinessHoursJst(new Date("2026-03-30T12:00:00+09:00")), true);
+  assert.equal(isWithinStoreBusinessHoursJst(new Date("2026-03-30T21:00:00+09:00")), false);
 });
 
-test("isWithinOneHourBeforeCloseJst: 22:59 JST is false, 23:00 JST is true", () => {
-  assert.equal(isWithinOneHourBeforeCloseJst(new Date("2026-03-30T22:59:00+09:00")), false);
-  assert.equal(isWithinOneHourBeforeCloseJst(new Date("2026-03-30T23:00:00+09:00")), true);
-  assert.equal(isWithinOneHourBeforeCloseJst(new Date("2026-03-30T23:59:00+09:00")), true);
+test("isWithinOneHourBeforeCloseJst: 19:59 JST false, 20:00–20:59 true, 21:00 false", () => {
+  assert.equal(isWithinOneHourBeforeCloseJst(new Date("2026-03-30T19:59:00+09:00")), false);
+  assert.equal(isWithinOneHourBeforeCloseJst(new Date("2026-03-30T20:00:00+09:00")), true);
+  assert.equal(isWithinOneHourBeforeCloseJst(new Date("2026-03-30T20:59:00+09:00")), true);
+  assert.equal(isWithinOneHourBeforeCloseJst(new Date("2026-03-30T21:00:00+09:00")), false);
 });
 
 test("applyCustomerFacingStoreAndStock: after hours shows closed store and unset menu", () => {
@@ -74,7 +77,7 @@ test("applyCustomerFacingStoreAndStock: open hours and touched today preserves D
 });
 
 test("applyCustomerFacingStoreAndStock: one hour before close forces closing_soon when fresh today", () => {
-  const now = new Date("2026-03-30T23:30:00+09:00");
+  const now = new Date("2026-03-30T20:30:00+09:00");
   const out = applyCustomerFacingStoreAndStock(storeBusyToday, defaultMenuStockById, "2026-03-30T02:00:00.000Z", now);
   assert.equal(out.storeStatus.status, "closing_soon");
   assert.equal(out.storeStatus.status_note, "混雑");
@@ -82,7 +85,7 @@ test("applyCustomerFacingStoreAndStock: one hour before close forces closing_soo
 });
 
 test("applyCustomerFacingStoreAndStock: one hour before close when stale uses closing_soon and available menu", () => {
-  const now = new Date("2026-03-30T23:30:00+09:00");
+  const now = new Date("2026-03-30T20:30:00+09:00");
   const staleStore: StoreStatus = {
     ...seededStoreStatus,
     status: "busy",

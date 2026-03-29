@@ -685,9 +685,9 @@ const storeQuestions: QuizQuestionSpec[] = [
     idBase: "store-hours",
     category: "お店",
     question: "営業時間の案内として正しいものは？",
-    options: ["10:00〜24:00（売り切れ次第終了）", "7:00〜15:00", "11:30〜14:00のみ", "24時間営業"],
+    options: [STORE_INFO.hours, "7:00〜15:00", "11:30〜14:00のみ", "24時間営業"],
     answerIndex: 0,
-    explanation: "営業時間は 10:00〜24:00、売り切れ次第終了です。",
+    explanation: `営業時間は ${STORE_INFO.hours} です。`,
   },
   {
     idBase: "store-instagram",
@@ -1040,8 +1040,8 @@ const storeLieStatements: Statement[] = [
     id: "store-false-8",
     category: "お店",
     subject: "営業時間",
-    text: `${STORE_INFO.name} は売り切れても24時まで必ず営業します。`,
-    explanation: `${STORE_INFO.name} は売り切れ次第で営業終了します。`,
+    text: `${STORE_INFO.name} は閉店後も夜遅くまで営業しています。`,
+    explanation: `${STORE_INFO.name} の営業時間は ${STORE_INFO.hours} です。`,
   },
   {
     id: "store-false-9",
