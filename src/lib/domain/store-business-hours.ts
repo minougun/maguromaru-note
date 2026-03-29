@@ -5,6 +5,8 @@ import type { MenuItemId, StoreStatus } from "@/lib/domain/types";
 /** 店舗案内の営業時間（`STORE_INFO.hours`）に合わせ、東京時間 10:00〜24:00 を営業中とみなす */
 const OPEN_MINUTES_FROM_MIDNIGHT_JST = 10 * 60;
 const CLOSE_MINUTES_FROM_MIDNIGHT_JST = 24 * 60;
+/** 閉店 24:00 の 1 時間前（東京 23:00 から） */
+const ONE_HOUR_BEFORE_CLOSE_MINUTES_JST = CLOSE_MINUTES_FROM_MIDNIGHT_JST - 60;
 
 /**
  * 東京日付 YYYY-MM-DD（集計・日替わり判定用）
@@ -15,9 +17,9 @@ export function calendarDateJst(isoOrDate: string | Date): string {
 }
 
 /**
- * 案内営業時間内か（東京 10:00 以上 24:00 未満＝翌0:00まで）
+ * 東京の当日 0:00 からの経過分（0〜1439）
  */
-export function isWithinStoreBusinessHoursJst(now: Date): boolean {
+export function minutesFromMidnightJst(now: Date): number {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: "Asia/Tokyo",
     hour: "numeric",
@@ -26,8 +28,23 @@ export function isWithinStoreBusinessHoursJst(now: Date): boolean {
   }).formatToParts(now);
   const hour = Number(parts.find((p) => p.type === "hour")?.value ?? "0");
   const minute = Number(parts.find((p) => p.type === "minute")?.value ?? "0");
-  const mins = hour * 60 + minute;
+  return hour * 60 + minute;
+}
+
+/**
+ * 案内営業時間内か（東京 10:00 以上 24:00 未満＝翌0:00まで）
+ */
+export function isWithinStoreBusinessHoursJst(now: Date): boolean {
+  const mins = minutesFromMidnightJst(now);
   return mins >= OPEN_MINUTES_FROM_MIDNIGHT_JST && mins < CLOSE_MINUTES_FROM_MIDNIGHT_JST;
+}
+
+/**
+ * 閉店 1 時間前の帯か（東京 23:00〜23:59。案内の 24:00 閉店に準拠）
+ */
+export function isWithinOneHourBeforeCloseJst(now: Date): boolean {
+  const mins = minutesFromMidnightJst(now);
+  return mins >= ONE_HOUR_BEFORE_CLOSE_MINUTES_JST && mins < CLOSE_MINUTES_FROM_MIDNIGHT_JST;
 }
 
 function latestTouchIso(storeUpdatedAt: string, menuStockUpdatedAt: string | null): string {
@@ -66,8 +83,25 @@ function afterHoursStoreDisplay(base: StoreStatus): StoreStatus {
   };
 }
 
+function closingSoonStoreDisplay(base: StoreStatus, clearCopy: boolean): StoreStatus {
+  if (clearCopy) {
+    return {
+      ...base,
+      status: "closing_soon",
+      status_note: "",
+      recommendation: "",
+      weather_comment: "",
+    };
+  }
+  return {
+    ...base,
+    status: "closing_soon",
+  };
+}
+
 /**
  * 一般ユーザー向けホーム表示用に、案内営業時間外は営業状況を本日終了（closed）・入荷は未設定へ、
+ * 閉店 1 時間前（東京 23:00〜）は「まもなく終了」（closing_soon）、
  * 営業時間内かつ本日未更新なら入荷を ◎ あり相当へ寄せる。
  * 管理画面用はマスクしない（`viewer.role === "admin"` のときスキップ）。
  */
@@ -92,8 +126,17 @@ export function applyCustomerFacingStoreAndStock(
   const today = calendarDateJst(now);
   const lastTouch = latestTouchIso(storeStatus.updated_at, menuStockUpdatedAt);
   const lastDay = calendarDateJst(lastTouch);
+  const freshToday = lastDay === today;
 
-  if (lastDay !== today) {
+  if (isWithinOneHourBeforeCloseJst(now)) {
+    return {
+      storeStatus: closingSoonStoreDisplay(storeStatus, !freshToday),
+      menuItemStatuses: freshToday ? menuItemStatuses : allMenuAvailable(),
+      menuStockUpdatedAt: freshToday ? menuStockUpdatedAt : null,
+    };
+  }
+
+  if (!freshToday) {
     return {
       storeStatus: clearedStoreStatus(storeStatus),
       menuItemStatuses: allMenuAvailable(),
