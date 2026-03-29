@@ -9,7 +9,8 @@
     "lint": "eslint src tests eslint.config.mjs",
     "typecheck": "tsc --noEmit",
     "test": "NEXT_PUBLIC_SITE_URL=http://localhost:3000 tsx --test tests/**/*.test.ts",
-    "analyze": "ANALYZE=true next build --webpack"
+    "analyze": "ANALYZE=true next build --webpack",
+    "assets:zukan-map": "node scripts/optimize-zukan-tuna-map.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.9.0",
@@ -30,6 +31,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "sharp": "0.34.5",
     "tailwindcss": "^4",
     "tsx": "4.21.0",
     "typescript": "^5"

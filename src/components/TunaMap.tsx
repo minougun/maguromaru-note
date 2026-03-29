@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import tunaMapBackground from "@/assets/zukan-tuna-map.png";
+import tunaMapBackground from "@/assets/zukan-tuna-map.webp";
 
 import type { Part, PartId } from "@/lib/domain/types";
 
@@ -20,7 +20,7 @@ interface MapRegionDef {
 }
 
 /**
- * viewBox 1365×768（`src/assets/zukan-tuna-map.png` を Next が `/_next/static/media/` にバンドル。縦横比はおおよそ 1365:768）。
+ * viewBox 1365×768（`src/assets/zukan-tuna-map.webp` を `/_next/static/media/` にバンドル。幅 1365 に最適化済み）。
  * 腹部は前後2領域：前＝大トロのみ、後＝大トロ・中トロ（記録は部位ごと）。
  * 中とろは背のブロック＋腹の後方の両方でハイライトされる。
  */
