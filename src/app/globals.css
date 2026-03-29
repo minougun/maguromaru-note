@@ -822,6 +822,25 @@ body {
   text-align: right;
 }
 
+.quiz-master-progress {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--wood-mid);
+  border-radius: 10px;
+  background: rgba(18, 11, 7, 0.5);
+}
+
+.quiz-master-progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.quiz-master-progress .progress-bar-wrap {
+  margin: 0 0 6px;
+}
+
 .quiz-stage-nav {
   display: flex;
   align-items: center;

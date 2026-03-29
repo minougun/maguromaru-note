@@ -19,6 +19,7 @@ import {
 } from "@/lib/quiz-stages";
 import { buildQuizResultShare, type SharePayload } from "@/lib/share/share";
 import { buildFreshSupabaseAuthHeaders } from "@/lib/supabase/browser";
+import { TITLES } from "@/lib/domain/constants";
 import { formatCount } from "@/lib/utils/format";
 
 type SessionQuestion = {
@@ -328,6 +329,29 @@ export function QuizScreen() {
             </div>
           </div>
         </div>
+        {(() => {
+          const masterTitle = TITLES.find((t) => t.id === "master")!;
+          const totalCorrect = snapshot.history.quizStats.totalCorrectAnswers;
+          const goal = masterTitle.requiredQuizCorrect;
+          const pct = Math.min(Math.round((totalCorrect / goal) * 100), 100);
+          const reached = totalCorrect >= goal;
+          return (
+            <div className="quiz-master-progress">
+              <div className="quiz-master-progress-header">
+                <span className="progress-label">👑 {masterTitle.name}への道</span>
+                <span className="progress-label">{pct}%</span>
+              </div>
+              <div className="progress-bar-wrap">
+                <div className="progress-bar-fill" style={{ width: `${pct}%` }} />
+              </div>
+              <p className="progress-caption">
+                {reached
+                  ? `${masterTitle.name}到達！おめでとうございます！`
+                  : `累計 ${formatCount(totalCorrect)} / ${formatCount(goal)} 問正解`}
+              </p>
+            </div>
+          );
+        })()}
         <p className="helper-text" style={{ marginTop: 8 }}>
           各ステージ内で累計 10問正解すると次のステージが解放。問題内容と難易度はステージごとに切り替わります。
         </p>
