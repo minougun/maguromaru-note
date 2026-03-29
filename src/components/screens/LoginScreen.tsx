@@ -8,6 +8,11 @@ import { ZodError } from "zod";
 import { AccountLinkSection } from "@/components/mypage/AccountLinkSection";
 import { useAuthState } from "@/components/providers/AuthProvider";
 import {
+  clearAuthCallbackQueryParams,
+  readAuthCallbackErrorMessage,
+  readAuthCallbackNotice,
+} from "@/lib/auth-callback-ui";
+import {
   requestEmailSignInOtp,
   startAnonymousSession,
   startAppleSignInFlow,
@@ -40,15 +45,17 @@ export function LoginScreen() {
   const [emailPanelOpen, setEmailPanelOpen] = useState(false);
 
   useEffect(() => {
-    const authResult = new URLSearchParams(window.location.search).get("auth");
-    if (authResult === "linked") {
+    const params = new URLSearchParams(window.location.search);
+    if (readAuthCallbackNotice(params) === "linked") {
       setNotice("アカウント連携が完了しました。");
       setFormError(null);
-      window.history.replaceState({}, "", window.location.pathname);
+      clearAuthCallbackQueryParams();
       return;
     }
-    if (authResult === "error") {
-      setFormError("認証のコールバック処理に失敗しました。設定を確認して再度お試しください。");
+    const errMsg = readAuthCallbackErrorMessage(params);
+    if (errMsg) {
+      setFormError(errMsg);
+      clearAuthCallbackQueryParams();
     }
   }, []);
 

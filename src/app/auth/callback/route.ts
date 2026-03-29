@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
 
   if (authError) {
     redirectUrl.searchParams.set("auth", "error");
+    redirectUrl.searchParams.set("auth_err", "provider");
     return NextResponse.redirect(redirectUrl);
   }
 
@@ -49,6 +50,7 @@ export async function GET(request: NextRequest) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (error) {
       redirectUrl.searchParams.set("auth", "error");
+      redirectUrl.searchParams.set("auth_err", "session");
       response = NextResponse.redirect(redirectUrl);
       return response;
     }
@@ -56,6 +58,7 @@ export async function GET(request: NextRequest) {
     const parsedType = emailOtpCallbackTypeSchema.safeParse(otpTypeRaw);
     if (!parsedType.success) {
       redirectUrl.searchParams.set("auth", "error");
+      redirectUrl.searchParams.set("auth_err", "incomplete");
       return NextResponse.redirect(redirectUrl);
     }
     const { error } = await supabase.auth.verifyOtp({
@@ -64,11 +67,13 @@ export async function GET(request: NextRequest) {
     });
     if (error) {
       redirectUrl.searchParams.set("auth", "error");
+      redirectUrl.searchParams.set("auth_err", "email");
       response = NextResponse.redirect(redirectUrl);
       return response;
     }
   } else {
     redirectUrl.searchParams.set("auth", "error");
+    redirectUrl.searchParams.set("auth_err", "incomplete");
     return NextResponse.redirect(redirectUrl);
   }
 

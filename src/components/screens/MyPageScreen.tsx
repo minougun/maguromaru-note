@@ -9,6 +9,7 @@ import { requestAppSnapshotRefresh } from "@/components/providers/AppSnapshotPro
 import { useAuthState } from "@/components/providers/AuthProvider";
 import { Card } from "@/components/ui/Card";
 import { NorenBanner } from "@/components/ui/NorenBanner";
+import { clearAuthCallbackQueryParams, readAuthCallbackErrorMessage } from "@/lib/auth-callback-ui";
 import { formatSupabaseAuthError } from "@/lib/supabase/auth-errors";
 import {
   type BrowserAuthProfile,
@@ -60,13 +61,15 @@ export function MyPageScreen() {
   }, [auth.usingSupabase]);
 
   useEffect(() => {
-    const authResult = new URLSearchParams(window.location.search).get("auth");
+    const params = new URLSearchParams(window.location.search);
+    const authResult = params.get("auth");
     if (authResult !== "linked" && authResult !== "error") {
       return;
     }
 
     if (authResult === "error") {
-      setLinkError("認証のコールバックに失敗しました。");
+      setLinkError(readAuthCallbackErrorMessage(params) ?? "認証のコールバックに失敗しました。");
+      clearAuthCallbackQueryParams();
       return;
     }
 
