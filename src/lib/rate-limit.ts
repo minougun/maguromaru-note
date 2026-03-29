@@ -1,4 +1,4 @@
-type RateLimitPolicy = {
+export type RateLimitPolicy = {
   windowMs: number;
   maxRequests: number;
 };
@@ -61,17 +61,15 @@ export function consumeRateLimit(key: string, policy: RateLimitPolicy): RateLimi
   };
 }
 
-export function applyRateLimit(request: Request, routeKey: string, policy: RateLimitPolicy) {
-  const clientIp = readClientIp(request);
-  return consumeRateLimit(`${routeKey}:${clientIp}`, policy);
-}
-
 export const mutationRateLimits = {
   visitWrites: { windowMs: 60_000, maxRequests: 20 },
   quizWrites: { windowMs: 60_000, maxRequests: 60 },
   shareWrites: { windowMs: 60_000, maxRequests: 20 },
   adminWrites: { windowMs: 60_000, maxRequests: 20 },
 } as const;
+
+/** GET /api/app-snapshot 用（タブ切替・staleTime 前提の読み取り上限） */
+export const snapshotReadLimits = { windowMs: 60_000, maxRequests: 90 } as const;
 
 export function resetRateLimitStoreForTests() {
   store.clear();

@@ -4,9 +4,11 @@
  * package.json の test スクリプトで SITE_URL を固定している。
  */
 import assert from "node:assert/strict";
-import test from "node:test";
+import { beforeEach, test } from "node:test";
 
 import { verifyCsrfOrigin } from "@/lib/env";
+import { resetHttpRateLimitCachesForTests } from "@/lib/http-rate-limit";
+import { resetRateLimitStoreForTests } from "@/lib/rate-limit";
 import { POST as adminStatusPost } from "@/app/api/admin/status/route";
 import { GET as appSnapshotGet } from "@/app/api/app-snapshot/route";
 import { POST as anonymousCompletePost } from "@/app/api/auth/anonymous-link/complete/route";
@@ -20,6 +22,11 @@ import { POST as visitLogsPost } from "@/app/api/visit-logs/route";
 
 const allowedOrigin = "http://localhost:3000";
 const api = (path: string) => `${allowedOrigin}${path}`;
+
+beforeEach(() => {
+  resetRateLimitStoreForTests();
+  resetHttpRateLimitCachesForTests();
+});
 
 function jsonPost(path: string, init: { origin?: string | null; body?: string; headers?: Record<string, string> }) {
   const headers: Record<string, string> = {

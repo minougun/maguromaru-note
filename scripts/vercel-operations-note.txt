@@ -1,0 +1,13 @@
+Vercel / 運用メモ（負荷・監視）
+
+- vercel.json で app-snapshot の maxDuration を 30s に設定（Hobby プランでは上限 10s にクランプされる想定。Pro 以上で効く）。
+- ダッシュボードで Functions のエラー率・p95 レイテンシ・同時実行数を監視する。
+- 異常時: デプロイのロールバック、UPSTASH / Supabase のメトリクス確認、429 増加なら snapshotReadLimits の調整を検討。
+
+Upstash（任意・本番推奨）
+- UPSTASH_REDIS_REST_URL
+- UPSTASH_REDIS_REST_TOKEN
+未設定時は従来どおりプロセス内 Map のみ（サーバーレスではインスタンスごとに独立）。
+
+クライアント staleTime（任意）
+- NEXT_PUBLIC_APP_SNAPSHOT_STALE_MS … ミリ秒。既定 45000。5000〜600000 の範囲外は 45000 にフォールバック。

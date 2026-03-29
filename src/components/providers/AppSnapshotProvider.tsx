@@ -21,6 +21,25 @@ import type { AppSnapshot } from "@/lib/domain/types";
 import { withAppBasePath } from "@/lib/public-path";
 import { buildSupabaseAuthHeaders, readSupabaseAccessToken } from "@/lib/supabase/browser";
 
+type SnapshotCacheEntry = {
+  snapshot: AppSnapshot;
+  fetchedAt: number;
+};
+
+function readSnapshotStaleMs(): number {
+  const raw = process.env.NEXT_PUBLIC_APP_SNAPSHOT_STALE_MS?.trim();
+  if (!raw) {
+    return 45_000;
+  }
+  const n = Number.parseInt(raw, 10);
+  if (!Number.isFinite(n) || n < 5_000 || n > 600_000) {
+    return 45_000;
+  }
+  return n;
+}
+
+const SNAPSHOT_STALE_MS = readSnapshotStaleMs();
+
 function buildSnapshotRequestUrl(pathname: string | null): string {
   const scope = snapshotScopeForPathname(pathname);
   const params = new URLSearchParams();
@@ -38,6 +57,10 @@ function snapshotCacheKey(pathname: string | null): string {
     return `${scope}:p1:s${HISTORY_SNAPSHOT_DEFAULT_PAGE_SIZE}`;
   }
   return scope;
+}
+
+function isFreshEntry(entry: SnapshotCacheEntry): boolean {
+  return Date.now() - entry.fetchedAt < SNAPSHOT_STALE_MS;
 }
 
 /** 連携完了など、フックの外からスナップショット再取得を依頼するときに使う */
@@ -64,7 +87,7 @@ export function AppSnapshotProvider({ children }: { children: React.ReactNode })
   const pathnameRef = useRef(pathname);
   pathnameRef.current = pathname;
 
-  const snapshotCacheRef = useRef(new Map<string, AppSnapshot>());
+  const snapshotCacheRef = useRef(new Map<string, SnapshotCacheEntry>());
 
   const [snapshot, setSnapshot] = useState<AppSnapshot | null>(null);
   const [loading, setLoading] = useState(false);
@@ -106,7 +129,7 @@ export function AppSnapshotProvider({ children }: { children: React.ReactNode })
     const key = snapshotCacheKey(pathname);
     const hit = snapshotCacheRef.current.get(key);
     if (hit) {
-      setSnapshot(hit);
+      setSnapshot(hit.snapshot);
       setError(null);
       setLoading(false);
     } else {
@@ -130,12 +153,18 @@ export function AppSnapshotProvider({ children }: { children: React.ReactNode })
     }
 
     const key = snapshotCacheKey(pathname);
-    const hadCache = snapshotCacheRef.current.has(key);
+    const entry = snapshotCacheRef.current.get(key);
+
+    if (entry && isFreshEntry(entry)) {
+      return;
+    }
+
+    const hadCache = Boolean(entry);
+    const blockingLoad = !hadCache;
 
     let cancelled = false;
     const abortController = new AbortController();
     const snapshotUrl = buildSnapshotRequestUrl(pathname);
-    const blockingLoad = !hadCache;
 
     async function loadSnapshot() {
       try {
@@ -196,7 +225,7 @@ export function AppSnapshotProvider({ children }: { children: React.ReactNode })
           return;
         }
 
-        snapshotCacheRef.current.set(key, nextSnapshot);
+        snapshotCacheRef.current.set(key, { snapshot: nextSnapshot, fetchedAt: Date.now() });
 
         if (snapshotCacheKey(pathnameRef.current) === key) {
           setSnapshot(nextSnapshot);

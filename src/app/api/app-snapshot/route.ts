@@ -5,6 +5,8 @@ import {
   HISTORY_SNAPSHOT_MAX_PAGE_SIZE,
   tryParseSnapshotScope,
 } from "@/lib/domain/snapshot-scope";
+import { checkHttpRateLimit } from "@/lib/http-rate-limit";
+import { snapshotReadLimits } from "@/lib/rate-limit";
 import {
   getAccessTokenFromRequest,
   getAppSnapshot,
@@ -43,6 +45,19 @@ function parseHistoryPagingParams(url: URL): AppSnapshotLoadOptions | { error: s
 }
 
 export async function GET(request: Request) {
+  const rateLimit = await checkHttpRateLimit(request, "app-snapshot-get", snapshotReadLimits);
+  if (!rateLimit.ok) {
+    return NextResponse.json(
+      { error: "リクエストが多すぎます。時間をおいて再度お試しください。" },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(rateLimit.retryAfterSeconds),
+        },
+      },
+    );
+  }
+
   try {
     const url = new URL(request.url);
     const scopeParsed = tryParseSnapshotScope(url.searchParams.get("scope"));

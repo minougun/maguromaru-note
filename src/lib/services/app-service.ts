@@ -54,6 +54,7 @@ const QUIZ_SESSION_PROGRESS_COLUMNS =
   "submitted_at, question_ids, correct_question_ids, score, question_count" as const;
 const MENU_ITEM_STATUS_COLUMNS = "menu_item_id, status, updated_at" as const;
 import { filterTrackedParts, isTrackedPartId } from "@/lib/domain/tracked-parts";
+import { readBearerToken } from "@/lib/auth-bearer";
 import { getAdminEmail, getSupabaseEnv, getSupabaseServiceEnv, hasSupabaseEnv, isMockAllowed } from "@/lib/env";
 import { createMockPhotoUrl, createMockViewerContext, mockMasterData, readMockState, writeMockState } from "@/lib/mock/store";
 import { QUIZ_SESSION_SIZE, createQuizSession, getStageNumberFromQuestionId, scoreQuizAnswers, toPublicQuizSession } from "@/lib/quiz";
@@ -259,16 +260,6 @@ async function getSupabaseContext() {
   const client = await createServerSupabaseClient();
   const viewer = await getSupabaseViewer(client);
   return { client, viewer };
-}
-
-function readBearerToken(value: unknown) {
-  if (typeof value !== "string") {
-    return undefined;
-  }
-
-  const match = value.match(/^Bearer\s+(.+)$/i);
-  const token = match?.[1]?.trim();
-  return token || undefined;
 }
 
 function createTokenSupabaseClient(accessToken: string) {

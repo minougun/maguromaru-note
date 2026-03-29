@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { verifyCsrfOrigin } from "@/lib/env";
-import { applyRateLimit, mutationRateLimits } from "@/lib/rate-limit";
+import { checkHttpRateLimit } from "@/lib/http-rate-limit";
+import { mutationRateLimits } from "@/lib/rate-limit";
 import { getAccessTokenFromRequest, recordVisit, toRouteError } from "@/lib/services/app-service";
 
 export async function POST(request: Request) {
@@ -9,7 +10,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "不正なリクエスト元です。" }, { status: 403 });
   }
 
-  const rateLimit = applyRateLimit(request, "visit-logs-post", mutationRateLimits.visitWrites);
+  const rateLimit = await checkHttpRateLimit(request, "visit-logs-post", mutationRateLimits.visitWrites);
   if (!rateLimit.ok) {
     return NextResponse.json(
       { error: "リクエストが多すぎます。時間をおいて再度お試しください。" },
