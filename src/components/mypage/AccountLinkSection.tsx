@@ -120,10 +120,6 @@ export function AccountLinkSection({
         <header className="account-link-header">
           <h2 className="account-link-title">アカウント連携</h2>
           <p className="account-link-subtitle">データのバックアップや引き継ぎができます</p>
-          <p className="account-link-subhint">
-            Apple / Google を紐づけるには、Supabase ダッシュボードの Authentication → Sign In / Providers で「Allow
-            manual linking」をオンにしてください。
-          </p>
         </header>
 
         <div className="account-link-list" role="list">
