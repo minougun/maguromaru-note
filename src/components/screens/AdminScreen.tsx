@@ -137,7 +137,7 @@ export function AdminScreen() {
               { value: "open", label: "営業中" },
               { value: "busy", label: "混雑中" },
               { value: "closing_soon", label: "まもなく終了" },
-              { value: "closed", label: "閉店" },
+              { value: "closed", label: "本日終了" },
             ].map((item) => (
               <button
                 className="button-choice"

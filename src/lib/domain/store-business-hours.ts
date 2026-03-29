@@ -55,7 +55,7 @@ function clearedStoreStatus(base: StoreStatus): StoreStatus {
   };
 }
 
-/** 案内営業時間外のホーム「営業状況」用（バッジで「閉店」と出す） */
+/** 案内営業時間外のホーム「営業状況」用（`closed` → UI は「本日終了」バッジ） */
 function afterHoursStoreDisplay(base: StoreStatus): StoreStatus {
   return {
     ...base,
@@ -67,7 +67,7 @@ function afterHoursStoreDisplay(base: StoreStatus): StoreStatus {
 }
 
 /**
- * 一般ユーザー向けホーム表示用に、案内営業時間外は営業状況を閉店表示・入荷は未設定へ、
+ * 一般ユーザー向けホーム表示用に、案内営業時間外は営業状況を本日終了（closed）・入荷は未設定へ、
  * 営業時間内かつ本日未更新なら入荷を ◎ あり相当へ寄せる。
  * 管理画面用はマスクしない（`viewer.role === "admin"` のときスキップ）。
  */

@@ -24,7 +24,7 @@ function storeStatusMeta(status: "open" | "busy" | "closing_soon" | "closed") {
     case "closing_soon":
       return { label: "まもなく終了", className: "badge badge-closing" };
     case "closed":
-      return { label: "閉店", className: "badge badge-closed" };
+      return { label: "本日終了", className: "badge badge-closed" };
   }
 }
 
