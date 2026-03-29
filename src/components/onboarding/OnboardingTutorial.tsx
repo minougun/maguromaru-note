@@ -57,6 +57,7 @@ const STEPS: Step[] = [
     mockId: "account",
     title: "アカウント連携",
     body: "Apple・Google・メールのいずれかで連携すると、機種変更や再インストール後もデータを引き継ぎやすくなります。",
+    screenshotSrc: "/onboarding/account.webp",
   },
 ];
 
