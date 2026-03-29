@@ -19,7 +19,7 @@ interface MapRegionDef {
 }
 
 /**
- * viewBox 1365×768（`public/tuna-map-base.svg` と同一。ラベル焼き込みの raster は使わない）。
+ * viewBox 1365×768（`/zukan-tuna-map.webp` / `public/tuna-map-base.svg` と同一想定）。
  * 腹部は前後2領域：前＝大トロのみ、後＝大トロ・中トロ（記録は部位ごと）。
  * 中とろは背のブロック＋腹の後方の両方でハイライトされる。
  */
@@ -109,7 +109,7 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
           </defs>
 
           <image
-            href={publicPath("/tuna-map-base.svg")}
+            href={publicPath("/zukan-tuna-map.webp")}
             width="1365"
             height="768"
             preserveAspectRatio="xMidYMid meet"
