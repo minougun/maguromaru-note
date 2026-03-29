@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -85,6 +86,17 @@ export function LoginScreen() {
   if (mode === "choose") {
     return (
       <div className="login-launch">
+        <div className="login-launch-icon-stage">
+          <Image
+            alt=""
+            className="login-launch-mark-img"
+            height={544}
+            priority
+            sizes="(max-width: 420px) 72vw, 280px"
+            src="/brand/login-launch-mark.webp"
+            width={560}
+          />
+        </div>
         <div className="login-launch-inner">
           {(formError || notice) && (
             <p
