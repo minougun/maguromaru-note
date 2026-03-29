@@ -40,7 +40,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (auth.usingSupabase && !auth.signedIn) {
+  if (!auth.signedIn) {
     return (
       <div className="app-shell app-shell--login">
         <main className="screen-main screen-main--login">

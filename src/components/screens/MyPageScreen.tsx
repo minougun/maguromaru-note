@@ -325,7 +325,22 @@ export function MyPageScreen() {
             ログアウト
           </button>
         </Card>
-      ) : null}
+      ) : (
+        <Card>
+          <p className="account-copy">初回の選択画面に戻ります（ローカル開発用）。</p>
+          <button
+            className="button-outline inline-button"
+            onClick={() => {
+              auth.clearLocalSession();
+              router.push("/");
+              router.refresh();
+            }}
+            type="button"
+          >
+            はじめに戻る
+          </button>
+        </Card>
+      )}
     </>
   );
 }

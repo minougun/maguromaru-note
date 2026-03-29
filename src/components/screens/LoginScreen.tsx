@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { useAuthState } from "@/components/providers/AuthProvider";
-import { Card } from "@/components/ui/Card";
 import {
   requestPhoneSignInSms,
   startAnonymousSession,
@@ -58,8 +57,12 @@ export function LoginScreen() {
       setPendingAction("anonymous");
       setFormError(null);
       setNotice(null);
-      await startAnonymousSession();
-      router.refresh();
+      if (auth.usingSupabase) {
+        await startAnonymousSession();
+        router.refresh();
+      } else {
+        auth.acknowledgeLocalSession();
+      }
     } catch (error) {
       setFormError(authErrorMessage(error));
     } finally {
@@ -77,20 +80,6 @@ export function LoginScreen() {
       setFormError(authErrorMessage(error));
       setPendingAction(null);
     }
-  }
-
-  if (!auth.usingSupabase) {
-    return (
-      <div className="login-launch">
-        <div className="login-launch-inner">
-          <Card>
-            <p className="account-copy" style={{ margin: 0 }}>
-              この環境では Supabase が未設定のため、ログイン画面は表示されません。開発用のモック動作ではそのまま利用できます。
-            </p>
-          </Card>
-        </div>
-      </div>
-    );
   }
 
   if (mode === "choose") {
@@ -138,6 +127,27 @@ export function LoginScreen() {
             </button>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (!auth.usingSupabase) {
+    return (
+      <div className="login-signin">
+        <button
+          className="login-signin-back"
+          disabled={pendingAction !== null}
+          onClick={() => setMode("choose")}
+          type="button"
+        >
+          ← 戻る
+        </button>
+        <h2 className="login-signin-heading">サインイン</h2>
+        <p className="login-signin-lead">
+          この環境では Supabase が未設定のため、Google や電話番号でのサインインは使えません。本番では{" "}
+          <code className="login-signin-code">NEXT_PUBLIC_SUPABASE_URL</code> と{" "}
+          <code className="login-signin-code">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> を設定してください。開発中は「今すぐはじめる」でモック利用できます。
+        </p>
       </div>
     );
   }

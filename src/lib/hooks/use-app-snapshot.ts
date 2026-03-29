@@ -18,11 +18,11 @@ export function useAppSnapshot() {
       return;
     }
 
-    if (auth.usingSupabase && !auth.signedIn) {
+    if (!auth.signedIn) {
       return;
     }
 
-    if (auth.usingSupabase && auth.signedIn && !auth.accessToken) {
+    if (auth.usingSupabase && !auth.accessToken) {
       return;
     }
 
