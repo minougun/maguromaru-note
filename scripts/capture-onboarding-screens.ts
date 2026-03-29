@@ -4,14 +4,15 @@
  * ## 使い方
  *
  * 1. 初回のみ Chromium を入れる: npx playwright install chromium
- * 2. 別ターミナルで npm run dev（既定 http://localhost:3000）
+ * 2. 別ターミナルで npm run dev（WSL では CAPTURE_BASE_URL=http://127.0.0.1:3000 を推奨）
  * 3. npm run capture:onboarding
  *
  * ## 環境変数
  *
  * | 変数 | 既定 | 説明 |
  * |------|------|------|
- * | CAPTURE_BASE_URL | http://localhost:3000 | オリジン（末尾スラッシュなし） |
+ * | CAPTURE_BASE_URL | http://127.0.0.1:3000 | オリジン（WSL では localhost より 127.0.0.1 推奨） |
+ * | CAPTURE_KEEP_LOCALHOST | （未設定） | 1 なら hostname を localhost のままにする |
  * | NEXT_PUBLIC_BASE_PATH | （未設定） | next.config の basePath と揃える |
  * | CAPTURE_OUTPUT_DIR | public/onboarding/capture | 出力ディレクトリ（相対または絶対） |
  * | CAPTURE_VIEWPORT_WIDTH | 430 | アプリの max-width: 430px に合わせる |
@@ -69,15 +70,61 @@ function appUrl(origin: string, pathname: string): string {
   return `${origin.replace(/\/$/, "")}${base}${p}`;
 }
 
+/**
+ * WSL 等で localhost → ::1 になり、127.0.0.1 のみ listen している dev と噛み合わず goto が永遠に終わらないのを防ぐ。
+ */
+function normalizeCaptureOrigin(raw: string): string {
+  const trimmed = raw.replace(/\/$/, "");
+  if (process.env.CAPTURE_KEEP_LOCALHOST === "1") {
+    return trimmed;
+  }
+  try {
+    const u = new URL(trimmed.includes("://") ? trimmed : `http://${trimmed}`);
+    if (u.hostname === "localhost") {
+      u.hostname = "127.0.0.1";
+      const out = u.toString().replace(/\/$/, "");
+      console.info("[capture] localhost を 127.0.0.1 に置き換えました（WSL 対策）。元に戻す: CAPTURE_KEEP_LOCALHOST=1");
+      return out;
+    }
+    return trimmed;
+  } catch {
+    return trimmed;
+  }
+}
+
+async function preflightOrigin(origin: string): Promise<void> {
+  const probe = appUrl(origin, "/");
+  console.info("[capture] 接続確認: " + probe);
+  const ctrl = new AbortController();
+  const id = setTimeout(() => ctrl.abort(), 10_000);
+  try {
+    const res = await fetch(probe, { signal: ctrl.signal, redirect: "manual" });
+    await res.body?.cancel?.();
+  } catch {
+    throw new Error(
+      "接続できません: " +
+        probe +
+        "\n- 別ターミナルで npm run dev が listen しているか確認してください\n" +
+        "- WSL では CAPTURE_BASE_URL=http://127.0.0.1:3000（ポートは環境に合わせる）を明示してください",
+    );
+  } finally {
+    clearTimeout(id);
+  }
+  console.info("[capture] 接続 OK");
+}
+
 /** Next dev は HMR 等で window.load が遅延・未発火になり得るため、load は短めに試して諦める */
 async function gotoSettle(page: Page, url: string, label: string): Promise<void> {
-  console.info(`[capture] → ${label}: ${url}`);
+  console.info("[capture] → " + label + ": " + url);
   try {
-    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 120_000 });
+    await page.goto(url, { waitUntil: "commit", timeout: 45_000 });
+    console.info("[capture]   navigation commit OK");
+    await page.waitForLoadState("domcontentloaded", { timeout: 45_000 });
+    console.info("[capture]   domcontentloaded OK");
   } catch (err) {
     const hint =
-      "npm run dev が起動しているか、別ポートなら CAPTURE_BASE_URL を合わせてください。";
-    throw new Error(`画面へ移動できませんでした (${url})。${hint}`, { cause: err });
+      "npm run dev が起動しているか、別ポートなら CAPTURE_BASE_URL を合わせてください。WSL では 127.0.0.1 を試してください。";
+    throw new Error("画面へ移動できませんでした (" + url + ")。" + hint, { cause: err });
   }
   await page
     .waitForLoadState("load", { timeout: 8_000 })
@@ -109,7 +156,7 @@ async function ensureSignedIn(page: Page, origin: string): Promise<void> {
   console.info("[capture] ログイン状態を確認しています…");
   try {
     await startBtn.waitFor({ state: "visible", timeout: 20_000 });
-    console.info('[capture] 「今すぐはじめる」をクリックします');
+    console.info("[capture] 「今すぐはじめる」をクリックします");
     await startBtn.click();
   } catch {
     /* 既にログイン済みなど */
@@ -158,7 +205,8 @@ const ROUTES: { file: string; path: string }[] = [
 ];
 
 async function main() {
-  const origin = (process.env.CAPTURE_BASE_URL ?? "http://localhost:3000").replace(/\/$/, "");
+  const rawOrigin = (process.env.CAPTURE_BASE_URL ?? "http://127.0.0.1:3000").replace(/\/$/, "");
+  const origin = normalizeCaptureOrigin(rawOrigin);
   const outRel = process.env.CAPTURE_OUTPUT_DIR?.trim() || "public/onboarding/capture";
   const outDir = path.isAbsolute(outRel) ? outRel : path.join(process.cwd(), outRel);
 
@@ -166,7 +214,12 @@ async function main() {
   const height = envInt("CAPTURE_VIEWPORT_HEIGHT", 932);
   const deviceScaleFactor = envFloat("CAPTURE_DEVICE_SCALE_FACTOR", 1);
 
+  console.info("[capture] base URL: " + origin + (basePrefix() || ""));
+  console.info("[capture] viewport: " + width + "x" + height + " dpr=" + deviceScaleFactor);
+  console.info("[capture] output: " + outDir);
+
   await mkdir(outDir, { recursive: true });
+  await preflightOrigin(origin);
 
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
@@ -179,10 +232,6 @@ async function main() {
   const page = await context.newPage();
 
   try {
-    console.info(`[capture] base URL: ${origin}${basePrefix() || ""}`);
-    console.info(`[capture] viewport: ${width}x${height} dpr=${deviceScaleFactor}`);
-    console.info(`[capture] output: ${outDir}`);
-
     await ensureSignedIn(page, origin);
     await waitForNoBlockingSpinner(page);
 
@@ -197,7 +246,7 @@ async function main() {
         fullPage: false,
         animations: "disabled",
       });
-      console.info(`[capture] wrote ${outPath}`);
+      console.info("[capture] wrote " + outPath);
     }
   } finally {
     await browser.close();
