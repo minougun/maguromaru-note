@@ -205,7 +205,6 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
             const strokeDasharray = eaten ? "none" : "6 5";
             const strokeWidth = eaten ? (isSelected ? 3 : 2) : isSelected ? 5.25 : 4.5;
             const filterAttr = eaten ? "url(#glowF)" : undefined;
-            const lw = (r.labelWidth ?? 152) / 2;
 
             return (
               <g
@@ -250,37 +249,51 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
                 ) : (
                   <ellipse cx={r.cx} cy={r.cy} rx={(r.rx ?? 30) + 10} ry={(r.ry ?? 20) + 10} fill="transparent" />
                 )}
+              </g>
+            );
+          })}
+          {MAP_REGIONS.map((r) => {
+            const hasAllParts = r.partIds.every((id) => partsById.has(id));
+            if (!hasAllParts) return null;
+
+            const eaten = regionEaten(r, collected);
+            const primary = regionPrimaryPart(r, partsById, collected);
+            if (!primary) return null;
+
+            const lw = (r.labelWidth ?? 152) / 2;
+            const labelText = labelForRegion(r);
+            if (!labelText) return null;
+
+            return (
+              <g key={`${r.key}-labels`} aria-hidden="true" onClick={() => handleTapRegion(r)} style={{ cursor: "pointer" }}>
                 <line
+                  className="map-label-leader"
                   x1={r.label.x}
                   y1={r.label.y + 18}
                   x2={r.cx}
                   y2={r.cy}
-                  stroke="rgba(92,63,45,0.72)"
-                  strokeWidth="4"
-                  opacity="0.9"
-                  fill="none"
                 />
                 <rect
+                  className={eaten ? "map-label-pill map-label-pill--eaten" : "map-label-pill"}
                   x={r.label.x - lw}
                   y={r.label.y - 26}
                   rx="22"
                   ry="22"
                   width={lw * 2}
                   height="52"
-                  fill={eaten ? primary.color : "rgba(55,38,32,0.92)"}
-                  stroke={eaten ? primary.color : "rgba(196,168,120,0.45)"}
-                  strokeWidth="2"
+                  fill={eaten ? primary.color : undefined}
+                  stroke={eaten ? primary.color : undefined}
                 />
                 <text
+                  className={eaten ? "map-label-text map-label-text--eaten" : "map-label-text"}
                   x={r.label.x}
                   y={r.label.y + 8}
                   textAnchor="middle"
                   fontSize={r.label.text && r.label.text.length > 5 ? 22 : 28}
                   fontWeight="700"
-                  fill={eaten ? "#0d0805" : "#f2e4c7"}
                   fontFamily="Noto Sans JP, sans-serif"
                 >
-                  {labelForRegion(r)}
+                  {labelText}
                 </text>
               </g>
             );
