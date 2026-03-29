@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import type { Part, PartId } from "@/lib/domain/types";
+import { publicPath } from "@/lib/public-path";
 
 interface MapRegionDef {
   /** React の key（同一 partId を複数領域に使うため必須） */
@@ -18,7 +19,7 @@ interface MapRegionDef {
 }
 
 /**
- * viewBox 1365×768（`/zukan-tuna-map.webp` / `public/tuna-map-base.svg` と同一想定）。
+ * viewBox 1365×768（`public/tuna-map-base.svg` と同一。ラベル焼き込みの raster は使わない）。
  * 腹部は前後2領域：前＝大トロのみ、後＝大トロ・中トロ（記録は部位ごと）。
  * 中とろは背のブロック＋腹の後方の両方でハイライトされる。
  */
@@ -108,7 +109,7 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
           </defs>
 
           <image
-            href="/zukan-tuna-map.webp"
+            href={publicPath("/tuna-map-base.svg")}
             width="1365"
             height="768"
             preserveAspectRatio="xMidYMid meet"
@@ -126,8 +127,8 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
             const fill = eaten ? primary.color : "transparent";
             const fillOpacity = eaten ? (isSelected ? 0.6 : 0.4) : 0;
             const stroke = eaten ? primary.color : "#000000";
-            const strokeDasharray = eaten ? "none" : "4 4";
-            const strokeWidth = isSelected ? 3 : 2;
+            const strokeDasharray = eaten ? "none" : "6 5";
+            const strokeWidth = eaten ? (isSelected ? 3 : 2) : isSelected ? 3.5 : 3;
             const filterAttr = eaten ? "url(#glowF)" : undefined;
 
             return (
