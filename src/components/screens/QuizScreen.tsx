@@ -336,9 +336,7 @@ export function QuizScreen() {
             </div>
           );
         })()}
-        <p className="helper-text" style={{ marginTop: 8 }}>
-          各ステージ内で累計 10問正解すると次のステージが解放
-        </p>
+        <p className="helper-text quiz-unlock-hint">各ステージ内で累計 10問正解すると次のステージが解放</p>
         <div className="quiz-stage-single">
           <button
             className="quiz-stage-nav-btn"

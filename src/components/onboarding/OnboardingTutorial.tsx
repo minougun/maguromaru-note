@@ -4,53 +4,56 @@ import { useCallback, useState } from "react";
 
 import { publicPath } from "@/lib/public-path";
 
+import { type OnboardingMockId, OnboardingDeviceMock } from "@/components/onboarding/OnboardingDeviceMock";
+
 type Step = {
-  imageSrc: string;
+  mockId: OnboardingMockId;
   title: string;
   body: string;
+  /**
+   * 任意: `public/onboarding/screenshots/home.webp` のように画像を置くと、
+   * そのステップでは CSS モックの代わりにスクショを表示します（未配置時は 404 になるので、ファイルを置いてから指定）。
+   */
+  screenshotSrc?: string;
 };
 
-/** 実画面レイアウトに合わせたタブ別モック（public/onboarding/*.svg） */
 const STEPS: Step[] = [
   {
-    imageSrc: "/onboarding/mock-intro.svg",
+    mockId: "intro",
     title: "まぐろ丸ノートへようこそ",
     body: "海鮮丼まぐろ丸の公式アプリです。次のスライドから、画面下の6つのタブそれぞれでできることを紹介します。",
   },
   {
-    imageSrc: "/onboarding/mock-home.svg",
+    mockId: "home",
     title: "ホーム",
     body: "店舗の営業状況と天気、本日の入荷状況（各丼の「◎ あり」など）、おすすめメッセージ、最近の来店記録の一覧を確認できます。",
   },
   {
-    imageSrc: "/onboarding/mock-record.svg",
+    mockId: "record",
     title: "記録",
     body: "今日食べた丼を選び、食べた部位にチェックを入れて保存します。写真やメモを添えられるので、思い出として残せます。",
   },
   {
-    imageSrc: "/onboarding/mock-zukan.svg",
+    mockId: "zukan",
     title: "図鑑",
     body: "記録した部位が図鑑にライトアップされていきます。コンプリート進捗やマグロの部位マップから、解説を読めます。",
   },
   {
-    imageSrc: "/onboarding/mock-quiz.svg",
+    mockId: "quiz",
     title: "クイズ",
-    body: "ステージごとにまぐろの4択クイズに挑戦できます。ステージを順にクリアしていくと、難易度と報酬が上がっていきます。",
+    body: "まぐろの4択クイズをステージごとに挑戦できます。各ステージ内で累計10問正解すると、次のステージが解放されます。",
   },
   {
-    imageSrc: "/onboarding/mock-titles.svg",
+    mockId: "titles",
     title: "称号",
     body: "来店回数・図鑑・クイズ成績に応じて称号が解放されます。いまの称号と、次の条件もこの画面で確認できます。「晴れて最後の称号、\"まぐろマスター\"まで獲得できた暁には、なにか良いことがあるかも！？（※無いかもしれません）」",
   },
   {
-    imageSrc: "/onboarding/mock-account.svg",
+    mockId: "account",
     title: "アカウント連携",
     body: "Apple・Google・メールのいずれかで連携すると、機種変更や再インストール後もデータを引き継ぎやすくなります。",
   },
 ];
-
-const MOCK_WIDTH = 320;
-const MOCK_HEIGHT = 560;
 
 type OnboardingTutorialProps = {
   onComplete: () => void;
@@ -73,15 +76,16 @@ export function OnboardingTutorial({ onComplete }: OnboardingTutorialProps) {
 
       <div className="onboarding-panel">
         <div className="onboarding-art onboarding-art--mock" aria-hidden="true">
-          {/* next/image の unoptimized でも basePath は付かないため、__NEXT_ROUTER_BASEPATH 対応の publicPath を使う */}
-          <img
-            alt=""
-            className="onboarding-mock-img"
-            decoding="async"
-            height={MOCK_HEIGHT}
-            src={publicPath(step.imageSrc)}
-            width={MOCK_WIDTH}
-          />
+          {step.screenshotSrc ? (
+            <img
+              alt=""
+              className="onboarding-screenshot-img"
+              decoding="async"
+              src={publicPath(step.screenshotSrc)}
+            />
+          ) : (
+            <OnboardingDeviceMock screen={step.mockId} />
+          )}
         </div>
 
         <h2 className="onboarding-title" id="onboarding-title">

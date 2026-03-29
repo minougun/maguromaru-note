@@ -1,5 +1,5 @@
 /** チュートリアル内容を差し替えたらキーを上げて再表示できる */
-const ONBOARDING_DONE_KEY = "maguro_note_onboarding_v2_done";
+const ONBOARDING_DONE_KEY = "maguro_note_onboarding_v3_done";
 
 export function readOnboardingDone(): boolean {
   if (typeof window === "undefined") {
