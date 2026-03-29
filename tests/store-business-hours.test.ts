@@ -31,10 +31,10 @@ test("isWithinStoreBusinessHoursJst: 12:00 JST is open", () => {
   assert.equal(isWithinStoreBusinessHoursJst(new Date("2026-03-30T12:00:00+09:00")), true);
 });
 
-test("applyCustomerFacingStoreAndStock: after hours resets store and menu to unset", () => {
+test("applyCustomerFacingStoreAndStock: after hours shows closed store and unset menu", () => {
   const now = new Date("2026-03-30T03:00:00+09:00");
   const out = applyCustomerFacingStoreAndStock(storeBusyToday, defaultMenuStockById, "2026-03-30T02:00:00.000Z", now);
-  assert.equal(out.storeStatus.status, "unset");
+  assert.equal(out.storeStatus.status, "closed");
   assert.equal(out.storeStatus.status_note, "");
   assert.equal(out.menuItemStatuses.maguro_don, "unset");
   assert.equal(out.menuStockUpdatedAt, null);

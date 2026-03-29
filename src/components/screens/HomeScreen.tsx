@@ -24,7 +24,7 @@ function storeStatusMeta(status: "open" | "busy" | "closing_soon" | "closed") {
     case "closing_soon":
       return { label: "まもなく終了", className: "badge badge-closing" };
     case "closed":
-      return { label: "本日終了", className: "badge badge-closed" };
+      return { label: "閉店", className: "badge badge-closed" };
   }
 }
 
@@ -33,9 +33,9 @@ function menuItemStock(
   status: "open" | "busy" | "closing_soon" | "closed" | "unset",
   menuItemStatuses: Record<string, MenuStockStatus>,
 ): MenuStockStatus {
-  if (status === "closed") return "soldout";
   const row = menuItemStatuses[itemId];
   if (row === "unset") return "unset";
+  if (status === "closed") return "soldout";
   if (row == null) return "available";
   return row;
 }

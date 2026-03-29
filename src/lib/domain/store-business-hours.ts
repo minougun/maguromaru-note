@@ -55,8 +55,20 @@ function clearedStoreStatus(base: StoreStatus): StoreStatus {
   };
 }
 
+/** 案内営業時間外のホーム「営業状況」用（バッジで「閉店」と出す） */
+function afterHoursStoreDisplay(base: StoreStatus): StoreStatus {
+  return {
+    ...base,
+    status: "closed",
+    status_note: "",
+    recommendation: "",
+    weather_comment: "",
+  };
+}
+
 /**
- * 一般ユーザー向けホーム表示用に、閉店後は未設定表示へ、開店後かつ本日未更新なら入荷を ◎ あり相当へ寄せる。
+ * 一般ユーザー向けホーム表示用に、案内営業時間外は営業状況を閉店表示・入荷は未設定へ、
+ * 営業時間内かつ本日未更新なら入荷を ◎ あり相当へ寄せる。
  * 管理画面用はマスクしない（`viewer.role === "admin"` のときスキップ）。
  */
 export function applyCustomerFacingStoreAndStock(
@@ -71,7 +83,7 @@ export function applyCustomerFacingStoreAndStock(
 } {
   if (!isWithinStoreBusinessHoursJst(now)) {
     return {
-      storeStatus: clearedStoreStatus(storeStatus),
+      storeStatus: afterHoursStoreDisplay(storeStatus),
       menuItemStatuses: allMenuUnset(),
       menuStockUpdatedAt: null,
     };
