@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { VisitLogCard } from "@/components/logs/VisitLogCard";
 import { ShareModal } from "@/components/share/ShareModal";
 import { Card } from "@/components/ui/Card";
-import { BrandMark } from "@/components/ui/BrandMark";
 import { NorenBanner } from "@/components/ui/NorenBanner";
 import { ScreenState } from "@/components/ui/ScreenState";
 import { SectionTitle } from "@/components/ui/SectionTitle";
@@ -130,7 +129,9 @@ export function HomeScreen() {
       <NorenBanner label="本日の入荷状況" />
       <Card className="stock-card">
         <div className="stock-card-head">
-          <BrandMark className="stock-store-mark" />
+          <div className="stock-store-mark" aria-hidden="true">
+            丼
+          </div>
           {snapshot.home.menuStockUpdatedAt ? (
             <div className="stock-updated-chip">最終更新時間 {formatHm(snapshot.home.menuStockUpdatedAt)}</div>
           ) : null}
