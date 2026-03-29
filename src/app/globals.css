@@ -363,6 +363,86 @@ body {
   background: transparent;
 }
 
+/* SNS シェアで来店／クイズに 1.2 倍ボーナス（記録・履歴・クイズ・モーダル共通） */
+.share-bonus-callout {
+  margin: 0 0 14px;
+  padding: 14px 14px 12px;
+  border-radius: 16px;
+  border: 2px solid var(--aka-light);
+  background: linear-gradient(145deg, #fff9f2 0%, #ffe8dc 55%, #ffd8cc 100%);
+  box-shadow:
+    0 2px 0 rgba(255, 255, 255, 0.65) inset,
+    0 6px 18px rgba(194, 59, 59, 0.14);
+}
+
+.share-bonus-callout--compact {
+  margin: 0 0 12px;
+  padding: 10px 12px 10px;
+  border-radius: 14px;
+  border-width: 1.5px;
+}
+
+.share-bonus-callout-headline {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+  color: var(--navy);
+}
+
+.share-bonus-callout--compact .share-bonus-callout-headline {
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.share-bonus-callout-headline em {
+  font-style: normal;
+  color: var(--aka-bold);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+.share-bonus-callout-body {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--cream);
+}
+
+.share-bonus-callout--compact .share-bonus-callout-body {
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.share-bonus-callout-strong {
+  font-weight: 800;
+  color: var(--navy);
+}
+
+.share-bonus-callout-note {
+  margin: 8px 0 0;
+  font-size: 10px;
+  line-height: 1.45;
+  color: var(--cream-dark);
+}
+
+.share-bonus-callout--compact .share-bonus-callout-note {
+  margin-top: 6px;
+  font-size: 9px;
+}
+
+.share-bonus-callout-claimed {
+  margin: 8px 0 0;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(27, 45, 79, 0.08);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--navy);
+}
+
 .stock-card {
   border-radius: 22px;
   padding: 18px 16px 14px;

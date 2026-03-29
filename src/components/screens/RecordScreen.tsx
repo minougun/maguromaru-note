@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 
+import { ShareBonusCallout } from "@/components/share/ShareBonusCallout";
 import { ShareModalDynamic } from "@/components/share/ShareModalDynamic";
 import { Card } from "@/components/ui/Card";
 import { NorenBanner } from "@/components/ui/NorenBanner";
@@ -154,6 +155,7 @@ export function RecordScreen() {
   return (
     <>
       <NorenBanner label="今日の丼を記録" />
+      <ShareBonusCallout variant="visit" />
       <label className={`photo-zone ${previewUrl ? "has-img" : ""}`} htmlFor="don-photo">
         <input accept="image/*" capture="environment" hidden id="don-photo" onChange={handleFileChange} type="file" />
         {previewUrl ? (

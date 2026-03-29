@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { VisitLogCard } from "@/components/logs/VisitLogCard";
+import { ShareBonusCallout } from "@/components/share/ShareBonusCallout";
 import { ShareModalDynamic } from "@/components/share/ShareModalDynamic";
 import { Card } from "@/components/ui/Card";
 import { NorenBanner } from "@/components/ui/NorenBanner";
@@ -112,9 +113,7 @@ export function HistoryScreen() {
             </div>
           </div>
         </div>
-        <p className="helper-text">
-          履歴のシェアボタンから SNS 共有すると、その記録の来店回数は 1.2 倍で集計されます。ボーナスは1記録につき1回までです。
-        </p>
+        <ShareBonusCallout variant="visit" />
       </Card>
       {snapshot.history.logs.length > 0 ? (
         <div className="stack-list">

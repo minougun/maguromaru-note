@@ -49,7 +49,7 @@ export function VisitLogCard({
       {log.memo ? <div className="log-memo">{log.memo}</div> : null}
       <div className="log-actions">
         <button className="button-subtle" onClick={() => onShare(log)} type="button">
-          {log.shareBonusClaimed ? "🔗 シェア済み" : "🔗 シェアで1.2倍"}
+          {log.shareBonusClaimed ? "🔗 シェア済み" : "📣 シェア（来店1.2倍）"}
         </button>
         {onDelete ? (
           <button className="button-subtle danger-button" disabled={deleting} onClick={() => onDelete(log)} type="button">

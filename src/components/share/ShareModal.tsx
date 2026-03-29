@@ -2,8 +2,9 @@
 
 import { useRef, useState } from "react";
 
-import { createLineShareUrl, createXShareUrl, type ShareChannel, type SharePayload } from "@/lib/share/share";
 import { ShareCanvas } from "@/components/share/ShareCanvas";
+import { ShareBonusCallout } from "@/components/share/ShareBonusCallout";
+import { createLineShareUrl, createXShareUrl, type ShareChannel, type SharePayload } from "@/lib/share/share";
 
 export function ShareModal({
   payload,
@@ -74,10 +75,11 @@ export function ShareModal({
         <h3 className="modal-title">{payload.title}</h3>
         <ShareCanvas payload={currentPayload} />
         {currentPayload.bonusTarget ? (
-          <p className="helper-text">
-            {currentPayload.bonusTarget.bonusLabel} ボーナスは各記録・各クイズ結果につき1回までです。
-            {currentPayload.bonusTarget.alreadyClaimed ? " この項目のボーナスは受取済みです。" : ""}
-          </p>
+          <ShareBonusCallout
+            alreadyClaimed={currentPayload.bonusTarget.alreadyClaimed}
+            compact
+            variant={currentPayload.bonusTarget.targetType === "quiz_session" ? "quiz" : "visit"}
+          />
         ) : null}
         <div className="share-actions">
           <button

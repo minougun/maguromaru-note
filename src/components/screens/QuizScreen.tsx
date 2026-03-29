@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { ShareBonusCallout } from "@/components/share/ShareBonusCallout";
 import { ShareModalDynamic } from "@/components/share/ShareModalDynamic";
 import { Card } from "@/components/ui/Card";
 import { NorenBanner } from "@/components/ui/NorenBanner";
@@ -304,6 +305,7 @@ export function QuizScreen() {
   return (
     <>
       <NorenBanner label="まぐろクイズ" />
+      <ShareBonusCallout variant="quiz" />
       <Card glow>
         {(() => {
           const masterTitle = TITLES.find((t) => t.id === "master")!;
@@ -385,9 +387,7 @@ export function QuizScreen() {
             <p className="progress-caption">
               {score} / {questionTotal} 問正解
             </p>
-            <p className="helper-text">
-              SNS でこの結果をシェアすると、今回の正解数は 1.2 倍で集計されます。ボーナスは1結果につき1回までです。
-            </p>
+            <ShareBonusCallout variant="quiz" />
             {submittingResult ? <p className="helper-text">結果を保存しています...</p> : null}
             {submitError ? <p className="helper-text">{submitError}</p> : null}
             <div className="quiz-result-actions">
@@ -409,7 +409,7 @@ export function QuizScreen() {
                 }}
                 type="button"
               >
-                シェアで1.2倍
+                SNSでシェア（正解数1.2倍）
               </button>
               <button className="button-primary" onClick={() => restart()} type="button">
                 もう一度チャレンジ
