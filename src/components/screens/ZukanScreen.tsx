@@ -12,7 +12,7 @@ import { useAppSnapshot } from "@/lib/hooks/use-app-snapshot";
 import { buildZukanShare, type SharePayload } from "@/lib/share/share";
 
 export function ZukanScreen() {
-  const { snapshot, loading, error, refresh } = useAppSnapshot({ scope: "zukan" });
+  const { snapshot, loading, error, refresh } = useAppSnapshot();
   const [sharePayload, setSharePayload] = useState<SharePayload | null>(null);
 
   if (loading) {

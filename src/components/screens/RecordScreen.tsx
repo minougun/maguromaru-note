@@ -21,7 +21,7 @@ function todayString() {
 }
 
 export function RecordScreen() {
-  const { snapshot, loading, error, refresh } = useAppSnapshot({ scope: "record" });
+  const { snapshot, loading, error, refresh } = useAppSnapshot();
   const [selectedMenuItemId, setSelectedMenuItemId] = useState<MenuItemId | null>(null);
   const [selectedPartIds, setSelectedPartIds] = useState<Set<PartId>>(new Set());
   const [memo, setMemo] = useState("");

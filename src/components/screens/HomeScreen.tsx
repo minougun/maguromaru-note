@@ -39,7 +39,7 @@ function menuItemStock(
 }
 
 export function HomeScreen() {
-  const { snapshot, loading, error, refresh } = useAppSnapshot({ scope: "home" });
+  const { snapshot, loading, error, refresh } = useAppSnapshot();
   const [sharePayload, setSharePayload] = useState<SharePayload | null>(null);
   const [weatherText, setWeatherText] = useState("天気を取得中...");
 

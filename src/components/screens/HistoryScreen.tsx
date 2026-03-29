@@ -14,7 +14,7 @@ import { buildFreshSupabaseAuthHeaders } from "@/lib/supabase/browser";
 import { formatCount } from "@/lib/utils/format";
 
 export function HistoryScreen() {
-  const { snapshot, loading, error, refresh } = useAppSnapshot({ scope: "history" });
+  const { snapshot, loading, error, refresh } = useAppSnapshot();
   const [sharePayload, setSharePayload] = useState<SharePayload | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 

@@ -28,7 +28,7 @@ function normalizeMenuStocks(menuStocks: Record<string, MenuStockStatus>): Admin
 }
 
 export function AdminScreen() {
-  const { snapshot, loading, error, refresh } = useAppSnapshot({ scope: "admin" });
+  const { snapshot, loading, error, refresh } = useAppSnapshot();
   const [draft, setDraft] = useState<{
     menuStocks: AdminMenuStocks;
     recommendation: string;

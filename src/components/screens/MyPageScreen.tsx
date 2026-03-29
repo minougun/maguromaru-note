@@ -39,7 +39,7 @@ function profileErrorMessage(error: unknown) {
 export function MyPageScreen() {
   const router = useRouter();
   const auth = useAuthState();
-  const { snapshot, loading, error, refresh } = useAppSnapshot({ scope: "mypage" });
+  const { snapshot, loading, error, refresh } = useAppSnapshot();
   const [profile, setProfile] = useState<BrowserAuthProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
   const [linkNotice, setLinkNotice] = useState<string | null>(null);
