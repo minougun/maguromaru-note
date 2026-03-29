@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 
 import type { SharePayload } from "@/lib/share/share";
 
-const BRAND_MARK_PATH = "/brand/maguromaru-mark.png";
+const BRAND_MARK_PATH = "/brand/maguromaru-mark.webp";
 
 function drawShareCanvas(
   context: CanvasRenderingContext2D,

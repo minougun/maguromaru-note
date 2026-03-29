@@ -1,6 +1,6 @@
 import Image from "next/image";
 
-const BRAND_MARK_SRC = "/brand/maguromaru-mark.png";
+const BRAND_MARK_SRC = "/brand/maguromaru-mark.webp";
 
 /** ヘッダー・入荷カードなどで使う「まぐろ丸」マーク（円相風アート） */
 export function BrandMark({ className }: { className?: string }) {
