@@ -7,6 +7,7 @@ import type { Database } from "@/lib/database.types";
 import {
   authNextPathSchema,
   createEmailAccountInputSchema,
+  displayNameOnlySchema,
   signInWithPasswordInputSchema,
 } from "@/lib/domain/schemas";
 
@@ -118,9 +119,49 @@ export async function getSupabaseAuthProfile(): Promise<BrowserAuthProfile> {
   return {
     accessToken: session?.access_token ?? null,
     email: user?.email ?? null,
-    isAnonymous: Boolean(user?.is_anonymous) || identityProviders.length === 0,
+    isAnonymous: Boolean(user?.is_anonymous),
     identityProviders,
   };
+}
+
+/** 表示名のみで利用開始（匿名セッション + user_metadata.display_name）。パスワード不要。 */
+export async function signInWithDisplayNameOnly(rawDisplayName: string) {
+  const client = getSupabaseBrowserClient();
+  if (!client) {
+    throw new Error("Supabase が設定されていません。");
+  }
+
+  const displayName = displayNameOnlySchema.parse(rawDisplayName);
+
+  const {
+    data: { session: existing },
+  } = await client.auth.getSession();
+
+  if (existing?.user?.is_anonymous) {
+    const { error } = await client.auth.updateUser({
+      data: { display_name: displayName },
+    });
+    if (error) {
+      throw error;
+    }
+    return;
+  }
+
+  if (existing?.access_token) {
+    throw new Error("すでにログインしています。別の方法で入っている場合は一度ログアウトしてください。");
+  }
+
+  const { error: anonError } = await client.auth.signInAnonymously();
+  if (anonError) {
+    throw anonError;
+  }
+
+  const { error: nameError } = await client.auth.updateUser({
+    data: { display_name: displayName },
+  });
+  if (nameError) {
+    throw nameError;
+  }
 }
 
 export async function startGoogleLinkFlow(nextPath = "/") {
@@ -196,6 +237,41 @@ export async function signOutSupabase() {
   }
 
   await client.auth.signOut();
+}
+
+/** 電話番号の紐づけ: SMS 送信（updateUser）。マイページから呼ぶ。 */
+export async function requestPhoneLinkSms(phoneE164: string) {
+  const client = getSupabaseBrowserClient();
+  if (!client) {
+    throw new Error("Supabase が設定されていません。");
+  }
+
+  const phone = phoneE164.trim();
+  if (!phone.startsWith("+")) {
+    throw new Error("国番号から入力してください（例: +819012345678）。");
+  }
+
+  const { error } = await client.auth.updateUser({ phone });
+  if (error) {
+    throw error;
+  }
+}
+
+/** 電話番号の紐づけ: SMS の確認コードで確定。 */
+export async function verifyPhoneLinkOtp(phoneE164: string, token: string) {
+  const client = getSupabaseBrowserClient();
+  if (!client) {
+    throw new Error("Supabase が設定されていません。");
+  }
+
+  const { error } = await client.auth.verifyOtp({
+    phone: phoneE164.trim(),
+    token: token.trim(),
+    type: "phone_change",
+  });
+  if (error) {
+    throw error;
+  }
 }
 
 export async function signInWithEmailPassword(input: unknown) {

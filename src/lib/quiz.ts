@@ -714,13 +714,14 @@ const appQuestions: QuizQuestionSpec[] = [
     category: "アプリ",
     question: "アプリの利用開始に関する説明として正しいのはどれ？",
     options: [
-      "メールまたは Google アカウントでログインしてから使う",
-      "匿名のままですぐに全機能が使える",
-      "電話番号のSMS認証だけで始められる",
+      "表示名だけで始められ（パスワード不要）。マイページで Google や電話を後から紐づけられる",
+      "メールまたは Google アカウントがなければ一切使えない",
+      "電話番号のSMS認証だけが最初の登録方法である",
       "会員コード入力のみで始められる",
     ],
     answerIndex: 0,
-    explanation: "初回はログイン画面でメール登録・ログインまたは Google でサインインしてから利用します。",
+    explanation:
+      "表示名だけで匿名セッションを開始できます。別端末への引き継ぎはマイページから Google・メール・電話などで紐づけます。",
   },
   {
     idBase: "app-weather",
@@ -1121,8 +1122,9 @@ const appTruthStatements: Statement[] = [
     id: "app-truth-1",
     category: "アプリ",
     subject: "認証",
-    text: "このアプリはメールまたは Google でログインしてから使い始めます。",
-    explanation: "このアプリはメールまたは Google でログインしてから使い始めます。",
+    text: "このアプリは表示名だけで始められ、必要ならマイページから Google や電話番号を紐づけられます。",
+    explanation:
+      "表示名のみで匿名セッションを開始できます。メール・Google ログインも利用でき、紐づけで別端末から同じ記録にアクセスできます。",
   },
   {
     id: "app-truth-2",
@@ -1163,8 +1165,9 @@ const appTruthStatements: Statement[] = [
     id: "app-truth-7",
     category: "アプリ",
     subject: "引き継ぎ",
-    text: "別端末では、同じ Google またはメールアカウントでログインすると同じ記録にアクセスできます。",
-    explanation: "別端末では、同じ Google またはメールアカウントでログインすると同じ記録にアクセスできます。",
+    text: "別端末では、マイページで紐づけた Google・メール・電話のいずれかで同じ記録にアクセスできます。",
+    explanation:
+      "マイページでアカウントを紐づけたうえで、同じ Google・メール・電話の認証情報でログインすると記録を引き継げます。",
   },
   {
     id: "app-truth-8",
@@ -1194,8 +1197,8 @@ const appLieStatements: Statement[] = [
     id: "app-false-1",
     category: "アプリ",
     subject: "認証",
-    text: "このアプリは匿名のままでログインせずに使い始められます。",
-    explanation: "メールまたは Google でログインしてから利用します。",
+    text: "このアプリは最初から Google アカウントの連携が必須で、表示名だけでは始められません。",
+    explanation: "表示名だけで始められます。Google やメールは任意です。",
   },
   {
     id: "app-false-2",
@@ -1237,7 +1240,7 @@ const appLieStatements: Statement[] = [
     category: "アプリ",
     subject: "引き継ぎ",
     text: "記録の引き継ぎには電話認証しか使えません。",
-    explanation: "ログインにメールまたは Google を使い、同じアカウントで別端末からアクセスします。",
+    explanation: "マイページから Google・メール・電話など複数の方法で紐づけできます。",
   },
   {
     id: "app-false-8",

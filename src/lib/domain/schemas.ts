@@ -171,3 +171,11 @@ export const signInWithPasswordInputSchema = z
     password: authPasswordSchema,
   })
   .strict();
+
+/** 名前だけ登録（匿名セッションの display_name）用 */
+export const displayNameOnlySchema = z
+  .string()
+  .trim()
+  .min(1, "名前を入力してください。")
+  .max(32, "名前は32文字以内にしてください。")
+  .regex(/^[\p{L}\p{N}\s・ー‐－-]+$/u, "記号は ・ ー のみ使えます。絵文字は使えません。");

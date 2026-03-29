@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/Card";
 import { NorenBanner } from "@/components/ui/NorenBanner";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import {
+  signInWithDisplayNameOnly,
   signInWithEmailPassword,
   signUpWithEmailPassword,
   startGoogleSignInFlow,
@@ -30,6 +31,7 @@ export function LoginScreen() {
   const [notice, setNotice] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
+  const [displayNameOnly, setDisplayNameOnly] = useState("");
   const [createEmail, setCreateEmail] = useState("");
   const [createPassword, setCreatePassword] = useState("");
   const [createPasswordConfirmation, setCreatePasswordConfirmation] = useState("");
@@ -48,6 +50,22 @@ export function LoginScreen() {
       setFormError("認証のコールバック処理に失敗しました。設定を確認して再度お試しください。");
     }
   }, []);
+
+  async function handleNameOnly(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    try {
+      setPendingAction("name-only");
+      setFormError(null);
+      setNotice(null);
+      await signInWithDisplayNameOnly(displayNameOnly);
+      setNotice("ようこそ、まぐろ丸ノートへ。");
+      router.refresh();
+    } catch (error) {
+      setFormError(authErrorMessage(error));
+    } finally {
+      setPendingAction(null);
+    }
+  }
 
   async function handleGoogleSignIn() {
     try {
@@ -119,24 +137,49 @@ export function LoginScreen() {
 
   return (
     <>
-      <NorenBanner label="ログイン" />
+      <NorenBanner label="はじめる" />
 
       <Card glow>
-        <p className="account-status-label">はじめに</p>
-        <h2 className="account-status-title">アカウントでログイン</h2>
+        <p className="account-status-label">ようこそ</p>
+        <h2 className="account-status-title">まぐろ丸ノート</h2>
         <p className="account-status-copy">
-          まぐろ丸ノートを使うには、Google アカウントまたはメールアドレスでの登録・ログインが必要です。
+          表示名だけですぐに始められます。パスワードは不要です。別の端末でも記録を残したいときは、マイページから Google
+          アカウントや電話番号を紐づけられます。Google・メールでのログインも利用できます。
         </p>
       </Card>
 
       {notice ? <Card className="account-notice-card">{notice}</Card> : null}
       {formError ? <Card className="account-error-card">{formError}</Card> : null}
 
+      <SectionTitle subtitle="Name" title="名前だけではじめる" />
+      <Card>
+        <p className="account-copy">
+          同じブラウザでは、次回から自動で続きから使えます。機種変更や別ブラウザでは、マイページの紐づけが必要です。
+        </p>
+        <form className="account-form" onSubmit={handleNameOnly}>
+          <label className="form-label">
+            表示名（アプリ内で使う名前）
+            <input
+              autoComplete="nickname"
+              className="memo-input"
+              onChange={(event) => setDisplayNameOnly(event.target.value)}
+              placeholder="例: まぐろ太郎"
+              type="text"
+              value={displayNameOnly}
+            />
+          </label>
+          <button className="button-primary" disabled={pendingAction !== null} type="submit">
+            {pendingAction === "name-only" ? "準備中..." : "この名前ではじめる"}
+          </button>
+        </form>
+        <p className="account-meta-note">Supabase で匿名サインイン（Anonymous sign-ins）を有効にしてください。</p>
+      </Card>
+
       <SectionTitle subtitle="Google" title="Googleでログイン" />
       <Card>
         <p className="account-copy">Google アカウントがあれば、ワンタップで登録・ログインできます。</p>
         <button
-          className="button-primary"
+          className="button-outline"
           disabled={pendingAction !== null}
           onClick={() => void handleGoogleSignIn()}
           type="button"
@@ -148,7 +191,9 @@ export function LoginScreen() {
 
       <SectionTitle subtitle="Email" title="メールで新規登録" />
       <Card>
-        <p className="account-copy">メールアドレスとパスワードでアカウントを作成します。確認メールが届く設定の場合は、リンクを開いて完了してください。</p>
+        <p className="account-copy">
+          メールアドレスとパスワードでアカウントを作成します。確認メールが届く設定の場合は、リンクを開いて完了してください。
+        </p>
         <form className="account-form" onSubmit={handleSignUp}>
           <label className="form-label">
             メールアドレス
@@ -183,7 +228,7 @@ export function LoginScreen() {
               value={createPasswordConfirmation}
             />
           </label>
-          <button className="button-primary" disabled={pendingAction !== null} type="submit">
+          <button className="button-outline" disabled={pendingAction !== null} type="submit">
             {pendingAction === "email-signup" ? "登録中..." : "メールアドレスで登録"}
           </button>
         </form>

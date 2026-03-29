@@ -7,6 +7,7 @@ import {
   checkQuizAnswerInputSchema,
   createQuizSessionInputSchema,
   createEmailAccountInputSchema,
+  displayNameOnlySchema,
   recordVisitInputSchema,
   signInWithPasswordInputSchema,
   submitQuizSessionInputSchema,
@@ -299,4 +300,22 @@ test("updateStoreStatusInputSchema rejects invalid menu stock enum", () => {
       }),
     /Invalid option/,
   );
+});
+
+test("displayNameOnlySchema accepts trimmed names with allowed punctuation", () => {
+  assert.equal(displayNameOnlySchema.parse("  まぐろ太郎・1  "), "まぐろ太郎・1");
+  assert.equal(displayNameOnlySchema.parse("山田ー子"), "山田ー子");
+});
+
+test("displayNameOnlySchema rejects empty after trim", () => {
+  assert.throws(() => displayNameOnlySchema.parse("   "), /名前を入力/);
+});
+
+test("displayNameOnlySchema rejects overly long names", () => {
+  assert.throws(() => displayNameOnlySchema.parse("a".repeat(33)), /32文字/);
+});
+
+test("displayNameOnlySchema rejects disallowed characters", () => {
+  assert.throws(() => displayNameOnlySchema.parse("test@user"), /記号/);
+  assert.throws(() => displayNameOnlySchema.parse("😀まぐろ"), /記号/);
 });

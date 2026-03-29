@@ -44,11 +44,6 @@ async function resolveInitialSupabaseSession(
     return { accessToken: null, signedIn: false };
   }
 
-  if (user.is_anonymous) {
-    await client.auth.signOut();
-    return { accessToken: null, signedIn: false };
-  }
-
   return { accessToken: session.access_token, signedIn: true };
 }
 
@@ -126,44 +121,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        void (async () => {
-          if (!session?.access_token) {
-            setState((current) => ({
-              ...current,
-              ready: true,
-              usingSupabase: true,
-              signedIn: false,
-              error: null,
-              accessToken: null,
-            }));
-            return;
-          }
-
-          if (session.user?.is_anonymous) {
-            await client.auth.signOut();
-            if (cancelled) {
-              return;
-            }
-            setState((current) => ({
-              ...current,
-              ready: true,
-              usingSupabase: true,
-              signedIn: false,
-              error: null,
-              accessToken: null,
-            }));
-            return;
-          }
-
+        if (!session?.access_token) {
           setState((current) => ({
             ...current,
             ready: true,
             usingSupabase: true,
-            signedIn: true,
-            accessToken: session.access_token,
+            signedIn: false,
             error: null,
+            accessToken: null,
           }));
-        })();
+          return;
+        }
+
+        setState((current) => ({
+          ...current,
+          ready: true,
+          usingSupabase: true,
+          signedIn: true,
+          accessToken: session.access_token,
+          error: null,
+        }));
       }) ?? { data: { subscription: { unsubscribe() {} } } };
 
     return () => {
