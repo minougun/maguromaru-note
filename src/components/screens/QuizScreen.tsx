@@ -371,7 +371,7 @@ export function QuizScreen() {
               onClick={() => restart(stage.stageNumber)}
               type="button"
             >
-              <span className="quiz-stage-label">{stage.stage}</span>
+              <span className="quiz-stage-label">{unlockedStageNumbers.includes(stage.stageNumber) ? stage.stage : `🔒 ${stage.stage}`}</span>
               <span className="quiz-stage-count">{stage.title}</span>
               <span className="quiz-stage-detail">
                 {unlockedStageNumbers.includes(stage.stageNumber)
