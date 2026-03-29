@@ -42,6 +42,7 @@ test("buildMyPageSummary marks unlocked and current titles from snapshot progres
     menuItems: seededMenuItems,
     home: {
       menuItemStatuses: defaultMenuStockById,
+      menuStockUpdatedAt: null,
       storeStatus: seededStoreStatus,
       recentLogs: [],
     },

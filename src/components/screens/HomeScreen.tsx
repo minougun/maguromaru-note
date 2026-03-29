@@ -79,12 +79,14 @@ export function HomeScreen() {
   }
 
   const status = storeStatusMeta(snapshot.home.storeStatus.status);
-  const updatedAt = new Intl.DateTimeFormat("ja-JP", {
+  const timeFormatter = new Intl.DateTimeFormat("ja-JP", {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
     timeZone: "Asia/Tokyo",
-  }).format(new Date(snapshot.home.storeStatus.updated_at));
+  });
+  const formatHm = (iso: string) => timeFormatter.format(new Date(iso));
+  const showStoreLastUpdated = snapshot.home.storeStatus.status !== "unset";
   const yen = new Intl.NumberFormat("ja-JP");
 
   function openShare(log: VisitRecord) {
@@ -102,7 +104,9 @@ export function HomeScreen() {
           ) : (
             <span className="status-summary">
               <span className={status.className}>{status.label}</span>
-              <span className="status-updated-text">最終更新時間 {updatedAt}</span>
+              {showStoreLastUpdated ? (
+                <span className="status-updated-text">最終更新時間 {formatHm(snapshot.home.storeStatus.updated_at)}</span>
+              ) : null}
             </span>
           )}
         </div>
@@ -126,7 +130,9 @@ export function HomeScreen() {
       <Card className="stock-card">
         <div className="stock-card-head">
           <div className="stock-store-mark">丼</div>
-          <div className="stock-updated-chip">最終更新時間 {updatedAt}</div>
+          {snapshot.home.menuStockUpdatedAt ? (
+            <div className="stock-updated-chip">最終更新時間 {formatHm(snapshot.home.menuStockUpdatedAt)}</div>
+          ) : null}
         </div>
 
         {snapshot.menuItems.map((item) => {

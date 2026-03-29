@@ -31,7 +31,7 @@ import type {
   VisitRecord,
 } from "@/lib/domain/types";
 import { defaultMenuStockById, quizQuestionsPerStage, type MenuStockStatus } from "@/lib/domain/constants";
-import { seededMenuItemStatuses, seededQuizStats, seededShareBonusEvents, seededStoreStatus } from "@/lib/domain/seed";
+import { seededQuizStats, seededShareBonusEvents, seededStoreStatus } from "@/lib/domain/seed";
 import { filterTrackedParts, isTrackedPartId } from "@/lib/domain/tracked-parts";
 import { getAdminEmail, getSupabaseEnv, getSupabaseServiceEnv, hasSupabaseEnv, isMockAllowed } from "@/lib/env";
 import { createMockPhotoUrl, createMockViewerContext, mockMasterData, readMockState, writeMockState } from "@/lib/mock/store";
@@ -363,10 +363,24 @@ function buildMenuItemStatuses(rows: MenuItemStatusRow[]) {
   return statuses;
 }
 
-async function getMenuItemStatuses(client?: SupabaseClient<Database>) {
+function maxIsoTimestamp(values: string[]) {
+  if (values.length === 0) {
+    return null;
+  }
+  return values.reduce((best, cur) => (cur > best ? cur : best), values[0]);
+}
+
+async function getMenuItemStatuses(client?: SupabaseClient<Database>): Promise<{
+  statuses: Record<MenuItemId, MenuStockStatus>;
+  lastUpdatedAt: string | null;
+}> {
   if (!client) {
     const state = await readMockState();
-    return buildMenuItemStatuses(state.menuItemStatuses);
+    const rows = state.menuItemStatuses;
+    return {
+      statuses: buildMenuItemStatuses(rows),
+      lastUpdatedAt: maxIsoTimestamp(rows.map((row) => row.updated_at)),
+    };
   }
 
   const { data, error } = await fromAny(client, "menu_item_statuses").select("*");
@@ -374,7 +388,11 @@ async function getMenuItemStatuses(client?: SupabaseClient<Database>) {
     throw new AppServiceError(500, error.message);
   }
 
-  return buildMenuItemStatuses((data as MenuItemStatusRow[] | null) ?? seededMenuItemStatuses);
+  const rows = (data as MenuItemStatusRow[] | null) ?? [];
+  return {
+    statuses: buildMenuItemStatuses(rows),
+    lastUpdatedAt: maxIsoTimestamp(rows.map((row) => row.updated_at)),
+  };
 }
 
 function createEmptyQuizStats(userId: string): QuizStatsRow {
@@ -476,6 +494,7 @@ function buildSnapshotFromRecords(
   parts: Part[],
   menuItems: MenuItem[],
   menuItemStatuses: Record<MenuItemId, MenuStockStatus>,
+  menuStockUpdatedAt: string | null,
   storeStatus: StoreStatus,
   quizStatsRow: QuizStatsRow,
   quizSessions: QuizSessionRow[],
@@ -515,6 +534,7 @@ function buildSnapshotFromRecords(
     menuItems,
     home: {
       menuItemStatuses,
+      menuStockUpdatedAt,
       storeStatus,
       recentLogs: visitRecords.slice(0, 3),
     },
@@ -637,11 +657,13 @@ export async function getAppSnapshot(accessToken?: string): Promise<AppSnapshot>
       });
     const visitLogIds = new Set(visitLogs.map((entry) => entry.id));
     const visitLogParts = state.visitLogParts.filter((entry) => visitLogIds.has(entry.visit_log_id));
+    const menuBundle = await getMenuItemStatuses(undefined);
     return buildSnapshotFromRecords(
       viewer,
       parts,
       menuItems,
-      buildMenuItemStatuses(state.menuItemStatuses),
+      menuBundle.statuses,
+      menuBundle.lastUpdatedAt,
       state.storeStatus,
       quizStatsRow,
       quizSessions,
@@ -655,7 +677,7 @@ export async function getAppSnapshot(accessToken?: string): Promise<AppSnapshot>
     ? await getSupabaseContextFromAccessToken(accessToken)
     : await getSupabaseContext();
   const serviceRoleClient = createServiceRoleClient();
-  const [{ parts, menuItems }, menuItemStatuses, storeStatus, quizStatsRow, quizSessions, shareBonusEvents, { visitLogs, visitLogParts }] = await Promise.all([
+  const [{ parts, menuItems }, menuBundle, storeStatus, quizStatsRow, quizSessions, shareBonusEvents, { visitLogs, visitLogParts }] = await Promise.all([
     listMasterData(client),
     getMenuItemStatuses(client),
     getStoreStatus(client),
@@ -669,7 +691,8 @@ export async function getAppSnapshot(accessToken?: string): Promise<AppSnapshot>
     viewer,
     parts,
     menuItems,
-    menuItemStatuses,
+    menuBundle.statuses,
+    menuBundle.lastUpdatedAt,
     storeStatus,
     quizStatsRow,
     quizSessions,

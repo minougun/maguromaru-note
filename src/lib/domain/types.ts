@@ -63,6 +63,8 @@ export interface QuizStageProgressSummary {
 
 export interface HomeData {
   menuItemStatuses: Record<MenuItemId, MenuStockStatus>;
+  /** `menu_item_statuses` に行があるとき、そのうち最新の `updated_at`。未登録は null */
+  menuStockUpdatedAt: string | null;
   storeStatus: StoreStatus;
   recentLogs: VisitRecord[];
 }
