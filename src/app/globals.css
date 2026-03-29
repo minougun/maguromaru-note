@@ -217,7 +217,7 @@ body {
 }
 
 .tab-link[data-active="true"] {
-  color: #ffffff;
+  color: #a8f0fc;
 }
 
 .tab-link[data-active="true"]::before {
@@ -227,7 +227,7 @@ body {
   width: 6px;
   height: 6px;
   border-radius: 999px;
-  background: var(--aka-light);
+  background: #5cdbef;
 }
 
 .tab-icon {
@@ -1523,17 +1523,18 @@ body {
   cursor: not-allowed;
 }
 
+/* 選択中＝水色フィル、非選択＝白（初回起動スクリーン準拠） */
 .login-launch-btn--primary {
-  border: 1.5px solid #c23b3b;
-  background: transparent;
-  color: #fff;
-  box-shadow: 0 0 0 1px rgba(194, 59, 59, 0.15);
+  border: none;
+  background: #5cdbef;
+  color: #252525;
+  box-shadow: none;
 }
 
 .login-launch-btn--secondary {
-  border: none;
-  background: #2e2e2e;
-  color: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: #ffffff;
+  color: #252525;
 }
 
 .login-signin {
