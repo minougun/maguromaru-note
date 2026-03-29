@@ -9,24 +9,26 @@
  *
  * ### WSL の注意
  *
- * - **dev もキャプチャも WSL 内**なら既定の `http://127.0.0.1:3000` でよいことが多い。
- * - **dev が Windows 側**で、キャプチャだけ WSL の bash から叩く場合、`127.0.0.1` は WSL のループバックになり Windows の dev に届かない。
- *   そのときは次のいずれか:
- *   - `CAPTURE_USE_WSL_WINDOWS_HOST=1 npm run capture:onboarding`（`/etc/resolv.conf` の nameserver = Windows ホスト IP に向ける）
- *   - または手動で `CAPTURE_BASE_URL=http://（WindowsのIP）:3000`
+ * - **dev もキャプチャも WSL 内**なら既定の http://127.0.0.1:3000 でよいことが多い。
+ * - **dev が Windows 側**でキャプチャだけ WSL から叩く場合、127.0.0.1 では届かないことがある。
+ *   その場合は **自動で** /etc/resolv.conf の nameserver（Windows ホスト IP）へ再試行する（WSL 検出時・127.0.0.1/localhost のとき）。
+ * - 先に Windows 向けに固定したい: CAPTURE_USE_WSL_WINDOWS_HOST=1
+ * - 自動再試行を切る: CAPTURE_NO_WSL_AUTO_FALLBACK=1
  *
  * ## 環境変数
  *
  * | 変数 | 既定 | 説明 |
  * |------|------|------|
  * | CAPTURE_BASE_URL | http://127.0.0.1:3000 | オリジン |
- * | CAPTURE_USE_WSL_WINDOWS_HOST | （未設定） | 1 なら WSL から Windows 上の dev へ nameserver IP を使う |
+ * | CAPTURE_USE_WSL_WINDOWS_HOST | （未設定） | 1 なら最初から nameserver IP を使う |
+ * | CAPTURE_NO_WSL_AUTO_FALLBACK | （未設定） | 1 なら 127.0.0.1 失敗時の自動 Windows ホスト再試行をしない |
  * | CAPTURE_KEEP_LOCALHOST | （未設定） | 1 なら hostname を localhost のままにする |
  * | NEXT_PUBLIC_BASE_PATH | （未設定） | next.config の basePath と揃える |
  * | CAPTURE_OUTPUT_DIR | public/onboarding/capture | 出力ディレクトリ |
  * | CAPTURE_VIEWPORT_WIDTH | 430 | 幅 |
  * | CAPTURE_VIEWPORT_HEIGHT | 932 | 高さ |
  * | CAPTURE_DEVICE_SCALE_FACTOR | 1 | 2 で高解像度 |
+ * | CAPTURE_PROBE_TIMEOUT_MS | 5000 | 接続確認のタイムアウト |
  *
  * 出力: home.png record.png zukan.png quiz.png titles.png account.png
  *
@@ -126,7 +128,7 @@ function rewriteOriginHostname(origin: string, hostname: string): string {
   return u.toString().replace(/\/$/, "");
 }
 
-/** Windows 上の next dev に、WSL から繋ぐとき用 */
+/** Windows 上の next dev に、WSL から繋ぐとき用（明示指定） */
 function maybeUseWslWindowsHost(origin: string): string {
   if (process.env.CAPTURE_USE_WSL_WINDOWS_HOST !== "1") {
     return origin;
@@ -141,6 +143,37 @@ function maybeUseWslWindowsHost(origin: string): string {
   const next = rewriteOriginHostname(origin, ip);
   console.info("[capture] WSL→Windows ホスト向けオリジン: " + origin + " → " + next);
   return next;
+}
+
+function isWslEnvironment(): boolean {
+  if (process.env.WSL_DISTRO_NAME || process.env.WSL_INTEROP) {
+    return true;
+  }
+  try {
+    return /microsoft/i.test(readFileSync("/proc/version", "utf8"));
+  } catch {
+    return false;
+  }
+}
+
+function originHostname(origin: string): string {
+  try {
+    return new URL(origin.includes("://") ? origin : `http://${origin}`).hostname;
+  } catch {
+    return "";
+  }
+}
+
+/** 127.0.0.1 失敗時に Windows ホストへ自動で切り替えてよいか */
+function canWslAutoFallbackToWindowsHost(origin: string): boolean {
+  if (process.env.CAPTURE_NO_WSL_AUTO_FALLBACK === "1") {
+    return false;
+  }
+  if (!isWslEnvironment()) {
+    return false;
+  }
+  const h = originHostname(origin);
+  return h === "127.0.0.1" || h === "localhost";
 }
 
 /** fetch より socket タイムアウトが効きやすい（WSL でのハング対策） */
@@ -162,26 +195,50 @@ function httpProbe(urlStr: string, timeoutMs: number): Promise<void> {
   });
 }
 
-async function preflightOrigin(origin: string): Promise<void> {
-  const probe = appUrl(origin, "/");
+function buildConnectError(failedUrl: string): Error {
+  return new Error(
+    "接続できません: " +
+      failedUrl +
+      "\n- npm run dev を起動し、ポート（例 3002）を CAPTURE_BASE_URL に合わせる" +
+      "\n- 手動: CAPTURE_BASE_URL=http://（到達できるIP）:ポート" +
+      "\n- WSL で自動フォールバックを無効化: CAPTURE_NO_WSL_AUTO_FALLBACK=1",
+  );
+}
+
+/** 接続できるオリジンを確定（WSL では 127.0.0.1 失敗後に Windows ホストを自動試行） */
+async function resolveReachableOrigin(origin: string): Promise<string> {
   const timeoutMs = envInt("CAPTURE_PROBE_TIMEOUT_MS", 5000);
-  console.info("[capture] 接続確認: " + probe + " （タイムアウト " + timeoutMs + "ms）");
+
+  const probeOnce = async (o: string) => {
+    const p = appUrl(o, "/");
+    console.info("[capture] 接続確認: " + p + " （タイムアウト " + timeoutMs + "ms）");
+    await httpProbe(p, timeoutMs);
+  };
+
   try {
-    await httpProbe(probe, timeoutMs);
+    await probeOnce(origin);
+    console.info("[capture] 接続 OK");
+    return origin;
   } catch {
-    const wslHint =
-      process.env.CAPTURE_USE_WSL_WINDOWS_HOST !== "1"
-        ? "\n- next dev を **Windows** で動かし、キャプチャを **WSL** から実行している場合: CAPTURE_USE_WSL_WINDOWS_HOST=1 を試してください"
-        : "";
-    throw new Error(
-      "接続できません: " +
-        probe +
-        "\n- 別ターミナルで npm run dev が listen しているか、ポートを確認してください" +
-        wslHint +
-        "\n- 手動指定: CAPTURE_BASE_URL=http://（到達できるIP）:3000",
+    if (!canWslAutoFallbackToWindowsHost(origin)) {
+      throw buildConnectError(appUrl(origin, "/"));
+    }
+    const ip = readWslWindowsHostIp();
+    if (!ip) {
+      throw buildConnectError(appUrl(origin, "/"));
+    }
+    const next = rewriteOriginHostname(origin, ip);
+    console.info(
+      "[capture] 127.0.0.1 に届かないため、WSL の nameserver（Windows ホスト）で再試行: " + next,
     );
+    try {
+      await probeOnce(next);
+      console.info("[capture] 接続 OK");
+      return next;
+    } catch {
+      throw buildConnectError(appUrl(next, "/"));
+    }
   }
-  console.info("[capture] 接続 OK");
 }
 
 /** Next dev は HMR 等で window.load が遅延・未発火になり得るため、load は短めに試して諦める */
@@ -194,7 +251,7 @@ async function gotoSettle(page: Page, url: string, label: string): Promise<void>
     console.info("[capture]   domcontentloaded OK");
   } catch (err) {
     const hint =
-      "npm run dev が起動しているか、別ポートなら CAPTURE_BASE_URL を合わせてください。WSL+Windows 越えは CAPTURE_USE_WSL_WINDOWS_HOST=1 を試してください。";
+      "npm run dev が起動しているか、別ポートなら CAPTURE_BASE_URL を合わせてください。WSL では接続先が自動で切り替わるはずです（ダメなら CAPTURE_BASE_URL を手動指定）。";
     throw new Error("画面へ移動できませんでした (" + url + ")。" + hint, { cause: err });
   }
   await page
@@ -286,12 +343,12 @@ async function main() {
   const height = envInt("CAPTURE_VIEWPORT_HEIGHT", 932);
   const deviceScaleFactor = envFloat("CAPTURE_DEVICE_SCALE_FACTOR", 1);
 
-  console.info("[capture] base URL: " + origin + (basePrefix() || ""));
   console.info("[capture] viewport: " + width + "x" + height + " dpr=" + deviceScaleFactor);
   console.info("[capture] output: " + outDir);
 
   await mkdir(outDir, { recursive: true });
-  await preflightOrigin(origin);
+  origin = await resolveReachableOrigin(origin);
+  console.info("[capture] base URL（確定）: " + origin + (basePrefix() || ""));
 
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
