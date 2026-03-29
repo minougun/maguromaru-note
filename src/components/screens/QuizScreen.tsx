@@ -311,49 +311,45 @@ export function QuizScreen() {
     <>
       <NorenBanner label="まぐろクイズ" />
       <Card glow>
-        <div className="quiz-hero">
-          <div>
+        <div className="quiz-info-header">
+          <div className="quiz-info-stage">
             <div className="summary-label">現在のステージ</div>
             <div className="summary-title">{currentStage.stage}</div>
-            <div className="helper-text">{currentStage.title}</div>
+            <div className="quiz-info-subtitle">{currentStage.title}　─　{currentStage.difficultyLabel}</div>
           </div>
-          <div>
-            <div className="summary-label">難易度</div>
-            <div className="summary-value">{currentStage.difficultyLabel}</div>
+          <div className="quiz-info-stats">
+            <div className="quiz-info-stat">
+              <div className="summary-label">累計正解</div>
+              <div className="summary-value">{formatCount(snapshot.history.quizStats.totalCorrectAnswers)}問</div>
+            </div>
+            <div className="quiz-info-stat">
+              <div className="summary-label">最高到達</div>
+              <div className="summary-value">STAGE {highestUnlockedStageNumber}</div>
+            </div>
           </div>
         </div>
-        <p className="helper-text">
-          1 ステージ 10 問固定です。各ステージ内で累計 10 問正解すると次のステージが開きます。問題内容はステージごとに切り替わり、後半ほど難しくなります。
+        <p className="helper-text" style={{ marginTop: 8 }}>
+          各ステージ内で累計 10問正解すると次のステージが解放。問題内容と難易度はステージごとに切り替わります。
         </p>
-        <div className="quiz-hero quiz-stats-panel">
-          <div>
-            <div className="summary-label">累計正解</div>
-            <div className="summary-value">{formatCount(snapshot.history.quizStats.totalCorrectAnswers)}問</div>
-          </div>
-          <div>
-            <div className="summary-label">最高到達</div>
-            <div className="summary-title">STAGE {highestUnlockedStageNumber}</div>
-          </div>
-        </div>
-        <div className="quiz-stage-page">
+        <div className="quiz-stage-nav">
           <button
-            className="button-outline"
+            className="quiz-stage-nav-btn"
             disabled={!canMoveStagePageBackward}
             onClick={() => setStageNumber(Math.max(1, stagePageStart - 5))}
             type="button"
           >
-            前の5ステージ
+            ◀
           </button>
-          <span className="helper-text">
-            STAGE {stagePageStart} - {Math.min(stagePageStart + 4, QUIZ_STAGE_CONFIGS.length)}
+          <span className="quiz-stage-nav-label">
+            STAGE {stagePageStart} – {Math.min(stagePageStart + 4, QUIZ_STAGE_CONFIGS.length)}
           </span>
           <button
-            className="button-outline"
+            className="quiz-stage-nav-btn"
             disabled={!canMoveStagePageForward}
             onClick={() => setStageNumber(Math.min(QUIZ_STAGE_CONFIGS.length, stagePageStart + 5))}
             type="button"
           >
-            次の5ステージ
+            ▶
           </button>
         </div>
         <div className="quiz-stage-grid">
