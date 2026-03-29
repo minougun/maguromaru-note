@@ -15,6 +15,7 @@ import {
 // クライアント側では常に undefined になる。ここでは直接アクセスを使う。
 const BROWSER_SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const BROWSER_SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
+const BROWSER_SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "").trim();
 const HAS_SUPABASE = Boolean(BROWSER_SUPABASE_URL && BROWSER_SUPABASE_ANON_KEY);
 
 let browserClient: SupabaseClient<Database> | undefined;
@@ -75,9 +76,30 @@ export async function buildFreshSupabaseAuthHeaders(headers: HeadersInit = {}) {
   return buildSupabaseAuthHeaders(accessToken, headers);
 }
 
+/**
+ * Google / Apple OAuth やメール確認の戻り先オリジン。
+ * 本番ビルドでは `NEXT_PUBLIC_SITE_URL` に公開 URL（https://…）を必ず入れ、localhost へ飛ばないようにする。
+ * 未設定時のみ `window.location.origin`（ローカル開発用）。
+ */
+function getAuthRedirectOrigin(): string {
+  if (BROWSER_SITE_URL) {
+    try {
+      return new URL(BROWSER_SITE_URL).origin;
+    } catch {
+      /* 無効な URL はフォールバックへ */
+    }
+  }
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return window.location.origin;
+  }
+  throw new Error(
+    "認証のリダイレクト先を決められません。NEXT_PUBLIC_SITE_URL にサイトの公開 URL を設定してください。",
+  );
+}
+
 function buildAuthCallbackUrl(nextPath: string) {
   const parsedNextPath = authNextPathSchema.parse(nextPath);
-  const url = new URL("/auth/callback", window.location.origin);
+  const url = new URL("/auth/callback", getAuthRedirectOrigin());
   url.searchParams.set("next", parsedNextPath);
   return url.toString();
 }
