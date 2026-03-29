@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { TITLES } from "@/lib/domain/constants";
+import { QUIZ_MASTER_TITLE_FOR_PROGRESS } from "@/lib/quiz-master-progress";
 import { QUIZ_QUESTIONS, QUIZ_SESSION_SIZE, createQuizSession, scoreQuizAnswers, toPublicQuizSession } from "@/lib/quiz";
 
 test("quiz pool contains at least 1000 stage-specific questions", () => {
@@ -92,4 +94,11 @@ test("akami area question requires selecting both abdomen and back", () => {
   assert.equal(combinedResult.correct, true);
   assert.equal(abdomenOnlyResult.correct, false);
   assert.deepEqual(combinedResult.correctIndexes, [abdomenIndex, backIndex].sort((a, b) => a - b));
+});
+
+test("QUIZ_MASTER_TITLE_FOR_PROGRESS matches TITLES master", () => {
+  const master = TITLES.find((t) => t.id === "master");
+  assert.ok(master);
+  assert.equal(QUIZ_MASTER_TITLE_FOR_PROGRESS.name, master.name);
+  assert.equal(QUIZ_MASTER_TITLE_FOR_PROGRESS.requiredQuizCorrect, master.requiredQuizCorrect);
 });

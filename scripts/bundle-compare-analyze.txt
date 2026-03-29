@@ -1,0 +1,14 @@
+npm run analyze（webpack）後のクライアントチャンク比較メモ。
+baseline: git f66bde3（QuizScreen が @/lib/quiz から QUIZ_SESSION_SIZE を import していた版）
+current: 作業ブランチ（quiz 分離・dynamic・quiz-stages 関数化 等）
+
+app/quiz/page-*.js（ルート専用チャンク）
+  baseline: 100643 bytes
+  current:  20269 bytes
+  差分: 約 -80%（同一ビルド設定・同一 node_modules シンボリンクで計測）
+
+.next/static/chunks 内 *.js の合計（参考）
+  baseline: 1385404 bytes
+  current:  1304715 bytes
+
+詳細は .next/analyze/client.html（file:/// またはローカルパス）を参照。

@@ -1,14 +1,25 @@
 import { quizQuestionsPerStage, quizStageCount, quizStagesPerTier } from "@/lib/domain/constants";
 
-export const QUIZ_STAGE_CONFIGS = Array.from({ length: quizStageCount }, (_, index) => {
-  const stageNumber = index + 1;
+export type QuizStageConfig = {
+  stageNumber: number;
+  tier: number;
+  stage: string;
+  title: string;
+  detail: string;
+  difficultyLabel: string;
+};
+
+function buildQuizStageConfig(stageNumber: number): QuizStageConfig {
+  const safeStage =
+    Number.isInteger(stageNumber) && stageNumber >= 1 && stageNumber <= quizStageCount ? stageNumber : 1;
+  const index = safeStage - 1;
   const tier = Math.floor(index / quizStagesPerTier) + 1;
-  const stage = `STAGE ${stageNumber}`;
+  const stage = `STAGE ${safeStage}`;
 
   switch (tier) {
     case 1:
       return {
-        stageNumber,
+        stageNumber: safeStage,
         tier,
         stage,
         title: "部位入門",
@@ -17,7 +28,7 @@ export const QUIZ_STAGE_CONFIGS = Array.from({ length: quizStageCount }, (_, ind
       };
     case 2:
       return {
-        stageNumber,
+        stageNumber: safeStage,
         tier,
         stage,
         title: "魚種と生態",
@@ -26,7 +37,7 @@ export const QUIZ_STAGE_CONFIGS = Array.from({ length: quizStageCount }, (_, ind
       };
     case 3:
       return {
-        stageNumber,
+        stageNumber: safeStage,
         tier,
         stage,
         title: "漁と流通",
@@ -35,7 +46,7 @@ export const QUIZ_STAGE_CONFIGS = Array.from({ length: quizStageCount }, (_, ind
       };
     case 4:
       return {
-        stageNumber,
+        stageNumber: safeStage,
         tier,
         stage,
         title: "食と文化",
@@ -44,7 +55,7 @@ export const QUIZ_STAGE_CONFIGS = Array.from({ length: quizStageCount }, (_, ind
       };
     default:
       return {
-        stageNumber,
+        stageNumber: safeStage,
         tier,
         stage,
         title: "まぐろマスター",
@@ -52,7 +63,7 @@ export const QUIZ_STAGE_CONFIGS = Array.from({ length: quizStageCount }, (_, ind
         difficultyLabel: "最難関",
       };
   }
-});
+}
 
 type QuizStageProgressInput = {
   correctByStage: Record<number, number>;
@@ -92,6 +103,6 @@ export function getHighestUnlockedQuizStageNumber(progress: QuizStageProgressInp
   return unlocked[unlocked.length - 1] ?? 1;
 }
 
-export function getQuizStageConfig(stageNumber: number) {
-  return QUIZ_STAGE_CONFIGS.find((stage) => stage.stageNumber === stageNumber) ?? QUIZ_STAGE_CONFIGS[0];
+export function getQuizStageConfig(stageNumber: number): QuizStageConfig {
+  return buildQuizStageConfig(stageNumber);
 }

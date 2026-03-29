@@ -1,7 +1,16 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import { useAuthState } from "@/components/providers/AuthProvider";
 import {
@@ -21,6 +30,14 @@ function buildSnapshotRequestUrl(pathname: string | null): string {
     params.set("history_visit_page_size", String(HISTORY_SNAPSHOT_DEFAULT_PAGE_SIZE));
   }
   return `${withAppBasePath("/api/app-snapshot")}?${params.toString()}`;
+}
+
+function snapshotCacheKey(pathname: string | null): string {
+  const scope = snapshotScopeForPathname(pathname);
+  if (scope === "history") {
+    return `${scope}:p1:s${HISTORY_SNAPSHOT_DEFAULT_PAGE_SIZE}`;
+  }
+  return scope;
 }
 
 /** 連携完了など、フックの外からスナップショット再取得を依頼するときに使う */
@@ -44,17 +61,38 @@ const AppSnapshotContext = createContext<AppSnapshotContextValue | null>(null);
 export function AppSnapshotProvider({ children }: { children: React.ReactNode }) {
   const auth = useAuthState();
   const pathname = usePathname();
+  const pathnameRef = useRef(pathname);
+  pathnameRef.current = pathname;
+
+  const snapshotCacheRef = useRef(new Map<string, AppSnapshot>());
+
   const [snapshot, setSnapshot] = useState<AppSnapshot | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState(0);
 
+  const refresh = useCallback(() => {
+    snapshotCacheRef.current.clear();
+    setRefreshToken((current) => current + 1);
+  }, []);
+
   useEffect(() => {
+    const handler = () => {
+      snapshotCacheRef.current.clear();
+      setRefreshToken((current) => current + 1);
+    };
+    window.addEventListener(APP_SNAPSHOT_REFRESH_EVENT, handler);
+    return () => window.removeEventListener(APP_SNAPSHOT_REFRESH_EVENT, handler);
+  }, []);
+
+  /** タブ切り替え直後に前画面のスナップショットが見えないよう、描画前にキャッシュ反映またはクリア */
+  useLayoutEffect(() => {
     if (!auth.ready) {
       return;
     }
 
     if (!auth.signedIn) {
+      snapshotCacheRef.current.clear();
       setSnapshot(null);
       setError(null);
       setLoading(false);
@@ -65,14 +103,41 @@ export function AppSnapshotProvider({ children }: { children: React.ReactNode })
       return;
     }
 
+    const key = snapshotCacheKey(pathname);
+    const hit = snapshotCacheRef.current.get(key);
+    if (hit) {
+      setSnapshot(hit);
+      setError(null);
+      setLoading(false);
+    } else {
+      setSnapshot(null);
+      setLoading(true);
+      setError(null);
+    }
+  }, [auth.accessToken, auth.ready, auth.signedIn, auth.usingSupabase, pathname, refreshToken]);
+
+  useEffect(() => {
+    if (!auth.ready) {
+      return;
+    }
+
+    if (!auth.signedIn) {
+      return;
+    }
+
+    if (auth.usingSupabase && !auth.accessToken) {
+      return;
+    }
+
+    const key = snapshotCacheKey(pathname);
+    const hadCache = snapshotCacheRef.current.has(key);
+
     let cancelled = false;
     const abortController = new AbortController();
     const snapshotUrl = buildSnapshotRequestUrl(pathname);
+    const blockingLoad = !hadCache;
 
     async function loadSnapshot() {
-      setLoading(true);
-      setError(null);
-
       try {
         const initialToken = auth.usingSupabase
           ? auth.accessToken ?? (await readSupabaseAccessToken())
@@ -117,25 +182,35 @@ export function AppSnapshotProvider({ children }: { children: React.ReactNode })
 
         if (!response.ok) {
           const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-          setError(payload?.error ?? "データ取得に失敗しました。");
+          if (blockingLoad) {
+            setError(payload?.error ?? "データ取得に失敗しました。");
+          }
           return;
         }
 
         const nextSnapshot = (await response.json().catch(() => null)) as AppSnapshot | null;
         if (!nextSnapshot) {
-          setError("データの形式が不正です。");
+          if (blockingLoad) {
+            setError("データの形式が不正です。");
+          }
           return;
         }
-        setSnapshot(nextSnapshot);
+
+        snapshotCacheRef.current.set(key, nextSnapshot);
+
+        if (snapshotCacheKey(pathnameRef.current) === key) {
+          setSnapshot(nextSnapshot);
+          setError(null);
+        }
       } catch (err) {
         if (cancelled || (err instanceof DOMException && err.name === "AbortError")) {
           return;
         }
-        if (!cancelled) {
+        if (blockingLoad && !cancelled) {
           setError("通信に失敗しました。ネットワークを確認してください。");
         }
       } finally {
-        if (!cancelled) {
+        if (!cancelled && blockingLoad && snapshotCacheKey(pathnameRef.current) === key) {
           setLoading(false);
         }
       }
@@ -147,18 +222,6 @@ export function AppSnapshotProvider({ children }: { children: React.ReactNode })
       abortController.abort();
     };
   }, [auth.accessToken, auth.error, auth.ready, auth.signedIn, auth.usingSupabase, pathname, refreshToken]);
-
-  const refresh = useCallback(() => {
-    setRefreshToken((current) => current + 1);
-  }, []);
-
-  useEffect(() => {
-    const handler = () => {
-      setRefreshToken((current) => current + 1);
-    };
-    window.addEventListener(APP_SNAPSHOT_REFRESH_EVENT, handler);
-    return () => window.removeEventListener(APP_SNAPSHOT_REFRESH_EVENT, handler);
-  }, []);
 
   const waitingForUserSession =
     auth.ready &&

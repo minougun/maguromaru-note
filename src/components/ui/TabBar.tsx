@@ -25,7 +25,7 @@ export function TabBar() {
             data-active={active}
             href={tab.href}
             key={tab.href}
-            prefetch={tab.href === "/quiz" ? false : undefined}
+            prefetch={false}
           >
             <span aria-hidden="true" className="tab-icon">
               {tab.icon}

@@ -12,13 +12,9 @@ import { ScreenState } from "@/components/ui/ScreenState";
 import { useAppSnapshot } from "@/lib/hooks/use-app-snapshot";
 import { QUIZ_SESSION_SIZE } from "@/lib/quiz-session-constants";
 import type { QuizQuestionCategory } from "@/lib/quiz-types";
-import {
-  QUIZ_STAGE_CONFIGS,
-  getQuizStageConfig,
-  getStageProgressCount,
-  isQuizStageUnlocked,
-} from "@/lib/quiz-stages";
-import { TITLES } from "@/lib/domain/constants";
+import { quizStageCount } from "@/lib/domain/constants";
+import { QUIZ_MASTER_TITLE_FOR_PROGRESS } from "@/lib/quiz-master-progress";
+import { getQuizStageConfig, getStageProgressCount, isQuizStageUnlocked } from "@/lib/quiz-stages";
 import { FetchJsonError, fetchJsonWithAuth } from "@/lib/http/fetch-json";
 import { withAppBasePath } from "@/lib/public-path";
 import { buildQuizResultShare, type SharePayload } from "@/lib/share/share";
@@ -339,7 +335,7 @@ export function QuizScreen() {
     correctByStage: snapshot.history.quizStageProgress.correctByStage,
   });
   const canGoPrev = stageNumber > 1;
-  const canGoNext = stageNumber < QUIZ_STAGE_CONFIGS.length;
+  const canGoNext = stageNumber < quizStageCount;
 
   return (
     <>
@@ -347,24 +343,22 @@ export function QuizScreen() {
       <ShareBonusCallout variant="quiz" />
       <Card glow>
         {(() => {
-          const masterTitle = TITLES.find((t) => t.id === "master")!;
           const totalCorrect = snapshot.history.quizStats.totalCorrectAnswers;
-          const goal = masterTitle.requiredQuizCorrect;
+          const goal = QUIZ_MASTER_TITLE_FOR_PROGRESS.requiredQuizCorrect;
           const pct = Math.min(Math.round((totalCorrect / goal) * 100), 100);
           const reached = totalCorrect >= goal;
+          const name = QUIZ_MASTER_TITLE_FOR_PROGRESS.name;
           return (
             <div className="quiz-master-progress">
               <div className="quiz-master-progress-header">
-                <span className="progress-label">👑 {masterTitle.name}への道</span>
+                <span className="progress-label">👑 {name}への道</span>
                 <span className="progress-label">{pct}%</span>
               </div>
               <div className="progress-bar-wrap">
                 <div className="progress-bar-fill" style={{ width: `${pct}%` }} />
               </div>
               <p className="progress-caption">
-                {reached
-                  ? `${masterTitle.name}到達！おめでとうございます！`
-                  : `正解済み${formatCount(totalCorrect)}/${formatCount(goal)}`}
+                {reached ? `${name}到達！おめでとうございます！` : `正解済み${formatCount(totalCorrect)}/${formatCount(goal)}`}
               </p>
             </div>
           );
