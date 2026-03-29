@@ -303,10 +303,12 @@ export function QuizScreen() {
   const highestUnlockedStageNumber = getHighestUnlockedQuizStageNumber({
     correctByStage: snapshot.history.quizStageProgress.correctByStage,
   });
-  const stagePageStart = Math.floor((stageNumber - 1) / 5) * 5 + 1;
-  const visibleStages = QUIZ_STAGE_CONFIGS.slice(stagePageStart - 1, stagePageStart + 4);
-  const canMoveStagePageBackward = stagePageStart > 1;
-  const canMoveStagePageForward = stagePageStart + 5 <= QUIZ_STAGE_CONFIGS.length;
+  const viewingStage = getQuizStageConfig(stageNumber);
+  const isViewingLocked = !isQuizStageUnlocked(stageNumber, {
+    correctByStage: snapshot.history.quizStageProgress.correctByStage,
+  });
+  const canGoPrev = stageNumber > 1;
+  const canGoNext = stageNumber < QUIZ_STAGE_CONFIGS.length;
 
   return (
     <>
@@ -355,51 +357,39 @@ export function QuizScreen() {
         <p className="helper-text" style={{ marginTop: 8 }}>
           各ステージ内で累計 10問正解すると次のステージが解放。問題内容と難易度はステージごとに切り替わります。
         </p>
-        <div className="quiz-stage-nav">
+        <div className="quiz-stage-single">
           <button
             className="quiz-stage-nav-btn"
-            disabled={!canMoveStagePageBackward}
-            onClick={() => setStageNumber(Math.max(1, stagePageStart - 5))}
+            disabled={!canGoPrev}
+            onClick={() => setStageNumber(stageNumber - 1)}
             type="button"
           >
             ◀
           </button>
-          <span className="quiz-stage-nav-label">
-            STAGE {stagePageStart} – {Math.min(stagePageStart + 4, QUIZ_STAGE_CONFIGS.length)}
-          </span>
+          <button
+            className="button-choice quiz-stage-card quiz-stage-card-single"
+            data-active={!isViewingLocked}
+            data-locked={isViewingLocked}
+            disabled={isViewingLocked}
+            onClick={() => restart(stageNumber)}
+            type="button"
+          >
+            <span className="quiz-stage-label">{isViewingLocked ? `🔒 ${viewingStage.stage}` : viewingStage.stage}</span>
+            <span className="quiz-stage-count">{viewingStage.title}</span>
+            <span className="quiz-stage-detail">
+              {isViewingLocked
+                ? `STAGE ${stageNumber - 1} で累計 ${QUIZ_SESSION_SIZE} 問正解で開放`
+                : `${viewingStage.detail} ・ 累計 ${formatCount(getStageProgressCount({ correctByStage: snapshot.history.quizStageProgress.correctByStage }, stageNumber))} / ${QUIZ_SESSION_SIZE}`}
+            </span>
+          </button>
           <button
             className="quiz-stage-nav-btn"
-            disabled={!canMoveStagePageForward}
-            onClick={() => setStageNumber(Math.min(QUIZ_STAGE_CONFIGS.length, stagePageStart + 5))}
+            disabled={!canGoNext}
+            onClick={() => setStageNumber(stageNumber + 1)}
             type="button"
           >
             ▶
           </button>
-        </div>
-        <div className="quiz-stage-grid">
-          {visibleStages.map((stage) => (
-            <button
-              className="button-choice quiz-stage-card"
-              data-active={stageNumber === stage.stageNumber}
-              data-locked={!isQuizStageUnlocked(stage.stageNumber, {
-                correctByStage: snapshot.history.quizStageProgress.correctByStage,
-              })}
-              disabled={!isQuizStageUnlocked(stage.stageNumber, {
-                correctByStage: snapshot.history.quizStageProgress.correctByStage,
-              })}
-              key={stage.stageNumber}
-              onClick={() => restart(stage.stageNumber)}
-              type="button"
-            >
-              <span className="quiz-stage-label">{unlockedStageNumbers.includes(stage.stageNumber) ? stage.stage : `🔒 ${stage.stage}`}</span>
-              <span className="quiz-stage-count">{stage.title}</span>
-              <span className="quiz-stage-detail">
-                {unlockedStageNumbers.includes(stage.stageNumber)
-                  ? `${stage.detail} ・ 累計 ${formatCount(getStageProgressCount({ correctByStage: snapshot.history.quizStageProgress.correctByStage }, stage.stageNumber))} / ${QUIZ_SESSION_SIZE}`
-                  : `STAGE ${stage.stageNumber - 1} で累計 ${QUIZ_SESSION_SIZE} 問正解で開放`}
-              </span>
-            </button>
-          ))}
         </div>
       </Card>
 

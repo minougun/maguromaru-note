@@ -841,12 +841,17 @@ body {
   margin: 0 0 6px;
 }
 
-.quiz-stage-nav {
+.quiz-stage-single {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
   margin-top: 14px;
+}
+
+.quiz-stage-card-single {
+  flex: 1;
+  text-align: center;
 }
 
 .quiz-stage-nav-btn {
