@@ -685,11 +685,13 @@ function buildSnapshotFromRecords(
   let homeMenuItemStatuses = menuItemStatuses;
   let homeMenuStockUpdatedAt = menuStockUpdatedAt;
   let homeStoreStatus = storeStatus;
+  let homeShowStaffUpdateTimestamps = true;
   if (viewer.role !== "admin") {
     const masked = applyCustomerFacingStoreAndStock(storeStatus, menuItemStatuses, menuStockUpdatedAt, new Date());
     homeStoreStatus = masked.storeStatus;
     homeMenuItemStatuses = masked.menuItemStatuses;
     homeMenuStockUpdatedAt = masked.menuStockUpdatedAt;
+    homeShowStaffUpdateTimestamps = masked.showStaffUpdateTimestamps;
   }
 
   const shareBonus = buildShareBonusSummary(shareBonusEvents);
@@ -726,6 +728,7 @@ function buildSnapshotFromRecords(
       menuItemStatuses: homeMenuItemStatuses,
       menuStockUpdatedAt: homeMenuStockUpdatedAt,
       storeStatus: homeStoreStatus,
+      showStaffUpdateTimestamps: homeShowStaffUpdateTimestamps,
       recentLogs: visitRecords.slice(0, 3),
     },
     history: {

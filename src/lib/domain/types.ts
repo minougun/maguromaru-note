@@ -67,6 +67,8 @@ export interface HomeData {
   /** `menu_item_statuses` に行があるとき、そのうち最新の `updated_at`。未登録は null */
   menuStockUpdatedAt: string | null;
   storeStatus: StoreStatus;
+  /** 案内営業時間外のマスク時など、スタッフの最終更新時刻を UI に出さない */
+  showStaffUpdateTimestamps: boolean;
   recentLogs: VisitRecord[];
 }
 

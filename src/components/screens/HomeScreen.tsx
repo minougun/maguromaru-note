@@ -97,7 +97,8 @@ export function HomeScreen() {
     timeZone: "Asia/Tokyo",
   });
   const formatHm = (iso: string) => timeFormatter.format(new Date(iso));
-  const showStoreLastUpdated = storeStatus !== "unset";
+  const showStoreLastUpdated =
+    snapshot.home.showStaffUpdateTimestamps && storeStatus !== "unset";
   const yen = new Intl.NumberFormat("ja-JP");
 
   function openShare(log: VisitRecord) {
@@ -143,7 +144,7 @@ export function HomeScreen() {
           <div className="stock-store-mark" aria-hidden="true">
             丼
           </div>
-          {snapshot.home.menuStockUpdatedAt ? (
+          {snapshot.home.showStaffUpdateTimestamps && snapshot.home.menuStockUpdatedAt ? (
             <div className="stock-updated-chip">最終更新時間 {formatHm(snapshot.home.menuStockUpdatedAt)}</div>
           ) : null}
         </div>

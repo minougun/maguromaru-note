@@ -48,6 +48,7 @@ test("applyCustomerFacingStoreAndStock: after hours shows closed store and unset
   assert.equal(out.storeStatus.status_note, "");
   assert.equal(out.menuItemStatuses.maguro_don, "unset");
   assert.equal(out.menuStockUpdatedAt, null);
+  assert.equal(out.showStaffUpdateTimestamps, false);
 });
 
 test("applyCustomerFacingStoreAndStock: open hours but stale JST date uses available menu and unset store", () => {
@@ -67,6 +68,7 @@ test("applyCustomerFacingStoreAndStock: open hours but stale JST date uses avail
   assert.equal(out.storeStatus.status, "unset");
   assert.equal(out.menuItemStatuses.maguro_don, "available");
   assert.equal(out.menuItemStatuses.tokujo_don_mini, "available");
+  assert.equal(out.showStaffUpdateTimestamps, true);
 });
 
 test("applyCustomerFacingStoreAndStock: open hours and touched today preserves DB view", () => {
@@ -74,6 +76,7 @@ test("applyCustomerFacingStoreAndStock: open hours and touched today preserves D
   const out = applyCustomerFacingStoreAndStock(storeBusyToday, defaultMenuStockById, "2026-03-30T02:00:00.000Z", now);
   assert.equal(out.storeStatus.status, "busy");
   assert.equal(out.menuItemStatuses.maguro_don, "available");
+  assert.equal(out.showStaffUpdateTimestamps, true);
 });
 
 test("applyCustomerFacingStoreAndStock: one hour before close forces closing_soon when fresh today", () => {
@@ -82,6 +85,7 @@ test("applyCustomerFacingStoreAndStock: one hour before close forces closing_soo
   assert.equal(out.storeStatus.status, "closing_soon");
   assert.equal(out.storeStatus.status_note, "混雑");
   assert.equal(out.menuItemStatuses.maguro_don, "available");
+  assert.equal(out.showStaffUpdateTimestamps, true);
 });
 
 test("applyCustomerFacingStoreAndStock: one hour before close when stale uses closing_soon and available menu", () => {
@@ -101,4 +105,5 @@ test("applyCustomerFacingStoreAndStock: one hour before close when stale uses cl
   assert.equal(out.storeStatus.status, "closing_soon");
   assert.equal(out.storeStatus.status_note, "");
   assert.equal(out.menuItemStatuses.maguro_don, "available");
+  assert.equal(out.showStaffUpdateTimestamps, true);
 });

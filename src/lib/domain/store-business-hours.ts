@@ -114,12 +114,14 @@ export function applyCustomerFacingStoreAndStock(
   storeStatus: StoreStatus;
   menuItemStatuses: Record<MenuItemId, MenuStockStatus>;
   menuStockUpdatedAt: string | null;
+  showStaffUpdateTimestamps: boolean;
 } {
   if (!isWithinStoreBusinessHoursJst(now)) {
     return {
       storeStatus: afterHoursStoreDisplay(storeStatus),
       menuItemStatuses: allMenuUnset(),
       menuStockUpdatedAt: null,
+      showStaffUpdateTimestamps: false,
     };
   }
 
@@ -133,6 +135,7 @@ export function applyCustomerFacingStoreAndStock(
       storeStatus: closingSoonStoreDisplay(storeStatus, !freshToday),
       menuItemStatuses: freshToday ? menuItemStatuses : allMenuAvailable(),
       menuStockUpdatedAt: freshToday ? menuStockUpdatedAt : null,
+      showStaffUpdateTimestamps: true,
     };
   }
 
@@ -141,8 +144,14 @@ export function applyCustomerFacingStoreAndStock(
       storeStatus: clearedStoreStatus(storeStatus),
       menuItemStatuses: allMenuAvailable(),
       menuStockUpdatedAt: null,
+      showStaffUpdateTimestamps: true,
     };
   }
 
-  return { storeStatus, menuItemStatuses, menuStockUpdatedAt };
+  return {
+    storeStatus,
+    menuItemStatuses,
+    menuStockUpdatedAt,
+    showStaffUpdateTimestamps: true,
+  };
 }
