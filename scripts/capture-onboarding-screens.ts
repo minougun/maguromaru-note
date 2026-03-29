@@ -58,7 +58,7 @@ import path from "node:path";
 
 import { chromium, type Page } from "playwright";
 
-const ONBOARDING_DONE_KEY = "maguro_note_onboarding_v3_done";
+const ONBOARDING_DONE_KEY = "maguro_note_onboarding_v4_done";
 const LOCAL_SESSION_KEY = "maguro-note-local-session";
 
 function sleep(ms: number) {

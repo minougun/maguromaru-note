@@ -1,5 +1,5 @@
-/** チュートリアル内容を差し替えたらキーを上げて再表示できる */
-const ONBOARDING_DONE_KEY = "maguro_note_onboarding_v3_done";
+/** チュートリアル内容を差し替えたらキーを上げて再表示できる（v4: 実UIスクショ WebP に戻したタイミング） */
+const ONBOARDING_DONE_KEY = "maguro_note_onboarding_v4_done";
 
 export function readOnboardingDone(): boolean {
   if (typeof window === "undefined") {
