@@ -28,46 +28,106 @@ interface MapRegionDef {
 }
 
 /**
- * viewBox 1365×768（`src/assets/zukan-tuna-map.webp` を `/_next/static/media/` にバンドル。幅 1365 に最適化済み）。
- * 腹部は前後2領域：前＝大トロのみ、後＝大トロ・中トロ（記録は部位ごと）。
- * 中とろは背のブロック＋腹の後方の両方でハイライトされる。
+ * viewBox 1365×768。背景は `src/assets/zukan-tuna-map.webp`（幅 1365 に最適化済み）。
+ * ラベル・楕円位置は参考解剖図（714×429px、例: Downloads/655546.jpg）を縦横それぞれ線形スケールして合わせている。
+ * 腹は前から「大トロ」「大トロ・中トロ」「中とろ（後腹）」。中とろは背のブロックでもハイライト。
  */
+const REF_W = 714;
+const REF_H = 429;
+const VB_W = 1365;
+const VB_H = 768;
+
+function sx(x: number): number {
+  return (x * VB_W) / REF_W;
+}
+function sy(y: number): number {
+  return (y * VB_H) / REF_H;
+}
+
 const MAP_REGIONS: MapRegionDef[] = [
-  { key: "noten", partIds: ["noten"], type: "ellipse", cx: 292, cy: 178, rx: 48, ry: 30, label: { x: 228, y: 92 } },
-  { key: "hoho", partIds: ["hoho"], type: "ellipse", cx: 206, cy: 426, rx: 52, ry: 40, label: { x: 92, y: 486 } },
-  { key: "meura", partIds: ["meura"], type: "ellipse", cx: 238, cy: 342, rx: 42, ry: 32, label: { x: 158, y: 262 } },
+  {
+    key: "noten",
+    partIds: ["noten"],
+    type: "ellipse",
+    cx: sx(182),
+    cy: sy(110),
+    rx: sx(34),
+    ry: sy(22),
+    label: { x: sx(90), y: sy(56) },
+  },
+  {
+    key: "hoho",
+    partIds: ["hoho"],
+    type: "ellipse",
+    cx: sx(120),
+    cy: sy(235),
+    rx: sx(46),
+    ry: sy(36),
+    label: { x: sx(60), y: sy(278) },
+  },
+  {
+    key: "meura",
+    partIds: ["meura"],
+    type: "ellipse",
+    cx: sx(200),
+    cy: sy(162),
+    rx: sx(38),
+    ry: sy(30),
+    label: { x: sx(138), y: sy(128) },
+  },
   {
     key: "chutoro-back",
     partIds: ["chutoro"],
     type: "ellipse",
-    cx: 712,
-    cy: 248,
-    rx: 208,
-    ry: 70,
-    label: { x: 668, y: 82 },
+    cx: sx(400),
+    cy: sy(118),
+    rx: sx(128),
+    ry: sy(40),
+    label: { x: sx(357), y: sy(52) },
   },
-  { key: "akami", partIds: ["akami"], type: "ellipse", cx: 718, cy: 394, rx: 238, ry: 90, label: { x: 1040, y: 336 } },
   {
-    key: "belly-otoro-chutoro-rear",
-    partIds: ["otoro", "chutoro"],
+    key: "akami",
+    partIds: ["akami"],
     type: "ellipse",
-    cx: 738,
-    cy: 548,
-    rx: 132,
-    ry: 52,
-    label: { x: 926, y: 628, text: "大トロ・中トロ" },
-    labelWidth: 248,
+    cx: sx(392),
+    cy: sy(208),
+    rx: sx(152),
+    ry: sy(50),
+    label: { x: sx(450), y: sy(210) },
+    labelWidth: 168,
   },
   {
     key: "belly-otoro-front",
     partIds: ["otoro"],
     type: "ellipse",
-    cx: 438,
-    cy: 556,
-    rx: 112,
-    ry: 48,
-    label: { x: 352, y: 692, text: "大トロ" },
+    cx: sx(285),
+    cy: sy(320),
+    rx: sx(74),
+    ry: sy(36),
+    label: { x: sx(272), y: sy(398), text: "大トロ" },
     labelWidth: 132,
+  },
+  {
+    key: "belly-otoro-chutoro-mid",
+    partIds: ["otoro", "chutoro"],
+    type: "ellipse",
+    cx: sx(432),
+    cy: sy(315),
+    rx: sx(86),
+    ry: sy(34),
+    label: { x: sx(448), y: sy(392), text: "大トロ・中トロ" },
+    labelWidth: 248,
+  },
+  {
+    key: "belly-chutoro-rear",
+    partIds: ["chutoro"],
+    type: "ellipse",
+    cx: sx(538),
+    cy: sy(308),
+    rx: sx(70),
+    ry: sy(32),
+    label: { x: sx(548), y: sy(382) },
+    labelWidth: 168,
   },
 ];
 
