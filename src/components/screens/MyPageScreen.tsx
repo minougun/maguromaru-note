@@ -91,11 +91,11 @@ export function MyPageScreen() {
   }, [loadProfile]);
 
   useEffect(() => {
-    if (!auth.usingSupabase || !auth.accessToken) {
+    if (!auth.usingSupabase || !auth.signedIn) {
       return;
     }
     void loadProfile();
-  }, [auth.accessToken, auth.usingSupabase, loadProfile]);
+  }, [auth.signedIn, auth.usingSupabase, loadProfile]);
 
   useEffect(() => {
     if (profile && isProviderLinked(profile, "email")) {

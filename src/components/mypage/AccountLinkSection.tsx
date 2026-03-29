@@ -126,7 +126,10 @@ export function AccountLinkSection({
   const busy = pending !== null;
   const emailInputId = `${emailFieldIdPrefix}-link-email`;
   const emailOtpId = `${emailFieldIdPrefix}-link-email-otp`;
-  const showRows = isSignIn || (!loading && profile);
+  /** 失敗時に「読み込み中」のまま残さない（OAuth 直後などで getUserIdentities が空でもプロフィールは別経路で取れるようにした） */
+  const showListLoading = !isSignIn && !profile && (loading || !error);
+  const showListError = !isSignIn && !loading && !profile && Boolean(error);
+  const showRows = isSignIn || Boolean(profile);
   const showEmailPanel = emailExpanded && (isSignIn || (profile && !loading));
   const useOtpSubstep = emailFlow === "otp" && emailStep === "sent";
 
@@ -150,9 +153,13 @@ export function AccountLinkSection({
         </header>
 
         <div className="account-link-list" role="list">
-          {!showRows ? (
+          {showListLoading ? (
             <p className="account-link-loading">連携状態を読み込み中です…</p>
-          ) : (
+          ) : showListError ? (
+            <p className="account-link-loading account-link-loading--warn">
+              連携状態を取得できませんでした。上部のメッセージをご確認のうえ、画面の再読み込みをお試しください。
+            </p>
+          ) : showRows ? (
             <>
               <button className="account-link-row" disabled={busy} onClick={() => onApple()} type="button">
                 <span className="account-link-row-icon" aria-hidden>
@@ -187,7 +194,7 @@ export function AccountLinkSection({
                 <Chevron />
               </button>
             </>
-          )}
+          ) : null}
         </div>
 
         {showEmailPanel ? (

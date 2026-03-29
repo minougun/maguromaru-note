@@ -10,7 +10,7 @@ const MOCK_TABS = [
   { href: "/zukan", label: "図鑑", icon: "📖" },
   { href: "/quiz", label: "クイズ", icon: "🐟" },
   { href: "/titles", label: "称号", icon: "🏅" },
-  { href: "/mypage", label: "アカウント連携", icon: "👤" },
+  { href: "/mypage", label: "マイページ", icon: "👤" },
 ] as const;
 
 function activeHrefForScreen(screen: OnboardingMockId): string | null {

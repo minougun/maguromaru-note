@@ -131,12 +131,15 @@ export async function getSupabaseAuthProfile(): Promise<BrowserAuthProfile> {
   if (userError) {
     throw userError;
   }
-  if (identitiesError) {
-    throw identitiesError;
-  }
 
   const user = userData.user;
-  const identityProviders = [...new Set((identitiesData?.identities ?? []).map((identity) => identity.provider))];
+  /** getUserIdentities が一時失敗・空でも、getUser().user.identities に Google 等が載ることがある（OAuth 直後など） */
+  const fromIdentitiesApi = identitiesError ? [] : (identitiesData?.identities ?? []);
+  const fromUserObject = user?.identities ?? [];
+  const mergedIdentities = fromIdentitiesApi.length > 0 ? fromIdentitiesApi : fromUserObject;
+  const identityProviders = [
+    ...new Set(mergedIdentities.map((identity) => identity.provider).filter((p): p is string => Boolean(p))),
+  ];
 
   return {
     accessToken: session?.access_token ?? null,
