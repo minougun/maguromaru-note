@@ -1,24 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 560" width="320" height="560">
   <rect x="10" y="8" width="300" height="544" rx="28" fill="#fff" stroke="#e8e6e0" stroke-width="2"/>
   <rect x="20" y="18" width="280" height="52" rx="8" fill="#1b2d4f"/>
   <circle cx="44" cy="44" r="14" fill="#fff"/>
-  <text x="68" y="48" fill="#fff" font-family="system-ui,sans-serif" font-size="14" font-weight="700">~P8־üָ</text>
+  <text x="68" y="48" fill="#fff" font-family="system-ui,sans-serif" font-size="14" font-weight="700">????</text>
   <rect x="20" y="74" width="280" height="3" fill="url(#g)" opacity="0.7"/>
   <defs>
     <linearGradient id="g" x1="0" x2="1"><stop offset="0" stop-color="#c23b3b"/><stop offset="0.4" stop-color="#e85555"/><stop offset="1" stop-color="#1b2d4f" stop-opacity="0"/></linearGradient>
   </defs>
-  <text x="160" y="200" fill="#5a5a5a" font-family="system-ui,sans-serif" font-size="15" font-weight="700" text-anchor="middle">l¢׳ךxˆFS]</text>
-  <text x="160" y="232" fill="#9a9a9a" font-family="system-ui,sans-serif" font-size="11" text-anchor="middle">e—n2ûףQû¯₪÷ûנק</text>
-  <text x="160" y="252" fill="#9a9a9a" font-family="system-ui,sans-serif" font-size="11" text-anchor="middle">;bn¿ײK‰ûױW~Y</text>
+  <text x="160" y="200" fill="#5a5a5a" font-family="system-ui,sans-serif" font-size="15" font-weight="700" text-anchor="middle">????</text>
+  <text x="160" y="232" fill="#9a9a9a" font-family="system-ui,sans-serif" font-size="11" text-anchor="middle">?????????</text>
+  <text x="160" y="252" fill="#9a9a9a" font-family="system-ui,sans-serif" font-size="11" text-anchor="middle">??????????</text>
   <rect x="48" y="290" width="224" height="36" rx="10" fill="#f0efe8" stroke="#d8d5cc"/>
-  <text x="160" y="313" fill="#2c2c2c" font-family="system-ui,sans-serif" font-size="11" font-weight="600" text-anchor="middle">!n;bK‰¿ײ’9ֻ</text>
+  <text x="160" y="313" fill="#2c2c2c" font-family="system-ui,sans-serif" font-size="11" font-weight="600" text-anchor="middle">????</text>
   <rect x="20" y="472" width="280" height="72" fill="rgba(27,45,79,0.97)"/>
   <g font-family="system-ui,sans-serif" font-size="8" fill="rgba(255,255,255,0.45)" text-anchor="middle">
-    <text x="47" y="518"><א</text><text x="47" y="532">Ûüא</text>
-    <text x="93" y="518"></text><text x="93" y="532">2</text>
-    <text x="139" y="518">=ײ</text><text x="139" y="532">ףQ</text>
-    <text x="185" y="518">=</text><text x="185" y="532">¯₪÷</text>
-    <text x="231" y="518"><ֵ</text><text x="231" y="532">נק</text>
-    <text x="277" y="518">=d</text><text x="277" y="532">#:</text>
+    <text x="47" y="518">?</text><text x="47" y="532">??</text>
+    <text x="93" y="518">?</text><text x="93" y="532">?</text>
+    <text x="139" y="518">?</text><text x="139" y="532">?</text>
+    <text x="185" y="518">?</text><text x="185" y="532">??</text>
+    <text x="231" y="518">?</text><text x="231" y="532">?</text>
+    <text x="277" y="518">?</text><text x="277" y="532">?</text>
   </g>
 </svg>
