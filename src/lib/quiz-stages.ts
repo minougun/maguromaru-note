@@ -64,7 +64,7 @@ export function createEmptyQuizStageProgress() {
   ) as Record<number, number>;
 }
 
-/** そのステージで一度でも正解した設問のユニーク数（0〜10）。10 に達すると次ステージが解放対象。 */
+/** そのステージの正解済みの問題数（設問ユニーク、0〜10）。10 に達すると次ステージが解放対象。 */
 export function getStageProgressCount(progress: QuizStageProgressInput, stageNumber: number) {
   return progress.correctByStage[stageNumber] ?? 0;
 }

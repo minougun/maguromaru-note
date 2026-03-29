@@ -102,7 +102,7 @@ export function HistoryScreen() {
             <div className="summary-value">{formatCount(snapshot.history.visitCount)}回</div>
           </div>
           <div>
-            <div className="summary-label">累計クイズ正解</div>
+            <div className="summary-label">正解済みの問題数</div>
             <div className="summary-value">{formatCount(snapshot.history.quizStats.totalCorrectAnswers)}問</div>
           </div>
           <div>

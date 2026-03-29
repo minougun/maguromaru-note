@@ -640,18 +640,18 @@ const titleQuestions = TITLES.flatMap<QuizQuestionSpec>((title, index) => {
     {
       idBase: `title-quiz-${title.id}`,
       category: "称号",
-      question: `称号「${title.name}」に必要な累計クイズ正解数は？`,
+      question: `称号「${title.name}」に必要な正解済みの問題数は？`,
       options: quizCorrectOptions,
       answerIndex: answerIndexOf(quizCorrectOptions, `${title.requiredQuizCorrect}問`),
-      explanation: `${title.name} には累計 ${title.requiredQuizCorrect}問の正解が必要です。`,
+      explanation: `${title.name} には正解済みの問題数が ${title.requiredQuizCorrect} 問必要です。`,
     },
     {
       idBase: `title-name-${title.id}`,
       category: "称号",
-      question: `来店 ${title.requiredVisits}回・部位 ${requiredPartsLabel}・累計 ${title.requiredQuizCorrect}問正解で狙える称号はどれ？`,
+      question: `来店 ${title.requiredVisits}回・部位 ${requiredPartsLabel}・正解済みの問題数が ${title.requiredQuizCorrect}問で狙える称号はどれ？`,
       options: titleOptions,
       answerIndex: answerIndexOf(titleOptions, title.name),
-      explanation: `来店 ${title.requiredVisits}回・部位 ${requiredPartsLabel}・累計 ${title.requiredQuizCorrect}問正解で狙えるのは ${title.name} です。`,
+      explanation: `来店 ${title.requiredVisits}回・部位 ${requiredPartsLabel}・正解済みの問題数が ${title.requiredQuizCorrect}問で狙えるのは ${title.name} です。`,
     },
   ];
 });
@@ -881,8 +881,8 @@ for (const title of TITLES) {
       id: `title-quiz-true-${title.id}`,
       category: "称号",
       subject: title.name,
-      text: `${title.name} は累計 ${title.requiredQuizCorrect} 問正解が条件です。`,
-      explanation: `${title.name} は累計 ${title.requiredQuizCorrect} 問正解が条件です。`,
+      text: `${title.name} は正解済みの問題数が ${title.requiredQuizCorrect} 問であることが条件です。`,
+      explanation: `${title.name} は正解済みの問題数が ${title.requiredQuizCorrect} 問であることが条件です。`,
     },
   );
 
@@ -906,8 +906,8 @@ for (const title of TITLES) {
         id: `title-quiz-false-${title.id}-${other.id}`,
         category: "称号",
         subject: title.name,
-        text: `${title.name} は累計 ${other.requiredQuizCorrect} 問正解が条件です。`,
-        explanation: `${title.name} は累計 ${title.requiredQuizCorrect} 問正解が条件です。`,
+        text: `${title.name} は正解済みの問題数が ${other.requiredQuizCorrect} 問であることが条件です。`,
+        explanation: `${title.name} は正解済みの問題数が ${title.requiredQuizCorrect} 問であることが条件です。`,
       },
     );
   }

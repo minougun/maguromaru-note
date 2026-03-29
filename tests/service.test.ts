@@ -276,7 +276,7 @@ test("quiz stage 2 stays locked when only 5 distinct stage-1 questions were ever
     shareBonusEvents: seededShareBonusEvents.map((entry) => ({ ...entry })),
   });
 
-  await assert.rejects(() => createQuizSessionForViewer({ stageNumber: 2 }), /正解済みの問題が10問に達していない/);
+  await assert.rejects(() => createQuizSessionForViewer({ stageNumber: 2 }), /正解済みの問題数が10問に達していない/);
 });
 
 test("quiz stages unlock only after 10 mastered questions on the previous stage", () => {
@@ -300,7 +300,7 @@ test("createQuizSessionForViewer rejects locked stages", async () => {
 
   await assert.rejects(
     () => createQuizSessionForViewer({ stageNumber: 100 }),
-    /正解済みの問題が10問に達していない/,
+    /正解済みの問題数が10問に達していない/,
   );
 });
 

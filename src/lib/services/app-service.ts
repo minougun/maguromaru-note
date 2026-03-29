@@ -616,7 +616,7 @@ async function listQuizSessionsForUser(client: SupabaseClient<Database> | undefi
 }
 
 /**
- * ステージ解放用の進捗。同一ステージ内で「一度でも正解した設問 ID」のユニーク数（同一問題を複数回正解しても1問分）。
+ * ステージ解放用の進捗。同一ステージ内の「正解済みの問題数」（設問 ID のユニーク数。同一問題を複数回正解しても1問分）。
  * correct_question_ids 未保存の旧行は、score >= question_count のときのみ当該セッションの全問を正解済みとみなす。
  */
 function buildQuizStageProgressSummary(quizSessions: QuizSessionRow[]) {
@@ -1236,7 +1236,7 @@ export async function createQuizSessionForViewer(input: unknown, accessToken?: s
     ) {
       throw new AppServiceError(
         403,
-        "前のステージで、正解済みの問題が10問に達していないため、このステージはまだ開放されていません。",
+        "前のステージで、正解済みの問題数が10問に達していないため、このステージはまだ開放されていません。",
       );
     }
     const recentQuestionIds = collectRecentQuizQuestionIds(
@@ -1280,7 +1280,7 @@ export async function createQuizSessionForViewer(input: unknown, accessToken?: s
   ) {
     throw new AppServiceError(
       403,
-      "前のステージで、正解済みの問題が10問に達していないため、このステージはまだ開放されていません。",
+      "前のステージで、正解済みの問題数が10問に達していないため、このステージはまだ開放されていません。",
     );
   }
   const { data: recentSessionRows, error: recentSessionError } = await fromAny(client, "quiz_sessions")

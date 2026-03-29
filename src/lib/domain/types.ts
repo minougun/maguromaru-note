@@ -58,7 +58,7 @@ export interface ShareBonusSummary {
 }
 
 export interface QuizStageProgressSummary {
-  /** ステージごとに「一度でも正解した設問」のユニーク数（同一問題は1問分） */
+  /** ステージごとの正解済みの問題数（設問 ID のユニーク数。同一問題は1問分） */
   correctByStage: Record<number, number>;
 }
 
