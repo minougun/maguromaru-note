@@ -11,10 +11,8 @@ import { useAppSnapshot } from "@/lib/hooks/use-app-snapshot";
 import { QUIZ_SESSION_SIZE, type QuizQuestionCategory } from "@/lib/quiz";
 import {
   QUIZ_STAGE_CONFIGS,
-  getHighestUnlockedQuizStageNumber,
   getQuizStageConfig,
   getStageProgressCount,
-  getUnlockedQuizStageNumbers,
   isQuizStageUnlocked,
 } from "@/lib/quiz-stages";
 import { buildQuizResultShare, type SharePayload } from "@/lib/share/share";
@@ -297,12 +295,6 @@ export function QuizScreen() {
   const finished = Boolean(session) && currentIndex >= questionTotal;
   const score = result?.score ?? 0;
   const currentStage = getQuizStageConfig(stageNumber);
-  const unlockedStageNumbers = getUnlockedQuizStageNumbers({
-    correctByStage: snapshot.history.quizStageProgress.correctByStage,
-  });
-  const highestUnlockedStageNumber = getHighestUnlockedQuizStageNumber({
-    correctByStage: snapshot.history.quizStageProgress.correctByStage,
-  });
   const viewingStage = getQuizStageConfig(stageNumber);
   const isViewingLocked = !isQuizStageUnlocked(stageNumber, {
     correctByStage: snapshot.history.quizStageProgress.correctByStage,
@@ -319,16 +311,6 @@ export function QuizScreen() {
             <div className="summary-label">現在のステージ</div>
             <div className="summary-title">{currentStage.stage}</div>
             <div className="quiz-info-subtitle">{currentStage.title}　─　{currentStage.difficultyLabel}</div>
-          </div>
-          <div className="quiz-info-stats">
-            <div className="quiz-info-stat">
-              <div className="summary-label">累計正解</div>
-              <div className="summary-value">{formatCount(snapshot.history.quizStats.totalCorrectAnswers)}問</div>
-            </div>
-            <div className="quiz-info-stat">
-              <div className="summary-label">最高到達</div>
-              <div className="summary-value">STAGE {highestUnlockedStageNumber}</div>
-            </div>
           </div>
         </div>
         {(() => {
@@ -355,7 +337,7 @@ export function QuizScreen() {
           );
         })()}
         <p className="helper-text" style={{ marginTop: 8 }}>
-          各ステージ内で累計 10問正解すると次のステージが解放。問題内容と難易度はステージごとに切り替わります。
+          各ステージ内で累計 10問正解すると次のステージが解放
         </p>
         <div className="quiz-stage-single">
           <button
