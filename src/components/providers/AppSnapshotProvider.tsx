@@ -8,6 +8,15 @@ import { buildSupabaseAuthHeaders, readSupabaseAccessToken } from "@/lib/supabas
 
 const SNAPSHOT_URL = "/api/app-snapshot";
 
+/** 連携完了など、フックの外からスナップショット再取得を依頼するときに使う */
+export const APP_SNAPSHOT_REFRESH_EVENT = "maguro-app-snapshot-refresh";
+
+export function requestAppSnapshotRefresh() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent(APP_SNAPSHOT_REFRESH_EVENT));
+  }
+}
+
 type AppSnapshotContextValue = {
   snapshot: AppSnapshot | null;
   loading: boolean;
@@ -109,6 +118,14 @@ export function AppSnapshotProvider({ children }: { children: React.ReactNode })
 
   const refresh = useCallback(() => {
     setRefreshToken((current) => current + 1);
+  }, []);
+
+  useEffect(() => {
+    const handler = () => {
+      setRefreshToken((current) => current + 1);
+    };
+    window.addEventListener(APP_SNAPSHOT_REFRESH_EVENT, handler);
+    return () => window.removeEventListener(APP_SNAPSHOT_REFRESH_EVENT, handler);
   }, []);
 
   const waitingForUserSession =

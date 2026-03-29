@@ -204,7 +204,7 @@ body {
   background: rgba(27, 45, 79, 0.97);
   border-top: 2px solid var(--navy);
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   z-index: 50;
   backdrop-filter: blur(14px);
 }
@@ -213,13 +213,13 @@ body {
   border: 0;
   background: transparent;
   color: rgba(255, 255, 255, 0.55);
-  padding: 12px 6px 10px;
+  padding: 10px 4px 10px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   position: relative;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .tab-link[data-active="true"] {
@@ -1062,6 +1062,14 @@ body {
 
 .mypage-stats-grid {
   margin-bottom: 14px;
+}
+
+.mypage-account-lead {
+  margin: 0 0 18px;
+  padding: 0 4px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--cream-dark);
 }
 
 .mypage-stat-cell {

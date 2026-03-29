@@ -108,7 +108,7 @@ export function HistoryScreen() {
           <div>
             <div className="summary-label">現在の称号</div>
             <div className="summary-title">
-              {snapshot.history.currentTitle ? `${snapshot.history.currentTitle.icon} ${snapshot.history.currentTitle.name}` : "まだ称号なし"}
+              {snapshot.history.currentTitle ? `${snapshot.history.currentTitle.icon} ${snapshot.history.currentTitle.name}` : "称号なし"}
             </div>
           </div>
         </div>

@@ -8,6 +8,7 @@ const tabs = [
   { href: "/record", label: "記録", icon: "✏️" },
   { href: "/zukan", label: "図鑑", icon: "📖" },
   { href: "/quiz", label: "クイズ", icon: "🐟" },
+  { href: "/titles", label: "称号", icon: "🏅" },
   { href: "/mypage", label: "マイページ", icon: "👤" },
 ] as const;
 
