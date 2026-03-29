@@ -210,9 +210,7 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
       {selectedRegion && selectedRegion.partIds.length > 1 ? (
         <div className="map-detail-card map-detail-card--multi">
           <p className="map-detail-desc map-detail-multi-lead">
-            {selectedRegion.key === "belly-otoro-chutoro-rear"
-              ? "後方の腹は大トロと中トロの両方にまたがります。記録はそれぞれの部位で管理されます。"
-              : "この領域に含まれる部位の記録状況は下記のとおりです。"}
+            この領域に含まれる部位の記録状況は下記のとおりです。
           </p>
           <ul className="map-detail-multi-list">
             {selectedRegion.partIds.map((pid) => {
