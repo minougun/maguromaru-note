@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 
+import tunaMapBackground from "@/assets/zukan-tuna-map.png";
+
 import type { Part, PartId } from "@/lib/domain/types";
-import { publicPath } from "@/lib/public-path";
 
 interface MapRegionDef {
   /** React の key（同一 partId を複数領域に使うため必須） */
@@ -19,7 +20,7 @@ interface MapRegionDef {
 }
 
 /**
- * viewBox 1365×768（`public/zukan-tuna-map.png`、縦横比はおおよそ 1365:768）。
+ * viewBox 1365×768（`src/assets/zukan-tuna-map.png` を Next が `/_next/static/media/` にバンドル。縦横比はおおよそ 1365:768）。
  * 腹部は前後2領域：前＝大トロのみ、後＝大トロ・中トロ（記録は部位ごと）。
  * 中とろは背のブロック＋腹の後方の両方でハイライトされる。
  */
@@ -109,7 +110,7 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
           </defs>
 
           <image
-            href={publicPath("/zukan-tuna-map.png")}
+            href={tunaMapBackground.src}
             width="1365"
             height="768"
             preserveAspectRatio="xMidYMid meet"
