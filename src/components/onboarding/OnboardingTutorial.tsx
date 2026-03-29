@@ -10,8 +10,8 @@ type Step = {
   title: string;
   body: string;
   /**
-   * 任意: `public/onboarding/home.webp` のように画像を置くと、
-   * そのステップでは CSS モックの代わりにスクショを表示します。
+   * 任意: 静的 WebP を置くとそのステップでは画像を表示する。
+   * 下部タブは `OnboardingDeviceMock`＋`bottom-tabs.png` と同期させるため、通常は未指定（常にモック）とする。
    */
   screenshotSrc?: string;
 };
@@ -26,37 +26,31 @@ const STEPS: Step[] = [
     mockId: "home",
     title: "ホーム",
     body: "店舗の営業状況と天気、スタッフの一言コメント、本日のおすすめ、入荷状況（各丼の「◎ あり」など）、最近の来店記録を確認できます。",
-    screenshotSrc: "/onboarding/home.webp",
   },
   {
     mockId: "record",
     title: "記録",
     body: "今日食べた丼を選び、食べた部位にチェックを入れて保存します。写真やメモを添えられるので、思い出として残せます。",
-    screenshotSrc: "/onboarding/record.webp",
   },
   {
     mockId: "zukan",
     title: "図鑑",
     body: "記録した部位が図鑑にライトアップされていきます。コンプリート進捗やマグロの部位マップから、解説を読めます。",
-    screenshotSrc: "/onboarding/zukan.webp",
   },
   {
     mockId: "quiz",
     title: "クイズ",
     body: "まぐろの4択クイズをステージごとに挑戦できます。各ステージ10問。全ての問題に正解すると次のステージが解放されます。",
-    screenshotSrc: "/onboarding/quiz.webp",
   },
   {
     mockId: "titles",
     title: "称号",
     body: "来店回数・図鑑・クイズ成績に応じて称号が解放されます。いまの称号と、次の条件もこの画面で確認できます。「晴れて最後の称号、\"まぐろマスター\"まで獲得できた暁には、なにか良いことがあるかも！？（※無いかもしれません）」",
-    screenshotSrc: "/onboarding/titles.webp",
   },
   {
     mockId: "account",
     title: "アカウント連携",
     body: "Apple・Google・メールのいずれかで連携すると、機種変更や再インストール後もデータを引き継ぎやすくなります。",
-    screenshotSrc: "/onboarding/account.webp",
   },
 ];
 
