@@ -100,7 +100,7 @@ export function HomeScreen() {
           ) : (
             <span className="status-summary">
               <span className={status.className}>{status.label}</span>
-              <span className="status-updated-text">更新 {updatedAt}</span>
+              <span className="status-updated-text">最終更新時間 {updatedAt}</span>
             </span>
           )}
         </div>
@@ -114,8 +114,8 @@ export function HomeScreen() {
       <NorenBanner label="本日の入荷状況" />
       <Card className="stock-card">
         <div className="stock-card-head">
-          <div className="stock-store-mark">魚</div>
-          <div className="stock-updated-chip">更新 {updatedAt}</div>
+          <div className="stock-store-mark">丼</div>
+          <div className="stock-updated-chip">最終更新時間 {updatedAt}</div>
         </div>
 
         {snapshot.menuItems.map((item) => {
