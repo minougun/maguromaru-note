@@ -2118,11 +2118,15 @@ body {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
+/* 端末モックはスライド間で同じ外枠サイズ（内部だけスクロール） */
 .onboarding-art--mock {
-  max-width: min(340px, 90vw);
-  min-height: unset;
+  width: min(320px, 88vw);
+  height: min(520px, 56vh);
+  min-height: min(400px, 48vh);
+  max-width: min(320px, 88vw);
   padding: 10px 12px;
   background: rgba(0, 0, 0, 0.2);
+  box-sizing: border-box;
 }
 
 .onboarding-mock-img {
@@ -2135,21 +2139,15 @@ body {
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
 }
 
-.onboarding-screenshot-img {
-  width: 100%;
-  max-width: 340px;
-  height: auto;
-  max-height: 54vh;
-  object-fit: contain;
-  border-radius: 16px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
-}
-
-/* オンボーディング: 実 UI に寄せた端末モック（差し替えは STEPS[].screenshotSrc で画像パスを指定） */
+/* オンボーディング: 実 UI と同じタブアイコン（TabBar と同一絵文字）を含む端末モック */
 .onboarding-device {
   width: 100%;
-  max-width: 288px;
-  margin: 0 auto;
+  height: 100%;
+  max-width: none;
+  margin: 0;
+  min-height: 0;
+  display: flex;
+  align-items: stretch;
 }
 
 .onboarding-device-bezel {
@@ -2159,7 +2157,9 @@ body {
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.38), 0 0 0 1px rgba(255, 255, 255, 0.12);
   display: flex;
   flex-direction: column;
-  max-height: min(52vh, 520px);
+  flex: 1;
+  min-height: 0;
+  max-height: 100%;
 }
 
 .onboarding-mock-header {
@@ -2300,8 +2300,37 @@ body {
 .onboarding-mock-weather-bar {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  gap: 6px;
   font-size: 8px;
+  font-weight: 700;
+  color: var(--cream);
+}
+
+.onboarding-mock-weather-bar > span:last-child {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  text-align: right;
+}
+
+.onboarding-mock-status-note {
+  margin: 4px 0 0;
+  font-size: 6px;
+  line-height: 1.45;
+  font-weight: 600;
+  color: var(--cream-dark);
+}
+
+.onboarding-mock-recommend-card {
+  padding: 6px 8px;
+}
+
+.onboarding-mock-recommend-copy {
+  margin: 0;
+  font-size: 7px;
+  line-height: 1.45;
   font-weight: 700;
   color: var(--cream);
 }
@@ -2368,7 +2397,8 @@ body {
 .onboarding-mock-stock-row {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
+  gap: 6px;
   padding: 3px 0;
   border-bottom: 1px solid rgba(216, 213, 204, 0.6);
   font-size: 7px;
@@ -2378,9 +2408,24 @@ body {
   border-bottom: none;
 }
 
+.onboarding-mock-stock-name-block {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+
 .onboarding-mock-stock-name {
   font-weight: 800;
   color: var(--cream);
+  line-height: 1.2;
+}
+
+.onboarding-mock-stock-price {
+  font-size: 6px;
+  font-weight: 700;
+  color: var(--cream-faint);
 }
 
 .onboarding-mock-stock-ok {
@@ -2393,10 +2438,20 @@ body {
   color: #c27c00;
 }
 
+.onboarding-mock-stock-out {
+  font-weight: 800;
+  color: #6a6a6a;
+}
+
 .onboarding-mock-footnote {
   margin: 4px 0 0;
   font-size: 6px;
   color: var(--cream-faint);
+}
+
+.onboarding-mock-footnote--supplier {
+  margin-top: 2px;
+  line-height: 1.35;
 }
 
 .onboarding-mock-log-card {
@@ -2482,6 +2537,60 @@ body {
 }
 
 .onboarding-mock-photo-zone small {
+  font-size: 5px;
+  color: var(--cream-faint);
+}
+
+.onboarding-mock-share-bonus-wrap {
+  margin: 0 0 6px;
+}
+
+.onboarding-mock-share-bonus-wrap .share-bonus-callout {
+  margin: 0;
+  padding: 5px 7px 6px;
+  border-radius: 10px;
+  border-width: 1px;
+}
+
+.onboarding-mock-share-bonus-wrap .share-bonus-callout-headline {
+  margin: 0 0 3px;
+  font-size: 7px;
+  line-height: 1.3;
+  letter-spacing: 0;
+}
+
+.onboarding-mock-share-bonus-wrap .share-bonus-callout-headline em {
+  text-decoration-thickness: 1px;
+  text-underline-offset: 1px;
+}
+
+.onboarding-mock-share-bonus-wrap .share-bonus-callout-body {
+  font-size: 5px;
+  line-height: 1.4;
+}
+
+.onboarding-mock-share-bonus-wrap .share-bonus-callout-note {
+  margin-top: 3px;
+  font-size: 5px;
+}
+
+.onboarding-mock-menu-choice-grid {
+  gap: 4px !important;
+  margin-bottom: 6px !important;
+}
+
+.onboarding-mock-body .onboarding-mock-menu-choice-grid .menu-choice {
+  padding: 5px 6px;
+  border-radius: 8px;
+  gap: 2px;
+}
+
+.onboarding-mock-body .onboarding-mock-menu-choice-grid .menu-choice strong {
+  font-size: 6px;
+  line-height: 1.25;
+}
+
+.onboarding-mock-body .onboarding-mock-menu-choice-grid .menu-choice span {
   font-size: 5px;
   color: var(--cream-faint);
 }

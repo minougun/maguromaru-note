@@ -1,5 +1,6 @@
 "use client";
 
+import { ShareBonusCallout } from "@/components/share/ShareBonusCallout";
 import { publicPath } from "@/lib/public-path";
 
 export type OnboardingMockId = "intro" | "home" | "record" | "zukan" | "quiz" | "titles" | "account";
@@ -77,35 +78,60 @@ function MockHome() {
       <MockSectionTitle subtitle="Store status" title="営業状況" />
       <div className="onboarding-mock-card">
         <div className="onboarding-mock-weather-bar">
-          <span>☀️ 18℃</span>
-          <span className="onboarding-mock-muted">くもり</span>
+          <span>☀️ 18℃ くもり</span>
+          <span>
+            <span className="onboarding-mock-badge-open">営業中</span>
+            <span className="onboarding-mock-time">最終更新時間 12:30</span>
+          </span>
         </div>
-        <div className="onboarding-mock-status-row">
-          <span className="onboarding-mock-badge-open">営業中</span>
-          <span className="onboarding-mock-time">最終更新 12:30</span>
-        </div>
+        <p className="onboarding-mock-status-note">赤身たっぷりで営業中！本日の特上は脂がのっています。</p>
+      </div>
+      <MockSectionTitle subtitle="Recommendation" title="本日のおすすめ" />
+      <div className="onboarding-mock-card onboarding-mock-recommend-card">
+        <p className="onboarding-mock-recommend-copy">今日は特上まぐろ丼（大とろ入り）がおすすめです。</p>
       </div>
       <MockNoren>本日の入荷状況</MockNoren>
       <div className="onboarding-mock-card onboarding-mock-stock-card">
         <div className="onboarding-mock-stock-head">
           <span className="onboarding-mock-stock-mark">丼</span>
-          <span className="onboarding-mock-stock-chip">最終更新 12:30</span>
+          <span className="onboarding-mock-stock-chip">最終更新時間 12:30</span>
         </div>
         <div className="onboarding-mock-stock-row">
-          <span className="onboarding-mock-stock-name">特上まぐろ丼</span>
+          <div className="onboarding-mock-stock-name-block">
+            <span className="onboarding-mock-stock-name">まぐろ丼</span>
+            <span className="onboarding-mock-stock-price">¥2,000</span>
+          </div>
           <span className="onboarding-mock-stock-ok">◎ あり</span>
         </div>
         <div className="onboarding-mock-stock-row">
-          <span className="onboarding-mock-stock-name">ねぎとろ丼</span>
-          <span className="onboarding-mock-stock-warn">△ 少なめ</span>
+          <div className="onboarding-mock-stock-name-block">
+            <span className="onboarding-mock-stock-name">まぐろ丼ミニ</span>
+            <span className="onboarding-mock-stock-price">¥1,500</span>
+          </div>
+          <span className="onboarding-mock-stock-ok">◎ あり</span>
+        </div>
+        <div className="onboarding-mock-stock-row">
+          <div className="onboarding-mock-stock-name-block">
+            <span className="onboarding-mock-stock-name">特上まぐろ丼（大とろ入り）</span>
+            <span className="onboarding-mock-stock-price">¥3,000</span>
+          </div>
+          <span className="onboarding-mock-stock-warn">△ 残りわずか</span>
+        </div>
+        <div className="onboarding-mock-stock-row">
+          <div className="onboarding-mock-stock-name-block">
+            <span className="onboarding-mock-stock-name">特上まぐろ丼ミニ</span>
+            <span className="onboarding-mock-stock-price">¥2,500</span>
+          </div>
+          <span className="onboarding-mock-stock-out">✕ 終了</span>
         </div>
         <p className="onboarding-mock-footnote">※ 店舗スタッフが更新しています</p>
+        <p className="onboarding-mock-footnote onboarding-mock-footnote--supplier">仕入・監修：雅鮮魚店・寺本商店</p>
       </div>
       <MockSectionTitle subtitle="Recent logs" title="最近の記録" />
       <div className="onboarding-mock-card onboarding-mock-log-card">
         <div className="onboarding-mock-log-line">
-          <span className="onboarding-mock-log-date">3/30</span>
-          <span>特上まぐろ丼</span>
+          <span className="onboarding-mock-log-date">3/28</span>
+          <span>まぐろ丼</span>
         </div>
       </div>
     </>
@@ -116,28 +142,47 @@ function MockRecord() {
   return (
     <>
       <MockNoren>今日の丼を記録</MockNoren>
+      <div className="onboarding-mock-share-bonus-wrap">
+        <ShareBonusCallout compact variant="visit" />
+      </div>
       <div className="onboarding-mock-photo-zone">
         <span>
           タップでカメラ / ギャラリー
           <br />
-          <small>長辺1200pxに縮小…</small>
+          <small>長辺1200px、JPEG品質80%に縮小して送信</small>
         </span>
       </div>
       <MockSectionTitle subtitle="Menu" title="食べたメニュー" />
-      <div className="onboarding-mock-menu-row">
-        <span className="onboarding-mock-menu-pill onboarding-mock-menu-pill--on">特上まぐろ丼</span>
-        <span className="onboarding-mock-menu-pill">ねぎとろ丼</span>
+      <div className="menu-choice-grid onboarding-mock-menu-choice-grid">
+        <div className="menu-choice">
+          <strong>まぐろ丼</strong>
+          <span>2,000円</span>
+        </div>
+        <div className="menu-choice">
+          <strong>まぐろ丼ミニ</strong>
+          <span>1,500円</span>
+        </div>
+        <div className="menu-choice active">
+          <strong>特上まぐろ丼（大とろ入り）</strong>
+          <span>3,000円</span>
+        </div>
+        <div className="menu-choice">
+          <strong>特上まぐろ丼ミニ</strong>
+          <span>2,500円</span>
+        </div>
       </div>
       <MockSectionTitle subtitle="Parts" title="入っていた部位" />
       <div className="onboarding-mock-card onboarding-mock-mini-text">
-        メニューを選ぶと標準部位を自動選択。実際の具合に合わせて修正します。
+        特上まぐろ丼（大とろ入り） の標準部位を自動で選択しています。実際に入っていた内容に合わせて修正してください。
       </div>
       <div className="onboarding-mock-parts-mini">
-        <span className="onboarding-mock-part-chip onboarding-mock-part-chip--on">大トロ</span>
-        <span className="onboarding-mock-part-chip onboarding-mock-part-chip--on">中トロ</span>
-        <span className="onboarding-mock-part-chip">赤身</span>
+        <span className="onboarding-mock-part-chip onboarding-mock-part-chip--on">脳天</span>
+        <span className="onboarding-mock-part-chip onboarding-mock-part-chip--on">ほほ肉</span>
+        <span className="onboarding-mock-part-chip onboarding-mock-part-chip--on">大とろ</span>
+        <span className="onboarding-mock-part-chip onboarding-mock-part-chip--on">目裏</span>
+        <span className="onboarding-mock-part-chip onboarding-mock-part-chip--on">赤身</span>
       </div>
-      <div className="onboarding-mock-memo-fake">感想を書く…</div>
+      <div className="onboarding-mock-memo-fake">感想を書く…「脳天とろけた！」</div>
       <div className="onboarding-mock-primary-fake">この内容で記録する</div>
     </>
   );
@@ -149,11 +194,11 @@ function MockZukan() {
       <MockNoren>まぐろ図鑑</MockNoren>
       <div className="onboarding-mock-card onboarding-mock-glow">
         <p className="onboarding-mock-progress-label">コンプリート進捗</p>
-        <div className="onboarding-mock-progress-big">42%</div>
+        <div className="onboarding-mock-progress-big">44%</div>
         <div className="onboarding-mock-pbar">
-          <div className="onboarding-mock-pbar-fill" style={{ width: "42%" }} />
+          <div className="onboarding-mock-pbar-fill" style={{ width: "44%" }} />
         </div>
-        <p className="onboarding-mock-cap">10 / 24 部位</p>
+        <p className="onboarding-mock-cap">4 / 9 部位</p>
         <div className="onboarding-mock-outline-btn">図鑑の進捗をシェア</div>
       </div>
       <MockSectionTitle subtitle="Tuna map" title="部位マップ" />
@@ -174,7 +219,7 @@ function MockZukan() {
           <span className="onboarding-mock-tag-ok">記録済</span>
         </div>
         <div className="onboarding-mock-zukan-row onboarding-mock-zukan-row--miss">
-          <span>？ 脳天</span>
+          <span>脳天</span>
           <span className="onboarding-mock-tag-miss">未食</span>
         </div>
       </div>
