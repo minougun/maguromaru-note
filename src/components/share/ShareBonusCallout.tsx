@@ -21,9 +21,7 @@ export function ShareBonusCallout({ variant, compact, alreadyClaimed, className 
           📣 SNSでシェアすると <em>来店回数が1.2倍</em>
         </p>
         <p className="share-bonus-callout-body">
-          記録を <strong className="share-bonus-callout-strong">X・LINE・Instagram</strong>{" "}
-          から投稿すると、その<strong className="share-bonus-callout-strong">1件の来店記録</strong>が
-          通常より<strong className="share-bonus-callout-strong">1.2倍</strong>でカウントされます（来店回数・称号の集計に反映）。
+          記録を <strong className="share-bonus-callout-strong">X・LINE・Instagram</strong> に投稿すると、その<strong className="share-bonus-callout-strong">1件の来店記録</strong>が通常より<strong className="share-bonus-callout-strong">1.2倍</strong>でカウントされます（来店回数・称号の集計に反映）。
         </p>
         <p className="share-bonus-callout-note">※ 同じ記録につきボーナスは1回までです。</p>
         {alreadyClaimed ? <p className="share-bonus-callout-claimed">この記録のボーナスは受取済みです。</p> : null}
@@ -37,9 +35,7 @@ export function ShareBonusCallout({ variant, compact, alreadyClaimed, className 
         📣 SNSでシェアすると <em>クイズ正解数が1.2倍</em>
       </p>
       <p className="share-bonus-callout-body">
-        クイズ結果を <strong className="share-bonus-callout-strong">X・LINE・Instagram</strong>{" "}
-        から投稿すると、<strong className="share-bonus-callout-strong">今回チャレンジの正解数</strong>が
-        通常より<strong className="share-bonus-callout-strong">1.2倍</strong>でカウントされます（正解済みの問題数・称号の集計に反映）。
+        クイズ結果を <strong className="share-bonus-callout-strong">X・LINE・Instagram</strong>に投稿すると、<strong className="share-bonus-callout-strong">今回チャレンジの正解数</strong>が通常より<strong className="share-bonus-callout-strong">1.2倍</strong>でカウントされます（正解済みの問題数・称号の集計に反映）。
       </p>
       <p className="share-bonus-callout-note">※ 同じクイズ結果につきボーナスは1回までです。</p>
       {alreadyClaimed ? <p className="share-bonus-callout-claimed">この結果のボーナスは受取済みです。</p> : null}
