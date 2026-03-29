@@ -32,6 +32,7 @@ import type {
 } from "@/lib/domain/types";
 import { defaultMenuStockById, quizQuestionsPerStage, type MenuStockStatus } from "@/lib/domain/constants";
 import { seededQuizStats, seededShareBonusEvents, seededStoreStatus } from "@/lib/domain/seed";
+import type { SnapshotScope } from "@/lib/domain/snapshot-scope";
 import { filterTrackedParts, isTrackedPartId } from "@/lib/domain/tracked-parts";
 import { getAdminEmail, getSupabaseEnv, getSupabaseServiceEnv, hasSupabaseEnv, isMockAllowed } from "@/lib/env";
 import { createMockPhotoUrl, createMockViewerContext, mockMasterData, readMockState, writeMockState } from "@/lib/mock/store";
@@ -407,6 +408,40 @@ function createEmptyQuizStats(userId: string): QuizStatsRow {
   };
 }
 
+type SnapshotFetchPlan = {
+  menuBundle: boolean;
+  store: boolean;
+  quizStats: boolean;
+  quizSessions: boolean;
+  shareBonus: boolean;
+  visits: boolean;
+};
+
+const SNAPSHOT_FETCH_PLANS: Record<SnapshotScope, SnapshotFetchPlan> = {
+  full: { menuBundle: true, store: true, quizStats: true, quizSessions: true, shareBonus: true, visits: true },
+  home: { menuBundle: true, store: true, quizStats: true, quizSessions: false, shareBonus: true, visits: true },
+  admin: { menuBundle: true, store: true, quizStats: true, quizSessions: false, shareBonus: true, visits: true },
+  history: { menuBundle: false, store: false, quizStats: true, quizSessions: true, shareBonus: true, visits: true },
+  mypage: { menuBundle: false, store: false, quizStats: true, quizSessions: true, shareBonus: true, visits: true },
+  zukan: { menuBundle: false, store: false, quizStats: false, quizSessions: false, shareBonus: false, visits: true },
+  record: { menuBundle: false, store: false, quizStats: false, quizSessions: false, shareBonus: false, visits: false },
+  quiz: { menuBundle: false, store: false, quizStats: true, quizSessions: true, shareBonus: true, visits: true },
+};
+
+function defaultMenuStatusesBundle(): {
+  statuses: Record<MenuItemId, MenuStockStatus>;
+  lastUpdatedAt: string | null;
+} {
+  return {
+    statuses: { ...defaultMenuStockById } as Record<MenuItemId, MenuStockStatus>,
+    lastUpdatedAt: null,
+  };
+}
+
+function snapshotPlanNeedsServiceRole(plan: SnapshotFetchPlan) {
+  return plan.quizSessions || plan.shareBonus;
+}
+
 async function getQuizStats(client: SupabaseClient<Database> | undefined, userId: string) {
   if (!client) {
     const state = await readMockState();
@@ -641,7 +676,7 @@ export async function getViewerContextSafe(): Promise<ViewerContext | null> {
   }
 }
 
-export async function getAppSnapshot(accessToken?: string): Promise<AppSnapshot> {
+export async function getAppSnapshot(accessToken?: string, scope: SnapshotScope = "full"): Promise<AppSnapshot> {
   if (shouldUseMockBackend()) {
     const viewer = createMockViewerContext();
     const state = await readMockState();
@@ -676,16 +711,28 @@ export async function getAppSnapshot(accessToken?: string): Promise<AppSnapshot>
   const { client, viewer } = accessToken
     ? await getSupabaseContextFromAccessToken(accessToken)
     : await getSupabaseContext();
-  const serviceRoleClient = createServiceRoleClient();
-  const [{ parts, menuItems }, menuBundle, storeStatus, quizStatsRow, quizSessions, shareBonusEvents, { visitLogs, visitLogParts }] = await Promise.all([
-    listMasterData(client),
-    getMenuItemStatuses(client),
-    getStoreStatus(client),
-    getQuizStats(client, viewer.userId),
-    listQuizSessionsForUser(serviceRoleClient, viewer.userId),
-    getShareBonusEvents(serviceRoleClient, viewer.userId),
-    listVisitData(client, viewer.userId),
-  ]);
+  const plan = SNAPSHOT_FETCH_PLANS[scope];
+  const serviceRoleClient = snapshotPlanNeedsServiceRole(plan) ? createServiceRoleClient() : null;
+
+  const emptyVisits = {
+    visitLogs: [] as Database["public"]["Tables"]["visit_logs"]["Row"][],
+    visitLogParts: [] as Database["public"]["Tables"]["visit_log_parts"]["Row"][],
+  };
+
+  const [{ parts, menuItems }, menuBundle, storeStatus, quizStatsRow, quizSessions, shareBonusEvents, { visitLogs, visitLogParts }] =
+    await Promise.all([
+      listMasterData(client),
+      plan.menuBundle ? getMenuItemStatuses(client) : Promise.resolve(defaultMenuStatusesBundle()),
+      plan.store ? getStoreStatus(client) : Promise.resolve(seededStoreStatus),
+      plan.quizStats ? getQuizStats(client, viewer.userId) : Promise.resolve(createEmptyQuizStats(viewer.userId)),
+      plan.quizSessions && serviceRoleClient
+        ? listQuizSessionsForUser(serviceRoleClient, viewer.userId)
+        : Promise.resolve([] as QuizSessionRow[]),
+      plan.shareBonus && serviceRoleClient
+        ? getShareBonusEvents(serviceRoleClient, viewer.userId)
+        : Promise.resolve([] as ShareBonusEventRow[]),
+      plan.visits ? listVisitData(client, viewer.userId) : Promise.resolve(emptyVisits),
+    ]);
 
   return buildSnapshotFromRecords(
     viewer,
