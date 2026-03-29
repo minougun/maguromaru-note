@@ -364,6 +364,29 @@ export async function startGoogleSignInFlow(nextPath = "/") {
   }
 }
 
+/** 初回サインイン用: Apple（OAuth リダイレクト）。 */
+export async function startAppleSignInFlow(nextPath = "/") {
+  const client = getSupabaseBrowserClient();
+  if (!client) {
+    throw new Error("Supabase が設定されていません。");
+  }
+
+  const { data, error } = await client.auth.signInWithOAuth({
+    provider: "apple",
+    options: {
+      redirectTo: buildAuthCallbackUrl(nextPath),
+    },
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  if (data.url) {
+    window.location.assign(data.url);
+  }
+}
+
 export async function signUpWithEmailPassword(input: unknown, nextPath = "/") {
   const client = getSupabaseBrowserClient();
   if (!client) {

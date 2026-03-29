@@ -4,10 +4,12 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { AccountLinkSection } from "@/components/mypage/AccountLinkSection";
 import { useAuthState } from "@/components/providers/AuthProvider";
 import {
   requestPhoneSignInSms,
   startAnonymousSession,
+  startAppleSignInFlow,
   startGoogleSignInFlow,
   verifyPhoneSignInOtp,
 } from "@/lib/supabase/browser";
@@ -31,6 +33,7 @@ export function LoginScreen() {
   const [phoneE164, setPhoneE164] = useState("");
   const [phoneOtp, setPhoneOtp] = useState("");
   const [phoneStep, setPhoneStep] = useState<"idle" | "sent">("idle");
+  const [phonePanelOpen, setPhonePanelOpen] = useState(false);
 
   useEffect(() => {
     const authResult = new URLSearchParams(window.location.search).get("auth");
@@ -50,6 +53,7 @@ export function LoginScreen() {
       setPhoneStep("idle");
       setPhoneOtp("");
       setFormError(null);
+      setPhonePanelOpen(false);
     }
   }, [mode]);
 
@@ -67,18 +71,6 @@ export function LoginScreen() {
     } catch (error) {
       setFormError(authErrorMessage(error));
     } finally {
-      setPendingAction(null);
-    }
-  }
-
-  async function handleGoogleSignIn() {
-    try {
-      setPendingAction("google-signin");
-      setFormError(null);
-      setNotice(null);
-      await startGoogleSignInFlow("/");
-    } catch (error) {
-      setFormError(authErrorMessage(error));
       setPendingAction(null);
     }
   }
@@ -170,114 +162,89 @@ export function LoginScreen() {
       >
         ← 戻る
       </button>
-      <h2 className="login-signin-heading">サインイン</h2>
-      {formError ? (
-        <p className="login-launch-flash login-launch-flash--error" role="alert">
-          {formError}
-        </p>
-      ) : null}
-      {notice ? (
-        <p className="login-launch-flash login-launch-flash--ok" role="status">
-          {notice}
-        </p>
-      ) : null}
-      <p className="login-signin-lead">Google アカウントまたは電話番号（SMS）で連携してください。</p>
-      <button
-        className="login-launch-btn login-launch-btn--primary"
-        disabled={pendingAction !== null}
-        onClick={() => void handleGoogleSignIn()}
-        type="button"
-      >
-        {pendingAction === "google-signin" ? "Google へ移動中…" : "Google でサインイン"}
-      </button>
-      <p className="login-signin-section-label">電話番号</p>
-      {phoneStep === "idle" ? (
-        <div className="login-signin-form">
-          <label className="login-signin-label" htmlFor="login-phone">
-            電話番号（E.164）
-          </label>
-          <input
-            autoComplete="tel"
-            className="login-signin-input"
-            disabled={pendingAction !== null}
-            id="login-phone"
-            onChange={(event) => setPhoneE164(event.target.value)}
-            placeholder="+819012345678"
-            type="tel"
-            value={phoneE164}
-          />
-          <button
-            className="login-launch-btn login-launch-btn--secondary"
-            disabled={pendingAction !== null}
-            onClick={() => {
-              void (async () => {
-                try {
-                  setPendingAction("phone-sms");
-                  setFormError(null);
-                  await requestPhoneSignInSms(phoneE164);
-                  setPhoneStep("sent");
-                } catch (error) {
-                  setFormError(authErrorMessage(error));
-                } finally {
-                  setPendingAction(null);
-                }
-              })();
-            }}
-            type="button"
-          >
-            {pendingAction === "phone-sms" ? "送信中…" : "SMS を送る"}
-          </button>
-        </div>
-      ) : (
-        <div className="login-signin-form">
-          <label className="login-signin-label" htmlFor="login-otp">
-            SMS の確認コード
-          </label>
-          <input
-            className="login-signin-input"
-            disabled={pendingAction !== null}
-            id="login-otp"
-            inputMode="numeric"
-            onChange={(event) => setPhoneOtp(event.target.value)}
-            placeholder="6桁のコード"
-            type="text"
-            value={phoneOtp}
-          />
-          <button
-            className="login-launch-btn login-launch-btn--primary"
-            disabled={pendingAction !== null}
-            onClick={() => {
-              void (async () => {
-                try {
-                  setPendingAction("phone-otp");
-                  setFormError(null);
-                  await verifyPhoneSignInOtp(phoneE164, phoneOtp);
-                  router.refresh();
-                } catch (error) {
-                  setFormError(authErrorMessage(error));
-                } finally {
-                  setPendingAction(null);
-                }
-              })();
-            }}
-            type="button"
-          >
-            {pendingAction === "phone-otp" ? "確認中…" : "コードを確定"}
-          </button>
-          <button
-            className="login-signin-text-btn"
-            disabled={pendingAction !== null}
-            onClick={() => {
+      <AccountLinkSection
+        error={formError}
+        loading={false}
+        notice={notice}
+        onApple={() => {
+          void (async () => {
+            try {
+              setPendingAction("apple-signin");
+              setFormError(null);
+              setNotice(null);
+              await startAppleSignInFlow("/mypage");
+            } catch (error) {
+              setFormError(authErrorMessage(error));
+              setPendingAction(null);
+            }
+          })();
+        }}
+        onClosePhonePanel={() => {
+          setPhonePanelOpen(false);
+          setPhoneStep("idle");
+          setPhoneOtp("");
+          setFormError(null);
+        }}
+        onGoogle={() => {
+          void (async () => {
+            try {
+              setPendingAction("google-signin");
+              setFormError(null);
+              setNotice(null);
+              await startGoogleSignInFlow("/mypage");
+            } catch (error) {
+              setFormError(authErrorMessage(error));
+              setPendingAction(null);
+            }
+          })();
+        }}
+        onPhoneE164Change={setPhoneE164}
+        onPhoneOtpChange={setPhoneOtp}
+        onPhoneRow={() => {
+          setPhonePanelOpen((open) => !open);
+          setFormError(null);
+        }}
+        onSendSms={() => {
+          void (async () => {
+            try {
+              setPendingAction("phone-sms");
+              setFormError(null);
+              await requestPhoneSignInSms(phoneE164);
+              setPhoneStep("sent");
+            } catch (error) {
+              setFormError(authErrorMessage(error));
+            } finally {
+              setPendingAction(null);
+            }
+          })();
+        }}
+        onVerifyOtp={() => {
+          void (async () => {
+            try {
+              setPendingAction("phone-otp");
+              setFormError(null);
+              await verifyPhoneSignInOtp(phoneE164, phoneOtp);
               setPhoneStep("idle");
               setPhoneOtp("");
-              setFormError(null);
-            }}
-            type="button"
-          >
-            電話番号をやり直す
-          </button>
-        </div>
-      )}
+              setPhonePanelOpen(false);
+              router.push("/mypage");
+              router.refresh();
+            } catch (error) {
+              setFormError(authErrorMessage(error));
+            } finally {
+              setPendingAction(null);
+            }
+          })();
+        }}
+        pending={pendingAction}
+        phoneE164={phoneE164}
+        phoneExpanded={phonePanelOpen}
+        phoneFieldIdPrefix="login"
+        phoneOtp={phoneOtp}
+        phoneStep={phoneStep}
+        profile={null}
+        variant="signIn"
+      />
     </div>
   );
 }

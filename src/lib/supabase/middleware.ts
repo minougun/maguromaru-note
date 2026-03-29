@@ -5,6 +5,16 @@ import type { Database } from "@/lib/database.types";
 import { hasSupabaseEnv } from "@/lib/env";
 
 export async function updateSession(request: NextRequest) {
+  const authReturn = request.nextUrl.searchParams.get("auth");
+  if (
+    request.nextUrl.pathname === "/" &&
+    (authReturn === "linked" || authReturn === "error")
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/mypage";
+    return NextResponse.redirect(url);
+  }
+
   if (!hasSupabaseEnv()) {
     return NextResponse.next({
       request: {

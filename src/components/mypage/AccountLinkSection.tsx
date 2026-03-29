@@ -68,6 +68,10 @@ function Chevron() {
 }
 
 export type AccountLinkSectionProps = {
+  /** `signIn`: ログイン画面用（プロファイル未取得でも一覧を出す） */
+  variant?: "link" | "signIn";
+  /** 電話入力の id 接頭辞（同一 DOM に両方載ることがないよう画面ごとに分ける） */
+  phoneFieldIdPrefix?: string;
   profile: BrowserAuthProfile | null;
   loading: boolean;
   notice: string | null;
@@ -88,6 +92,8 @@ export type AccountLinkSectionProps = {
 };
 
 export function AccountLinkSection({
+  variant = "link",
+  phoneFieldIdPrefix = "mypage",
   profile,
   loading,
   notice,
@@ -106,10 +112,15 @@ export function AccountLinkSection({
   onVerifyOtp,
   onClosePhonePanel,
 }: AccountLinkSectionProps) {
+  const isSignIn = variant === "signIn";
   const appleOn = isProviderLinked(profile, "apple");
   const googleOn = isProviderLinked(profile, "google");
   const phoneOn = isProviderLinked(profile, "phone");
   const busy = pending !== null;
+  const phoneE164Id = `${phoneFieldIdPrefix}-phone-e164`;
+  const phoneOtpId = `${phoneFieldIdPrefix}-phone-otp`;
+  const showRows = isSignIn || (!loading && profile);
+  const showPhonePanel = phoneExpanded && (isSignIn || (profile && !loading));
 
   return (
     <section className="account-link-section">
@@ -119,11 +130,15 @@ export function AccountLinkSection({
       <div className="account-link-panel">
         <header className="account-link-header">
           <h2 className="account-link-title">アカウント連携</h2>
-          <p className="account-link-subtitle">データのバックアップや引き継ぎができます</p>
+          <p className="account-link-subtitle">
+            {isSignIn
+              ? "マイページと同じ手順で、Google・Apple・電話番号のいずれかにサインインできます。"
+              : "データのバックアップや引き継ぎができます"}
+          </p>
         </header>
 
         <div className="account-link-list" role="list">
-          {loading || !profile ? (
+          {!showRows ? (
             <p className="account-link-loading">連携状態を読み込み中です…</p>
           ) : (
             <>
@@ -132,7 +147,9 @@ export function AccountLinkSection({
                   <IconApple />
                 </span>
                 <span className="account-link-row-label">Apple</span>
-                <span className="account-link-row-status">{appleOn ? "連携済み" : "未連携"}</span>
+                <span className="account-link-row-status">
+                  {isSignIn ? "サインイン" : appleOn ? "連携済み" : "未連携"}
+                </span>
                 <Chevron />
               </button>
 
@@ -141,7 +158,9 @@ export function AccountLinkSection({
                   <IconGoogle />
                 </span>
                 <span className="account-link-row-label">Google</span>
-                <span className="account-link-row-status">{googleOn ? "連携済み" : "未連携"}</span>
+                <span className="account-link-row-status">
+                  {isSignIn ? "サインイン" : googleOn ? "連携済み" : "未連携"}
+                </span>
                 <Chevron />
               </button>
 
@@ -150,26 +169,32 @@ export function AccountLinkSection({
                   <IconPhone />
                 </span>
                 <span className="account-link-row-label">電話番号</span>
-                <span className="account-link-row-status">{phoneOn ? "連携済み" : "未連携"}</span>
+                <span className="account-link-row-status">
+                  {isSignIn ? "SMS でサインイン" : phoneOn ? "連携済み" : "未連携"}
+                </span>
                 <Chevron />
               </button>
             </>
           )}
         </div>
 
-        {phoneExpanded && profile && !loading ? (
+        {showPhonePanel ? (
           <div className="account-link-phone-panel">
-            <p className="account-link-phone-lead">国番号付きの電話番号を入力し、SMS のコードで連携します。</p>
+            <p className="account-link-phone-lead">
+              {isSignIn
+                ? "国番号付きの電話番号を入力し、SMS のコードでサインインします。"
+                : "国番号付きの電話番号を入力し、SMS のコードで連携します。"}
+            </p>
             {phoneStep === "idle" ? (
               <div className="account-link-phone-form">
-                <label className="account-link-field-label" htmlFor="mypage-phone-e164">
+                <label className="account-link-field-label" htmlFor={phoneE164Id}>
                   電話番号（E.164）
                 </label>
                 <input
                   autoComplete="tel"
                   className="account-link-field-input"
                   disabled={busy}
-                  id="mypage-phone-e164"
+                  id={phoneE164Id}
                   onChange={(e) => onPhoneE164Change(e.target.value)}
                   placeholder="+819012345678"
                   type="tel"
@@ -186,13 +211,13 @@ export function AccountLinkSection({
               </div>
             ) : (
               <div className="account-link-phone-form">
-                <label className="account-link-field-label" htmlFor="mypage-phone-otp">
+                <label className="account-link-field-label" htmlFor={phoneOtpId}>
                   SMS の確認コード
                 </label>
                 <input
                   className="account-link-field-input"
                   disabled={busy}
-                  id="mypage-phone-otp"
+                  id={phoneOtpId}
                   inputMode="numeric"
                   onChange={(e) => onPhoneOtpChange(e.target.value)}
                   placeholder="6桁のコード"

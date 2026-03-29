@@ -204,11 +204,26 @@ export function MyPageScreen() {
         </div>
       </div>
 
+      <SectionTitle subtitle="Titles" title="称号" />
+      <Card>
+        {summary.titles.map((title) => (
+          <div className={`title-row ${title.current ? "current" : ""} ${title.unlocked ? "" : "locked"}`} key={title.id}>
+            <div className={`title-icon ${title.current ? "current" : ""}`}>{title.unlocked ? title.icon : "🔒"}</div>
+            <div className="title-copy">
+              <div className="title-name">{title.name}</div>
+              <div className="title-meta">{title.unlocked ? "解放済み" : title.requirementText}</div>
+            </div>
+            {title.current ? <span className="title-status-chip">使用中</span> : null}
+          </div>
+        ))}
+      </Card>
+
       {auth.usingSupabase ? (
         <AccountLinkSection
           error={linkError}
           loading={profileLoading}
           notice={linkNotice}
+          phoneFieldIdPrefix="mypage"
           onApple={() => {
             if (!profile) {
               return;
@@ -299,8 +314,8 @@ export function MyPageScreen() {
                 setPhoneOtp("");
                 setPhonePanelOpen(false);
                 setLinkNotice("電話番号の連携が完了しました。");
-                router.refresh();
                 await loadProfile();
+                void refresh();
               } catch (err) {
                 setLinkError(profileErrorMessage(err));
               } finally {
@@ -316,20 +331,6 @@ export function MyPageScreen() {
           profile={profile}
         />
       ) : null}
-
-      <SectionTitle subtitle="Titles" title="称号" />
-      <Card>
-        {summary.titles.map((title) => (
-          <div className={`title-row ${title.current ? "current" : ""} ${title.unlocked ? "" : "locked"}`} key={title.id}>
-            <div className={`title-icon ${title.current ? "current" : ""}`}>{title.unlocked ? title.icon : "🔒"}</div>
-            <div className="title-copy">
-              <div className="title-name">{title.name}</div>
-              <div className="title-meta">{title.unlocked ? "解放済み" : title.requirementText}</div>
-            </div>
-            {title.current ? <span className="title-status-chip">使用中</span> : null}
-          </div>
-        ))}
-      </Card>
 
       {auth.usingSupabase ? (
         <Card>
