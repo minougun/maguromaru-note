@@ -611,13 +611,12 @@ async function listQuizSessionsForUser(client: SupabaseClient<Database> | undefi
   return (data as QuizSessionRow[] | null) ?? [];
 }
 
-function buildQuizStageProgressSummary(quizSessions: QuizSessionRow[], shareBonusEvents: ShareBonusEventRow[]) {
+/**
+ * ステージ解放用の進捗。セッションごとの正解数の最大値（同じ問題を何度解いても、最良の1回分のみが効く）。
+ * シェアボーナスによる加算はここには含めない（解放条件は「その回の10問の内訳」に一致させる）。
+ */
+function buildQuizStageProgressSummary(quizSessions: QuizSessionRow[]) {
   const correctByStage = createEmptyQuizStageProgress();
-  const quizShareBonusBySessionId = new Map(
-    shareBonusEvents
-      .filter((entry) => entry.target_type === "quiz_session")
-      .map((entry) => [entry.target_id, tenthsToCount(entry.bonus_correct_tenths)]),
-  );
 
   for (const session of quizSessions) {
     if (!session.submitted_at) {
@@ -628,9 +627,9 @@ function buildQuizStageProgressSummary(quizSessions: QuizSessionRow[], shareBonu
     const inferredStageNumber =
       getStageNumberFromQuestionId(questionIds[0] ?? "") ??
       Math.max(1, Math.ceil(session.question_count / quizQuestionsPerStage));
-    const current = correctByStage[inferredStageNumber] ?? 0;
-    correctByStage[inferredStageNumber] =
-      current + (session.score ?? 0) + (quizShareBonusBySessionId.get(session.id) ?? 0);
+    const sessionScore = session.score ?? 0;
+    const prev = correctByStage[inferredStageNumber] ?? 0;
+    correctByStage[inferredStageNumber] = Math.max(prev, sessionScore);
   }
 
   return {
@@ -652,7 +651,7 @@ function buildSnapshotFromRecords(
   visitLogParts: Database["public"]["Tables"]["visit_log_parts"]["Row"][],
 ): AppSnapshot {
   const shareBonus = buildShareBonusSummary(shareBonusEvents);
-  const quizStageProgress = buildQuizStageProgressSummary(quizSessions, shareBonusEvents);
+  const quizStageProgress = buildQuizStageProgressSummary(quizSessions);
   const visitRecords = buildVisitRecords(
     parts,
     menuItems,
@@ -1196,17 +1195,18 @@ export async function createQuizSessionForViewer(input: unknown, accessToken?: s
   if (shouldUseMockBackend()) {
     const viewer = createMockViewerContext();
     const state = await readMockState();
-    const shareBonusEvents = state.shareBonusEvents.filter((entry) => entry.user_id === viewer.userId);
     const quizStageProgress = buildQuizStageProgressSummary(
       state.quizSessions.filter((entry) => entry.user_id === viewer.userId),
-      shareBonusEvents,
     );
     if (
       !isQuizStageUnlocked(parsed.stageNumber, {
         correctByStage: quizStageProgress.correctByStage,
       })
     ) {
-      throw new AppServiceError(403, "累計正解数が足りないため、このステージはまだ開放されていません。");
+      throw new AppServiceError(
+        403,
+        "前のステージを10問すべて正解していないため、このステージはまだ開放されていません。",
+      );
     }
     const recentQuestionIds = collectRecentQuizQuestionIds(
       state.quizSessions.filter((entry) => entry.user_id === viewer.userId),
@@ -1239,17 +1239,17 @@ export async function createQuizSessionForViewer(input: unknown, accessToken?: s
     ? await getSupabaseContextFromAccessToken(accessToken)
     : await getSupabaseContext();
   const client = createServiceRoleClient();
-  const [quizSessions, shareBonusEvents] = await Promise.all([
-    listQuizSessionsForUser(client, viewer.userId),
-    getShareBonusEvents(client, viewer.userId),
-  ]);
-  const quizStageProgress = buildQuizStageProgressSummary(quizSessions, shareBonusEvents);
+  const quizSessions = await listQuizSessionsForUser(client, viewer.userId);
+  const quizStageProgress = buildQuizStageProgressSummary(quizSessions);
   if (
     !isQuizStageUnlocked(parsed.stageNumber, {
       correctByStage: quizStageProgress.correctByStage,
     })
   ) {
-    throw new AppServiceError(403, "累計正解数が足りないため、このステージはまだ開放されていません。");
+    throw new AppServiceError(
+      403,
+      "前のステージを10問すべて正解していないため、このステージはまだ開放されていません。",
+    );
   }
   const { data: recentSessionRows, error: recentSessionError } = await fromAny(client, "quiz_sessions")
     .select("question_ids, created_at")

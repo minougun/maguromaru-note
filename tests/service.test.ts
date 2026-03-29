@@ -10,8 +10,7 @@ import {
   seededVisitLogParts,
   seededVisitLogs,
 } from "@/lib/domain/seed";
-import { writeMockState } from "@/lib/mock/store";
-import { createMockViewerContext } from "@/lib/mock/store";
+import { createMockViewerContext, writeMockState } from "@/lib/mock/store";
 import { getUnlockedQuizStageNumbers, isQuizStageUnlocked } from "@/lib/quiz-stages";
 import { getCurrentTitle } from "@/lib/titles";
 import {
@@ -189,9 +188,51 @@ test("quiz session is server-scored and cannot be submitted twice", async () => 
   );
 });
 
-test("quiz stages unlock only after clearing the previous stage", () => {
+function pickWrongQuizSelection(correctIndexes: number[]): number[] {
+  const sorted = [...correctIndexes].sort((a, b) => a - b);
+  if (sorted.length >= 2) {
+    return [sorted[0]!];
+  }
+  const c = sorted[0] ?? 0;
+  return [(c + 1) % 4];
+}
+
+test("quiz stage 2 stays locked when stage 1 only scored 5/10 in two separate sessions", async () => {
+  await writeMockState({
+    menuItemStatuses: seededMenuItemStatuses.map((entry) => ({ ...entry })),
+    quizSessions: seededQuizSessions.map((entry) => ({ ...entry })),
+    visitLogs: seededVisitLogs.map((entry) => ({ ...entry })),
+    visitLogParts: seededVisitLogParts.map((entry) => ({ ...entry })),
+    storeStatus: { ...seededStoreStatus },
+    quizStats: [{ ...seededQuizStats }],
+    shareBonusEvents: seededShareBonusEvents.map((entry) => ({ ...entry })),
+  });
+
+  for (let round = 0; round < 2; round++) {
+    const s = await createQuizSessionForViewer({ stageNumber: 1 });
+    const answers: number[][] = [];
+    for (let i = 0; i < s.questions.length; i++) {
+      const q = s.questions[i]!;
+      const probe = await checkQuizAnswer({
+        sessionId: s.sessionId,
+        questionId: q.id,
+        answerProof: q.answerProof,
+        answerIndexes: [0],
+      });
+      const correctIdxs = probe.result.correctIndexes;
+      answers.push(i < 5 ? [...correctIdxs] : pickWrongQuizSelection(correctIdxs));
+    }
+    const sub = await submitQuizSession({ sessionId: s.sessionId, answers });
+    assert.equal(sub.score, 5);
+  }
+
+  await assert.rejects(() => createQuizSessionForViewer({ stageNumber: 2 }), /前のステージを10問すべて正解/);
+});
+
+test("quiz stages unlock only after a perfect clear (10/10) on the previous stage", () => {
   assert.deepEqual(getUnlockedQuizStageNumbers({ correctByStage: { 1: 0, 2: 0, 3: 0 } }), [1]);
   assert.equal(isQuizStageUnlocked(2, { correctByStage: { 1: 10, 2: 0, 3: 0 } }), true);
+  assert.equal(isQuizStageUnlocked(2, { correctByStage: { 1: 5, 2: 0, 3: 0 } }), false);
   assert.equal(isQuizStageUnlocked(3, { correctByStage: { 1: 10, 2: 9, 3: 0 } }), false);
   assert.equal(isQuizStageUnlocked(3, { correctByStage: { 1: 10, 2: 10, 3: 0 } }), true);
 });
@@ -209,7 +250,7 @@ test("createQuizSessionForViewer rejects locked stages", async () => {
 
   await assert.rejects(
     () => createQuizSessionForViewer({ stageNumber: 100 }),
-    /累計正解数が足りないため、このステージはまだ開放されていません/,
+    /前のステージを10問すべて正解していないため/,
   );
 });
 

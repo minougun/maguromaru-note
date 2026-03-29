@@ -64,6 +64,7 @@ export function createEmptyQuizStageProgress() {
   ) as Record<number, number>;
 }
 
+/** そのステージで記録された「1セッションあたりの正解数」の最大（0〜10）。解放条件は全問正解（=10）相当。 */
 export function getStageProgressCount(progress: QuizStageProgressInput, stageNumber: number) {
   return progress.correctByStage[stageNumber] ?? 0;
 }

@@ -824,6 +824,7 @@ body {
 .quiz-unlock-hint {
   margin-top: 8px;
   text-align: center;
+  overflow-wrap: anywhere;
 }
 
 .quiz-info-header {

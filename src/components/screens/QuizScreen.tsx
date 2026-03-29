@@ -294,7 +294,6 @@ export function QuizScreen() {
   const currentQuestion = session?.questions[currentIndex] ?? null;
   const finished = Boolean(session) && currentIndex >= questionTotal;
   const score = result?.score ?? 0;
-  const currentStage = getQuizStageConfig(stageNumber);
   const viewingStage = getQuizStageConfig(stageNumber);
   const isViewingLocked = !isQuizStageUnlocked(stageNumber, {
     correctByStage: snapshot.history.quizStageProgress.correctByStage,
@@ -306,13 +305,6 @@ export function QuizScreen() {
     <>
       <NorenBanner label="まぐろクイズ" />
       <Card glow>
-        <div className="quiz-info-header">
-          <div className="quiz-info-stage">
-            <div className="summary-label">現在のステージ</div>
-            <div className="summary-title">{currentStage.stage}</div>
-            <div className="quiz-info-subtitle">{currentStage.title}　─　{currentStage.difficultyLabel}</div>
-          </div>
-        </div>
         {(() => {
           const masterTitle = TITLES.find((t) => t.id === "master")!;
           const totalCorrect = snapshot.history.quizStats.totalCorrectAnswers;
@@ -331,12 +323,14 @@ export function QuizScreen() {
               <p className="progress-caption">
                 {reached
                   ? `${masterTitle.name}到達！おめでとうございます！`
-                  : `累計 ${formatCount(totalCorrect)} / ${formatCount(goal)} 問正解`}
+                  : `通算 ${formatCount(totalCorrect)} / ${formatCount(goal)} 問正解`}
               </p>
             </div>
           );
         })()}
-        <p className="helper-text quiz-unlock-hint">各ステージ内で累計 10問正解すると次のステージが解放</p>
+        <p className="helper-text quiz-unlock-hint">
+          各ステージは10問です。1回のチャレンジで全問正解すると次のステージが解放されます。何度プレイしても正解数は足し算されず、これまでで最も良い1回の結果だけがステージ進行に使われます。
+        </p>
         <div className="quiz-stage-single">
           <button
             className="quiz-stage-nav-btn"
@@ -358,8 +352,8 @@ export function QuizScreen() {
             <span className="quiz-stage-count">{viewingStage.title}</span>
             <span className="quiz-stage-detail">
               {isViewingLocked
-                ? `STAGE ${stageNumber - 1} で累計 ${QUIZ_SESSION_SIZE} 問正解で開放`
-                : `${viewingStage.detail} ・ 累計 ${formatCount(getStageProgressCount({ correctByStage: snapshot.history.quizStageProgress.correctByStage }, stageNumber))} / ${QUIZ_SESSION_SIZE}`}
+                ? `STAGE ${stageNumber - 1} を1回で全問正解すると開放`
+                : `${viewingStage.detail} ・ ベスト ${formatCount(getStageProgressCount({ correctByStage: snapshot.history.quizStageProgress.correctByStage }, stageNumber))} / ${QUIZ_SESSION_SIZE}`}
             </span>
           </button>
           <button
