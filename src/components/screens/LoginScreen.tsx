@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -86,6 +87,18 @@ export function LoginScreen() {
     return (
       <div className="login-launch">
         <div className="login-launch-inner">
+          <div className="login-launch-hero">
+            <Image
+              alt=""
+              className="login-launch-hero-img"
+              height={544}
+              priority
+              sizes="(max-width: 420px) 88vw, 340px"
+              src="/brand/login-launch-hero.webp"
+              width={560}
+            />
+            <h1 className="login-launch-title">まぐろ丸ノート</h1>
+          </div>
           {(formError || notice) && (
             <p
               className={
