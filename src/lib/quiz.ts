@@ -2,6 +2,7 @@ import { STORE_INFO, TITLES, quizQuestionsPerStage, quizStageCount, quizStagesPe
 import { getDefaultPartIdsForMenuItem } from "@/lib/domain/menu-part-defaults";
 import { seededMenuItems, seededParts } from "@/lib/domain/seed";
 import { filterTrackedParts } from "@/lib/domain/tracked-parts";
+import type { QuizQuestionCategory } from "@/lib/quiz-types";
 import {
   TUNA_CUISINE,
   TUNA_ECOLOGY,
@@ -11,16 +12,8 @@ import {
   type TunaFact,
 } from "@/lib/tuna-knowledge";
 
-export type QuizQuestionCategory =
-  | "部位"
-  | "メニュー"
-  | "称号"
-  | "お店"
-  | "魚種"
-  | "生態"
-  | "漁と流通"
-  | "食と栄養"
-  | "雑学";
+export type { QuizQuestionCategory } from "@/lib/quiz-types";
+export { QUIZ_SESSION_SIZE } from "@/lib/quiz-session-constants";
 
 export interface QuizQuestion {
   id: string;
@@ -1179,7 +1172,6 @@ function buildStageQuestionBanks() {
 const STAGE_QUESTION_BANKS = buildStageQuestionBanks();
 
 export const QUIZ_QUESTIONS: QuizQuestion[] = Array.from(STAGE_QUESTION_BANKS.values()).flat();
-export const QUIZ_SESSION_SIZE = quizQuestionsPerStage;
 export const QUIZ_STAGE_NUMBERS = Array.from({ length: quizStageCount }, (_, index) => index + 1);
 export const QUIZ_CATEGORIES = [
   "部位",

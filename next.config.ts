@@ -73,7 +73,7 @@ const basePath =
 const nextConfig: NextConfig = {
   ...(basePath ? { basePath } : {}),
   experimental: {
-    optimizePackageImports: ["@supabase/supabase-js"],
+    optimizePackageImports: ["@supabase/supabase-js", "zod"],
   },
   images: {
     remotePatterns: [

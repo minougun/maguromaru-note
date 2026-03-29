@@ -10,7 +10,8 @@ import { Card } from "@/components/ui/Card";
 import { NorenBanner } from "@/components/ui/NorenBanner";
 import { ScreenState } from "@/components/ui/ScreenState";
 import { useAppSnapshot } from "@/lib/hooks/use-app-snapshot";
-import { QUIZ_SESSION_SIZE, type QuizQuestionCategory } from "@/lib/quiz";
+import { QUIZ_SESSION_SIZE } from "@/lib/quiz-session-constants";
+import type { QuizQuestionCategory } from "@/lib/quiz-types";
 import {
   QUIZ_STAGE_CONFIGS,
   getQuizStageConfig,

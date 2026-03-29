@@ -20,7 +20,13 @@ export function TabBar() {
       {tabs.map((tab) => {
         const active = pathname === tab.href;
         return (
-          <Link className="tab-link" data-active={active} href={tab.href} key={tab.href}>
+          <Link
+            className="tab-link"
+            data-active={active}
+            href={tab.href}
+            key={tab.href}
+            prefetch={tab.href === "/quiz" ? false : undefined}
+          >
             <span aria-hidden="true" className="tab-icon">
               {tab.icon}
             </span>
