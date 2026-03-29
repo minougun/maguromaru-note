@@ -18,13 +18,17 @@ interface MapRegionDef {
   };
 }
 
+/**
+ * viewBox 1365×768（`/zukan-tuna-map.webp` / `public/tuna-map-base.svg` と同一想定）。
+ * ラベル位置は部位図（頭左・腹下に大とろ・中とろ、体軸中央に赤身）に合わせる。
+ */
 const MAP_REGIONS: MapRegionDef[] = [
-  { id: "noten", type: "ellipse", cx: 304, cy: 214, rx: 48, ry: 28, label: { x: 240, y: 102 } },
-  { id: "hoho", type: "ellipse", cx: 250, cy: 436, rx: 54, ry: 42, label: { x: 120, y: 486 } },
-  { id: "meura", type: "ellipse", cx: 333, cy: 490, rx: 46, ry: 34, label: { x: 300, y: 662 } },
-  { id: "chutoro", type: "ellipse", cx: 718, cy: 250, rx: 210, ry: 72, label: { x: 682, y: 90 } },
-  { id: "akami", type: "ellipse", cx: 739, cy: 386, rx: 228, ry: 92, label: { x: 1034, y: 344 } },
-  { id: "otoro", type: "ellipse", cx: 582, cy: 494, rx: 156, ry: 72, label: { x: 538, y: 680 } },
+  { id: "noten", type: "ellipse", cx: 292, cy: 178, rx: 48, ry: 30, label: { x: 228, y: 92 } },
+  { id: "hoho", type: "ellipse", cx: 206, cy: 426, rx: 52, ry: 40, label: { x: 92, y: 486 } },
+  { id: "meura", type: "ellipse", cx: 238, cy: 342, rx: 42, ry: 32, label: { x: 158, y: 262 } },
+  { id: "chutoro", type: "ellipse", cx: 788, cy: 532, rx: 136, ry: 56, label: { x: 1002, y: 628 } },
+  { id: "akami", type: "ellipse", cx: 718, cy: 394, rx: 238, ry: 90, label: { x: 1040, y: 336 } },
+  { id: "otoro", type: "ellipse", cx: 448, cy: 550, rx: 118, ry: 50, label: { x: 402, y: 694 } },
 ];
 
 interface TunaMapProps {
