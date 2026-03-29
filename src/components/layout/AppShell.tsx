@@ -31,6 +31,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (!auth.signedIn) {
     return (
       <div className="app-shell app-shell--login">
+        <AppHeader />
         <main className="screen-main screen-main--login">
           <LoginScreen />
         </main>
