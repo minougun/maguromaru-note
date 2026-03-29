@@ -17,6 +17,14 @@ interface MapRegionDef {
   r?: number;
   rx?: number;
   ry?: number;
+  label: {
+    x: number;
+    y: number;
+    /** 未指定なら partIds から名称を結合 */
+    text?: string;
+  };
+  /** ラベル枠の幅（長い文言用） */
+  labelWidth?: number;
 }
 
 /**
@@ -25,9 +33,9 @@ interface MapRegionDef {
  * 中とろは背のブロック＋腹の後方の両方でハイライトされる。
  */
 const MAP_REGIONS: MapRegionDef[] = [
-  { key: "noten", partIds: ["noten"], type: "ellipse", cx: 292, cy: 178, rx: 48, ry: 30 },
-  { key: "hoho", partIds: ["hoho"], type: "ellipse", cx: 206, cy: 426, rx: 52, ry: 40 },
-  { key: "meura", partIds: ["meura"], type: "ellipse", cx: 238, cy: 342, rx: 42, ry: 32 },
+  { key: "noten", partIds: ["noten"], type: "ellipse", cx: 292, cy: 178, rx: 48, ry: 30, label: { x: 228, y: 92 } },
+  { key: "hoho", partIds: ["hoho"], type: "ellipse", cx: 206, cy: 426, rx: 52, ry: 40, label: { x: 92, y: 486 } },
+  { key: "meura", partIds: ["meura"], type: "ellipse", cx: 238, cy: 342, rx: 42, ry: 32, label: { x: 158, y: 262 } },
   {
     key: "chutoro-back",
     partIds: ["chutoro"],
@@ -36,8 +44,9 @@ const MAP_REGIONS: MapRegionDef[] = [
     cy: 248,
     rx: 208,
     ry: 70,
+    label: { x: 668, y: 82 },
   },
-  { key: "akami", partIds: ["akami"], type: "ellipse", cx: 718, cy: 394, rx: 238, ry: 90 },
+  { key: "akami", partIds: ["akami"], type: "ellipse", cx: 718, cy: 394, rx: 238, ry: 90, label: { x: 1040, y: 336 } },
   {
     key: "belly-otoro-chutoro-rear",
     partIds: ["otoro", "chutoro"],
@@ -46,6 +55,8 @@ const MAP_REGIONS: MapRegionDef[] = [
     cy: 548,
     rx: 132,
     ry: 52,
+    label: { x: 926, y: 628, text: "大トロ・中トロ" },
+    labelWidth: 248,
   },
   {
     key: "belly-otoro-front",
@@ -55,6 +66,8 @@ const MAP_REGIONS: MapRegionDef[] = [
     cy: 556,
     rx: 112,
     ry: 48,
+    label: { x: 352, y: 692, text: "大トロ" },
+    labelWidth: 132,
   },
 ];
 
@@ -85,6 +98,7 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
   }
 
   function labelForRegion(r: MapRegionDef): string {
+    if (r.label.text) return r.label.text;
     const names = r.partIds.map((id) => partsById.get(id)?.name).filter(Boolean);
     return names.join("・") || "";
   }
@@ -131,6 +145,7 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
             const strokeDasharray = eaten ? "none" : "6 5";
             const strokeWidth = eaten ? (isSelected ? 3 : 2) : isSelected ? 5.25 : 4.5;
             const filterAttr = eaten ? "url(#glowF)" : undefined;
+            const lw = (r.labelWidth ?? 152) / 2;
 
             return (
               <g
@@ -175,6 +190,38 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
                 ) : (
                   <ellipse cx={r.cx} cy={r.cy} rx={(r.rx ?? 30) + 10} ry={(r.ry ?? 20) + 10} fill="transparent" />
                 )}
+                <line
+                  x1={r.label.x}
+                  y1={r.label.y + 18}
+                  x2={r.cx}
+                  y2={r.cy}
+                  stroke="rgba(92,63,45,0.72)"
+                  strokeWidth="4"
+                  opacity="0.9"
+                  fill="none"
+                />
+                <rect
+                  x={r.label.x - lw}
+                  y={r.label.y - 26}
+                  rx="22"
+                  ry="22"
+                  width={lw * 2}
+                  height="52"
+                  fill={eaten ? primary.color : "rgba(55,38,32,0.92)"}
+                  stroke={eaten ? primary.color : "rgba(196,168,120,0.45)"}
+                  strokeWidth="2"
+                />
+                <text
+                  x={r.label.x}
+                  y={r.label.y + 8}
+                  textAnchor="middle"
+                  fontSize={r.label.text && r.label.text.length > 5 ? 22 : 28}
+                  fontWeight="700"
+                  fill={eaten ? "#0d0805" : "#f2e4c7"}
+                  fontFamily="Noto Sans JP, sans-serif"
+                >
+                  {labelForRegion(r)}
+                </text>
               </g>
             );
           })}
