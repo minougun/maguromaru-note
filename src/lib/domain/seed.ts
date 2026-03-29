@@ -35,13 +35,13 @@ export const seededMenuItems: MenuItem[] = [
 export const seededStoreStatus: StoreStatus = {
   id: 1,
   recommendation: "",
-  status: "unset",
+  status: "open",
   status_note: "",
   weather_comment: "",
   updated_at: "2026-03-28T12:34:00.000Z",
 };
 
-/** モックでは DB と同様、行が無い＝defaultMenuStockById（すべて unset）で解決 */
+/** モックでは DB と同様、行が無い＝defaultMenuStockById（既定は available）で解決 */
 export const seededMenuItemStatuses: MenuItemStatusRow[] = [];
 
 export const seededQuizStats: QuizStatsRow = {

@@ -19,11 +19,13 @@ type AdminMenuStocks = {
 };
 
 function normalizeMenuStocks(menuStocks: Record<string, MenuStockStatus>): AdminMenuStocks {
+  const pick = (v: MenuStockStatus | undefined) =>
+    v && v !== "unset" ? v : ("available" as const);
   return {
-    maguro_don: menuStocks.maguro_don ?? "unset",
-    maguro_don_mini: menuStocks.maguro_don_mini ?? "unset",
-    tokujo_don: menuStocks.tokujo_don ?? "unset",
-    tokujo_don_mini: menuStocks.tokujo_don_mini ?? "unset",
+    maguro_don: pick(menuStocks.maguro_don),
+    maguro_don_mini: pick(menuStocks.maguro_don_mini),
+    tokujo_don: pick(menuStocks.tokujo_don),
+    tokujo_don_mini: pick(menuStocks.tokujo_don_mini),
   };
 }
 
@@ -76,7 +78,8 @@ export function AdminScreen() {
   const form = draft ?? {
     menuStocks: normalizeMenuStocks(snapshot.home.menuItemStatuses),
     recommendation: snapshot.home.storeStatus.recommendation,
-    status: snapshot.home.storeStatus.status,
+    status:
+      snapshot.home.storeStatus.status === "unset" ? "open" : snapshot.home.storeStatus.status,
     statusNote: snapshot.home.storeStatus.status_note,
     weatherComment: snapshot.home.storeStatus.weather_comment,
   };
@@ -131,7 +134,6 @@ export function AdminScreen() {
           営業状況
           <div className="admin-actions">
             {[
-              { value: "unset", label: "未設定" },
               { value: "open", label: "営業中" },
               { value: "busy", label: "混雑中" },
               { value: "closing_soon", label: "まもなく終了" },
@@ -171,7 +173,6 @@ export function AdminScreen() {
                   {(() => {
                     const menuItemId = item.id as keyof AdminMenuStocks;
                     return [
-                      { value: "unset", label: "未設定" },
                       { value: "available", label: "あり" },
                       { value: "few", label: "残りわずか" },
                       { value: "soldout", label: "終了" },

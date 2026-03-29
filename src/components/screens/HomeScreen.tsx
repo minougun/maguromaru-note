@@ -14,7 +14,7 @@ import { useAppSnapshot } from "@/lib/hooks/use-app-snapshot";
 import { buildPastLogShare, type SharePayload } from "@/lib/share/share";
 import { fetchOsakaHonmachiWeatherSafe } from "@/lib/weather";
 
-function storeStatusMeta(status: "open" | "busy" | "closing_soon" | "closed" | "unset") {
+function storeStatusMeta(status: "open" | "busy" | "closing_soon" | "closed") {
   switch (status) {
     case "open":
       return { label: "営業中", className: "badge badge-open" };
@@ -24,8 +24,6 @@ function storeStatusMeta(status: "open" | "busy" | "closing_soon" | "closed" | "
       return { label: "まもなく終了", className: "badge badge-closing" };
     case "closed":
       return { label: "本日終了", className: "badge badge-closed" };
-    case "unset":
-      return { label: "未設定", className: "badge badge-unset" };
   }
 }
 
@@ -35,7 +33,9 @@ function menuItemStock(
   menuItemStatuses: Record<string, MenuStockStatus>,
 ): MenuStockStatus {
   if (status === "closed") return "soldout";
-  return menuItemStatuses[itemId] ?? "unset";
+  const row = menuItemStatuses[itemId];
+  if (!row || row === "unset") return "available";
+  return row;
 }
 
 export function HomeScreen() {
@@ -86,7 +86,8 @@ export function HomeScreen() {
     );
   }
 
-  const status = storeStatusMeta(snapshot.home.storeStatus.status);
+  const storeStatus = snapshot.home.storeStatus.status;
+  const statusBadge = storeStatus === "unset" ? null : storeStatusMeta(storeStatus);
   const timeFormatter = new Intl.DateTimeFormat("ja-JP", {
     hour: "2-digit",
     minute: "2-digit",
@@ -94,7 +95,7 @@ export function HomeScreen() {
     timeZone: "Asia/Tokyo",
   });
   const formatHm = (iso: string) => timeFormatter.format(new Date(iso));
-  const showStoreLastUpdated = snapshot.home.storeStatus.status !== "unset";
+  const showStoreLastUpdated = storeStatus !== "unset";
   const yen = new Intl.NumberFormat("ja-JP");
 
   function openShare(log: VisitRecord) {
@@ -111,7 +112,7 @@ export function HomeScreen() {
             <span>{snapshot.home.storeStatus.weather_comment}</span>
           ) : (
             <span className="status-summary">
-              <span className={status.className}>{status.label}</span>
+              {statusBadge ? <span className={statusBadge.className}>{statusBadge.label}</span> : null}
               {showStoreLastUpdated ? (
                 <span className="status-updated-text">最終更新時間 {formatHm(snapshot.home.storeStatus.updated_at)}</span>
               ) : null}

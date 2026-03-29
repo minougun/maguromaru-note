@@ -323,6 +323,44 @@ test("updateStoreStatusInputSchema rejects invalid menu stock enum", () => {
   );
 });
 
+test("updateStoreStatusInputSchema rejects unset store status", () => {
+  assert.throws(
+    () =>
+      updateStoreStatusInputSchema.parse({
+        recommendation: "",
+        status: "unset",
+        statusNote: "",
+        weatherComment: "",
+        menuStocks: {
+          maguro_don: "available",
+          maguro_don_mini: "available",
+          tokujo_don: "few",
+          tokujo_don_mini: "soldout",
+        },
+      }),
+    /Invalid option/,
+  );
+});
+
+test("updateStoreStatusInputSchema rejects unset menu stock", () => {
+  assert.throws(
+    () =>
+      updateStoreStatusInputSchema.parse({
+        recommendation: "",
+        status: "open",
+        statusNote: "",
+        weatherComment: "",
+        menuStocks: {
+          maguro_don: "unset",
+          maguro_don_mini: "available",
+          tokujo_don: "few",
+          tokujo_don_mini: "soldout",
+        },
+      }),
+    /Invalid option/,
+  );
+});
+
 test("displayNameOnlySchema accepts trimmed names with allowed punctuation", () => {
   assert.equal(displayNameOnlySchema.parse("  まぐろ太郎・1  "), "まぐろ太郎・1");
   assert.equal(displayNameOnlySchema.parse("山田ー子"), "山田ー子");

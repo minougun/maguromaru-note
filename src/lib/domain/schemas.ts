@@ -31,6 +31,10 @@ export const menuItemIdSchema = z.enum(menuItemIds);
 export const partIdSchema = z.enum(partIds);
 export const storeStatusSchema = z.enum(storeStatuses);
 export const menuStockStatusSchema = z.enum(["available", "few", "soldout", "unset"]);
+
+/** 管理画面 POST 用（DB に unset を書き込まない） */
+export const adminStoreStatusSchema = z.enum(["open", "busy", "closing_soon", "closed"]);
+export const adminMenuStockStatusSchema = z.enum(["available", "few", "soldout"]);
 export const authEmailSchema = z.email("メールアドレスの形式が不正です。").trim().max(254);
 export const authPasswordSchema = z
   .string()
@@ -83,10 +87,10 @@ export const quizAnswerIndexesSchema = z
 
 export const menuStocksSchema = z
   .object({
-    maguro_don: menuStockStatusSchema,
-    maguro_don_mini: menuStockStatusSchema,
-    tokujo_don: menuStockStatusSchema,
-    tokujo_don_mini: menuStockStatusSchema,
+    maguro_don: adminMenuStockStatusSchema,
+    maguro_don_mini: adminMenuStockStatusSchema,
+    tokujo_don: adminMenuStockStatusSchema,
+    tokujo_don_mini: adminMenuStockStatusSchema,
   })
   .strict();
 
@@ -123,7 +127,7 @@ export const recordVisitInputSchema = z
 export const updateStoreStatusInputSchema = z
   .object({
     recommendation: z.string().trim().max(280).default(""),
-    status: storeStatusSchema,
+    status: adminStoreStatusSchema,
     statusNote: z.string().trim().max(120).default(""),
     weatherComment: z.string().trim().max(120).default(""),
     menuStocks: menuStocksSchema,

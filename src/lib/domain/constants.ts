@@ -36,10 +36,10 @@ export const menuStockLabels: Record<MenuStockStatus, { text: string; className:
 };
 
 export const defaultMenuStockById: Record<(typeof menuItemIds)[number], MenuStockStatus> = {
-  maguro_don: "unset",
-  maguro_don_mini: "unset",
-  tokujo_don: "unset",
-  tokujo_don_mini: "unset",
+  maguro_don: "available",
+  maguro_don_mini: "available",
+  tokujo_don: "available",
+  tokujo_don_mini: "available",
 };
 
 export const storeStatuses = ["open", "busy", "closing_soon", "closed", "unset"] as const;
