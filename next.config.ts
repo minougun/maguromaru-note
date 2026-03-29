@@ -63,6 +63,9 @@ if (process.env.NODE_ENV === "development") {
 }
 
 const nextConfig: NextConfig = {
+  experimental: {
+    optimizePackageImports: ["@supabase/supabase-js"],
+  },
   images: {
     remotePatterns: [
       {

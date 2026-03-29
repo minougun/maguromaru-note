@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 
-import { ShareModal } from "@/components/share/ShareModal";
+import { ShareModalDynamic } from "@/components/share/ShareModalDynamic";
 import { Card } from "@/components/ui/Card";
 import { NorenBanner } from "@/components/ui/NorenBanner";
 import { ScreenState } from "@/components/ui/ScreenState";
@@ -230,7 +230,7 @@ export function RecordScreen() {
       <button className="button-primary" disabled={!selectedMenuItemId || submitting} onClick={handleSubmit} type="button">
         {!selectedMenuItemId ? "メニューを選んでください" : submitting ? "保存中..." : "この内容で記録する"}
       </button>
-      <ShareModal onClose={() => setSharePayload(null)} onShareBonus={handleShareBonus} open={Boolean(sharePayload)} payload={sharePayload} />
+      <ShareModalDynamic onClose={() => setSharePayload(null)} onShareBonus={handleShareBonus} open={Boolean(sharePayload)} payload={sharePayload} />
     </>
   );
 }

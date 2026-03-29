@@ -59,7 +59,7 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
           </defs>
 
           <image
-            href="/Gemini_Generated_Image_kxpb3ykxpb3ykxpb.png"
+            href="/zukan-tuna-map.webp"
             width="1365"
             height="768"
             preserveAspectRatio="xMidYMid meet"

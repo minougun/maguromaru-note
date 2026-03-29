@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { VisitLogCard } from "@/components/logs/VisitLogCard";
-import { ShareModal } from "@/components/share/ShareModal";
+import { ShareModalDynamic } from "@/components/share/ShareModalDynamic";
 import { Card } from "@/components/ui/Card";
 import { NorenBanner } from "@/components/ui/NorenBanner";
 import { ScreenState } from "@/components/ui/ScreenState";
@@ -167,7 +167,7 @@ export function HomeScreen() {
         </Card>
       )}
 
-      <ShareModal onClose={() => setSharePayload(null)} open={Boolean(sharePayload)} payload={sharePayload} />
+      <ShareModalDynamic onClose={() => setSharePayload(null)} open={Boolean(sharePayload)} payload={sharePayload} />
     </>
   );
 }

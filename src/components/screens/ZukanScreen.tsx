@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 
-import { ShareModal } from "@/components/share/ShareModal";
-import { TunaMap } from "@/components/TunaMap";
+import { ShareModalDynamic } from "@/components/share/ShareModalDynamic";
+import { TunaMapDynamic } from "@/components/TunaMapDynamic";
 import { Card } from "@/components/ui/Card";
 import { NorenBanner } from "@/components/ui/NorenBanner";
 import { ScreenState } from "@/components/ui/ScreenState";
@@ -59,7 +59,7 @@ export function ZukanScreen() {
       ) : null}
 
       <SectionTitle subtitle="Tuna map" title="部位マップ" />
-      <TunaMap collectedPartIds={snapshot.zukan.collectedPartIds} parts={snapshot.parts} />
+      <TunaMapDynamic collectedPartIds={snapshot.zukan.collectedPartIds} parts={snapshot.parts} />
 
       <SectionTitle subtitle="All parts" title="部位一覧" />
       <div className="parts-grid">
@@ -77,7 +77,7 @@ export function ZukanScreen() {
         })}
       </div>
 
-      <ShareModal onClose={() => setSharePayload(null)} open={Boolean(sharePayload)} payload={sharePayload} />
+      <ShareModalDynamic onClose={() => setSharePayload(null)} open={Boolean(sharePayload)} payload={sharePayload} />
     </>
   );
 }

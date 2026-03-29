@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { VisitLogCard } from "@/components/logs/VisitLogCard";
-import { ShareModal } from "@/components/share/ShareModal";
+import { ShareModalDynamic } from "@/components/share/ShareModalDynamic";
 import { Card } from "@/components/ui/Card";
 import { NorenBanner } from "@/components/ui/NorenBanner";
 import { ScreenState } from "@/components/ui/ScreenState";
@@ -133,7 +133,7 @@ export function HistoryScreen() {
           <p className="helper-text">まだ履歴がありません。記録を作るとここに残ります。</p>
         </Card>
       )}
-      <ShareModal onClose={() => setSharePayload(null)} onShareBonus={handleShareBonus} open={Boolean(sharePayload)} payload={sharePayload} />
+      <ShareModalDynamic onClose={() => setSharePayload(null)} onShareBonus={handleShareBonus} open={Boolean(sharePayload)} payload={sharePayload} />
     </>
   );
 }
