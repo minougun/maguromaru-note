@@ -202,50 +202,61 @@ body {
   max-width: 430px;
   transform: translateX(-50%);
   padding-bottom: var(--safe-bottom);
-  background: rgba(27, 45, 79, 0.97);
   border-top: 2px solid var(--navy);
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   z-index: 50;
-  backdrop-filter: blur(14px);
+  /* public/tabbar/bottom-tabs.png（643×112）を帯全体にフィット */
+  aspect-ratio: 643 / 112;
+  height: auto;
+  background-color: rgba(27, 45, 79, 0.97);
+  background-repeat: no-repeat;
+  background-position: center top;
+  background-size: 100% auto;
+  align-items: stretch;
 }
 
 .tab-link {
   border: 0;
   background: transparent;
-  color: rgba(255, 255, 255, 0.55);
-  padding: 10px 2px 10px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 2px;
-  position: relative;
-  font-size: 11px;
-  text-align: center;
+  padding: 0;
   min-width: 0;
+  min-height: 0;
+  position: relative;
+  align-self: stretch;
+  /* ラベル・絵文字は PNG に含める。フォーカスリングのみ表示 */
+  outline-offset: -2px;
 }
 
-.tab-link > span:last-child {
-  width: 100%;
-  text-align: center;
-  line-height: 1.2;
-  overflow-wrap: anywhere;
-  word-break: keep-all;
+.tab-link:focus-visible {
+  outline: 2px solid #5cdbef;
+  border-radius: 4px;
+  z-index: 1;
 }
 
-.tab-link[data-active="true"] {
-  color: #a8f0fc;
-}
-
-.tab-link[data-active="true"]::before {
+.tab-link[data-active="true"]::after {
   content: "";
   position: absolute;
-  top: 6px;
-  width: 6px;
-  height: 6px;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 28px;
+  height: 3px;
   border-radius: 999px;
-  background: #5cdbef;
+  background: rgba(92, 219, 239, 0.85);
+  pointer-events: none;
+}
+
+.tab-link-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .tab-icon {
