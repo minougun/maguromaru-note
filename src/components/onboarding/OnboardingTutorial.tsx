@@ -2,7 +2,22 @@
 
 import { useCallback, useState } from "react";
 
-import { type OnboardingMockId, OnboardingDeviceMock } from "@/components/onboarding/OnboardingDeviceMock";
+import { type OnboardingMockId } from "@/components/onboarding/OnboardingDeviceMock";
+import { publicPath } from "@/lib/public-path";
+
+/** convert-tutorial-to-webp.ts と同じ統一キャンバス（CLS 用・実ファイルと一致） */
+const TUTORIAL_ART_WIDTH = 320;
+const TUTORIAL_ART_HEIGHT = 520;
+
+const TUTORIAL_WEBP: Record<OnboardingMockId, string> = {
+  intro: "/onboarding/tutorial/intro.webp",
+  home: "/onboarding/tutorial/home.webp",
+  record: "/onboarding/tutorial/record.webp",
+  zukan: "/onboarding/tutorial/zukan.webp",
+  quiz: "/onboarding/tutorial/quiz.webp",
+  titles: "/onboarding/tutorial/titles.webp",
+  account: "/onboarding/tutorial/account.webp",
+};
 
 type Step = {
   mockId: OnboardingMockId;
@@ -68,8 +83,17 @@ export function OnboardingTutorial({ onComplete }: OnboardingTutorialProps) {
       </button>
 
       <div className="onboarding-panel">
-        <div className="onboarding-art onboarding-art--mock" aria-hidden="true">
-          <OnboardingDeviceMock screen={step.mockId} />
+        <div className="onboarding-art onboarding-art--tutorial-webp" aria-hidden="true">
+          {/* eslint-disable-next-line @next/next/no-img-element -- 公開 WebP・basePath 対応は publicPath で統一 */}
+          <img
+            alt=""
+            className="onboarding-tutorial-webp-img"
+            decoding="async"
+            draggable={false}
+            height={TUTORIAL_ART_HEIGHT}
+            src={publicPath(TUTORIAL_WEBP[step.mockId])}
+            width={TUTORIAL_ART_WIDTH}
+          />
         </div>
 
         <h2 className="onboarding-title" id="onboarding-title">

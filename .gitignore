@@ -7,3 +7,6 @@ coverage
 *.tsbuildinfo
 /.vercel
 .vercel
+
+# チュートリアルは WebP をコミット。PNG は capture:tutorial-mock のローカル中間物
+public/onboarding/tutorial/*.png

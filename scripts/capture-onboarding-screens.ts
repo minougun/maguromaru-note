@@ -8,6 +8,7 @@
  *    - 既に dev が動いていればそこへ接続。どこにも繋がらなければ **このリポジトリで next dev を自動起動**（終了時に停止）
  * 3. チュートリアル用モックの PNG（OnboardingDeviceMock のみ）: npm run capture:tutorial-mock
  *    - 出力既定: public/onboarding/tutorial/*.png（CAPTURE_TUTORIAL_OUTPUT_DIR で変更可）
+ *    - 続けて WebP 化: npm run tutorial:png-to-webp（OnboardingTutorial は .webp を参照）
  * 4. 自動起動を止めたいとき: CAPTURE_AUTO_START_DEV=0（別ターミナルで npm run dev 必須）
  *
  * ### WSL の注意

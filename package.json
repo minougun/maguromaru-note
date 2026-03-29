@@ -13,6 +13,7 @@
     "test": "NEXT_PUBLIC_SITE_URL=http://localhost:3000 tsx --test tests/**/*.test.ts",
     "capture:onboarding": "tsx scripts/capture-onboarding-screens.ts",
     "capture:tutorial-mock": "CAPTURE_MOCK_TUTORIAL=1 tsx scripts/capture-onboarding-screens.ts",
+    "tutorial:png-to-webp": "tsx scripts/convert-tutorial-to-webp.ts",
     "analyze": "ANALYZE=true next build --webpack"
   },
   "dependencies": {
@@ -35,6 +36,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "playwright": "1.51.0",
+    "sharp": "0.34.5",
     "tailwindcss": "^4",
     "tsx": "4.21.0",
     "typescript": "^5"
