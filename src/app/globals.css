@@ -2119,7 +2119,7 @@ body {
 }
 
 .onboarding-art--mock {
-  max-width: min(280px, 86vw);
+  max-width: min(340px, 90vw);
   min-height: unset;
   padding: 10px 12px;
   background: rgba(0, 0, 0, 0.2);
@@ -2137,9 +2137,9 @@ body {
 
 .onboarding-screenshot-img {
   width: 100%;
-  max-width: 280px;
+  max-width: 340px;
   height: auto;
-  max-height: 46vh;
+  max-height: 54vh;
   object-fit: contain;
   border-radius: 16px;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
