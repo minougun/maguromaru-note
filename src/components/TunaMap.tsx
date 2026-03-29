@@ -5,7 +5,10 @@ import { useState } from "react";
 import type { Part, PartId } from "@/lib/domain/types";
 
 interface MapRegionDef {
-  id: PartId;
+  /** React の key（同一 partId を複数領域に使うため必須） */
+  key: string;
+  /** このシェイプが表す部位（腹の一括りは複数） */
+  partIds: PartId[];
   type: "circle" | "ellipse";
   cx: number;
   cy: number;
@@ -15,20 +18,44 @@ interface MapRegionDef {
   label: {
     x: number;
     y: number;
+    /** 未指定なら partIds[0] の名前 */
+    text?: string;
   };
+  /** ラベル枠の幅（長い文言用） */
+  labelWidth?: number;
 }
 
 /**
  * viewBox 1365×768（`/zukan-tuna-map.webp` / `public/tuna-map-base.svg` と同一想定）。
- * ラベル位置は部位図（頭左・腹下に大とろ・中とろ、体軸中央に赤身）に合わせる。
+ * 参照: 部位図（655546 系）— 頭部3点、背部に赤身・中とろ、腹部は大とろ・中とろを分割せず一領域。
+ * 中とろは背のブロックと腹の一括りの両方でハイライトされる。
  */
 const MAP_REGIONS: MapRegionDef[] = [
-  { id: "noten", type: "ellipse", cx: 292, cy: 178, rx: 48, ry: 30, label: { x: 228, y: 92 } },
-  { id: "hoho", type: "ellipse", cx: 206, cy: 426, rx: 52, ry: 40, label: { x: 92, y: 486 } },
-  { id: "meura", type: "ellipse", cx: 238, cy: 342, rx: 42, ry: 32, label: { x: 158, y: 262 } },
-  { id: "chutoro", type: "ellipse", cx: 788, cy: 532, rx: 136, ry: 56, label: { x: 1002, y: 628 } },
-  { id: "akami", type: "ellipse", cx: 718, cy: 394, rx: 238, ry: 90, label: { x: 1040, y: 336 } },
-  { id: "otoro", type: "ellipse", cx: 448, cy: 550, rx: 118, ry: 50, label: { x: 402, y: 694 } },
+  { key: "noten", partIds: ["noten"], type: "ellipse", cx: 292, cy: 178, rx: 48, ry: 30, label: { x: 228, y: 92 } },
+  { key: "hoho", partIds: ["hoho"], type: "ellipse", cx: 206, cy: 426, rx: 52, ry: 40, label: { x: 92, y: 486 } },
+  { key: "meura", partIds: ["meura"], type: "ellipse", cx: 238, cy: 342, rx: 42, ry: 32, label: { x: 158, y: 262 } },
+  {
+    key: "chutoro-back",
+    partIds: ["chutoro"],
+    type: "ellipse",
+    cx: 712,
+    cy: 248,
+    rx: 208,
+    ry: 70,
+    label: { x: 668, y: 82 },
+  },
+  { key: "akami", partIds: ["akami"], type: "ellipse", cx: 718, cy: 394, rx: 238, ry: 90, label: { x: 1040, y: 336 } },
+  {
+    key: "belly-otoro-chutoro",
+    partIds: ["otoro", "chutoro"],
+    type: "ellipse",
+    cx: 632,
+    cy: 556,
+    rx: 298,
+    ry: 58,
+    label: { x: 618, y: 698, text: "大とろ・中とろ" },
+    labelWidth: 236,
+  },
 ];
 
 interface TunaMapProps {
@@ -36,16 +63,37 @@ interface TunaMapProps {
   collectedPartIds: PartId[];
 }
 
+function regionEaten(region: MapRegionDef, collected: Set<PartId>): boolean {
+  return region.partIds.some((id) => collected.has(id));
+}
+
+function regionPrimaryPart(region: MapRegionDef, partsById: Map<PartId, Part>, collected: Set<PartId>): Part | null {
+  const firstCollected = region.partIds.find((id) => collected.has(id));
+  const id = firstCollected ?? region.partIds[0];
+  return partsById.get(id!) ?? null;
+}
+
 export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
   const partsById = new Map(parts.map((part) => [part.id, part]));
   const collected = new Set(collectedPartIds);
-  const [selectedPartId, setSelectedPartId] = useState<PartId | null>(null);
+  const [selectedRegionKey, setSelectedRegionKey] = useState<string | null>(null);
 
-  const selectedPart = selectedPartId ? partsById.get(selectedPartId) : null;
-  const isSelectedCollected = selectedPartId ? collected.has(selectedPartId) : false;
+  const selectedRegion = selectedRegionKey ? MAP_REGIONS.find((r) => r.key === selectedRegionKey) : null;
 
-  function handleTap(id: PartId) {
-    setSelectedPartId((current) => (current === id ? null : id));
+  function handleTapRegion(region: MapRegionDef) {
+    setSelectedRegionKey((current) => (current === region.key ? null : region.key));
+  }
+
+  function labelForRegion(r: MapRegionDef): string {
+    if (r.label.text) return r.label.text;
+    const names = r.partIds.map((id) => partsById.get(id)?.name).filter(Boolean);
+    return names.join("・") || "";
+  }
+
+  function ariaForRegion(r: MapRegionDef): string {
+    const eaten = regionEaten(r, collected);
+    const base = labelForRegion(r);
+    return `${base}${eaten ? "（いずれか記録済み）" : ""}`;
   }
 
   return (
@@ -70,26 +118,34 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
           />
 
           {MAP_REGIONS.map((r) => {
-            const part = partsById.get(r.id);
-            if (!part) return null;
-            const eaten = collected.has(r.id);
-            const isSelected = selectedPartId === r.id;
-            const fill = eaten ? part.color : "transparent";
+            const hasAllParts = r.partIds.every((id) => partsById.has(id));
+            if (!hasAllParts) return null;
+
+            const eaten = regionEaten(r, collected);
+            const primary = regionPrimaryPart(r, partsById, collected);
+            if (!primary) return null;
+
+            const isSelected = selectedRegionKey === r.key;
+            const fill = eaten ? primary.color : "transparent";
             const fillOpacity = eaten ? (isSelected ? 0.6 : 0.4) : 0;
-            const stroke = eaten ? part.color : "rgba(0,0,0,0.6)";
+            const stroke = eaten ? primary.color : "rgba(0,0,0,0.6)";
             const strokeDasharray = eaten ? "none" : "4 4";
             const strokeWidth = isSelected ? 3 : 2;
             const filterAttr = eaten ? "url(#glowF)" : undefined;
 
+            const lw = (r.labelWidth ?? 152) / 2;
+
             return (
               <g
-                key={r.id}
-                onClick={() => handleTap(r.id)}
+                key={r.key}
+                onClick={() => handleTapRegion(r)}
                 style={{ cursor: "pointer" }}
                 role="button"
                 tabIndex={0}
-                aria-label={`${part.name}${eaten ? "（記録済み）" : ""}`}
-                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleTap(r.id); }}
+                aria-label={ariaForRegion(r)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") handleTapRegion(r);
+                }}
               >
                 {r.type === "circle" ? (
                   <circle
@@ -117,7 +173,6 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
                     filter={filterAttr}
                   />
                 )}
-                {/* Invisible hit area for easier tapping */}
                 {r.type === "circle" ? (
                   <circle cx={r.cx} cy={r.cy} r={(r.r ?? 20) + 10} fill="transparent" />
                 ) : (
@@ -134,26 +189,26 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
                   fill="none"
                 />
                 <rect
-                  x={r.label.x - 76}
+                  x={r.label.x - lw}
                   y={r.label.y - 26}
                   rx="22"
                   ry="22"
-                  width="152"
+                  width={lw * 2}
                   height="52"
-                  fill={eaten ? part.color : "rgba(55,38,32,0.92)"}
-                  stroke={eaten ? part.color : "rgba(196,168,120,0.45)"}
+                  fill={eaten ? primary.color : "rgba(55,38,32,0.92)"}
+                  stroke={eaten ? primary.color : "rgba(196,168,120,0.45)"}
                   strokeWidth="2"
                 />
                 <text
                   x={r.label.x}
                   y={r.label.y + 8}
                   textAnchor="middle"
-                  fontSize="28"
+                  fontSize={r.label.text && r.label.text.length > 7 ? 22 : 28}
                   fontWeight="700"
                   fill={eaten ? "#0d0805" : "#f2e4c7"}
                   fontFamily="Noto Sans JP, sans-serif"
                 >
-                  {part.name}
+                  {labelForRegion(r)}
                 </text>
               </g>
             );
@@ -163,23 +218,59 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
 
       <p className="map-hint">タップで部位の詳細を表示 ・ 色付き＝食べた部位</p>
 
-      {selectedPart ? (
-        <div className="map-detail-card">
-          <div className="map-detail-header">
-            <span className="map-detail-name" style={{ color: isSelectedCollected ? selectedPart.color : "var(--cream)" }}>
-              {selectedPart.name}
-            </span>
-            <span className="map-detail-area">{selectedPart.area}</span>
-            <span className="map-detail-rarity">{"★".repeat(selectedPart.rarity) + "☆".repeat(3 - selectedPart.rarity)}</span>
-          </div>
-          <p className="map-detail-desc">
-            {isSelectedCollected ? selectedPart.description : "まだ食べていません"}
-          </p>
-          {isSelectedCollected ? (
-            <span className="badge badge-available">記録済み</span>
-          ) : (
-            <span className="badge badge-soldout">未記録</span>
-          )}
+      {selectedRegion && selectedRegion.partIds.length === 1 ? (
+        (() => {
+          const pid = selectedRegion.partIds[0]!;
+          const part = partsById.get(pid);
+          if (!part) return null;
+          const isCollected = collected.has(pid);
+          return (
+            <div className="map-detail-card">
+              <div className="map-detail-header">
+                <span className="map-detail-name" style={{ color: isCollected ? part.color : "var(--cream)" }}>
+                  {part.name}
+                </span>
+                <span className="map-detail-area">{part.area}</span>
+                <span className="map-detail-rarity">{"★".repeat(part.rarity) + "☆".repeat(3 - part.rarity)}</span>
+              </div>
+              <p className="map-detail-desc">{isCollected ? part.description : "まだ食べていません"}</p>
+              {isCollected ? (
+                <span className="badge badge-available">記録済み</span>
+              ) : (
+                <span className="badge badge-soldout">未記録</span>
+              )}
+            </div>
+          );
+        })()
+      ) : null}
+
+      {selectedRegion && selectedRegion.partIds.length > 1 ? (
+        <div className="map-detail-card map-detail-card--multi">
+          <p className="map-detail-desc map-detail-multi-lead">腹部（大とろ・中とろ）はマップ上ひとまとまりです。それぞれの記録状況は下記のとおりです。</p>
+          <ul className="map-detail-multi-list">
+            {selectedRegion.partIds.map((pid) => {
+              const part = partsById.get(pid);
+              if (!part) return null;
+              const isCollected = collected.has(pid);
+              return (
+                <li className="map-detail-multi-item" key={pid}>
+                  <div className="map-detail-header">
+                    <span className="map-detail-name" style={{ color: isCollected ? part.color : "var(--cream)" }}>
+                      {part.name}
+                    </span>
+                    <span className="map-detail-area">{part.area}</span>
+                    <span className="map-detail-rarity">{"★".repeat(part.rarity) + "☆".repeat(3 - part.rarity)}</span>
+                  </div>
+                  <p className="map-detail-desc">{isCollected ? part.description : "まだ食べていません"}</p>
+                  {isCollected ? (
+                    <span className="badge badge-available">記録済み</span>
+                  ) : (
+                    <span className="badge badge-soldout">未記録</span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
         </div>
       ) : null}
     </div>
