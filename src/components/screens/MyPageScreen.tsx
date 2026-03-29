@@ -12,6 +12,7 @@ import { ScreenState } from "@/components/ui/ScreenState";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import { useAppSnapshot } from "@/lib/hooks/use-app-snapshot";
 import { buildMyPageSummary } from "@/lib/mypage";
+import { formatSupabaseAuthError } from "@/lib/supabase/auth-errors";
 import {
   type BrowserAuthProfile,
   getSupabaseAuthProfile,
@@ -27,10 +28,7 @@ function profileErrorMessage(error: unknown) {
   if (error instanceof ZodError) {
     return error.issues[0]?.message ?? "入力が不正です。";
   }
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return "処理に失敗しました。";
+  return formatSupabaseAuthError(error);
 }
 
 export function MyPageScreen() {

@@ -1699,6 +1699,14 @@ body {
   line-height: 1.45;
 }
 
+.account-link-subhint {
+  margin: 10px 0 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #8e8e93;
+  text-align: left;
+}
+
 .account-link-list {
   background: #fff;
 }
