@@ -16,7 +16,6 @@ export type QuizQuestionCategory =
   | "メニュー"
   | "称号"
   | "お店"
-  | "アプリ"
   | "魚種"
   | "生態"
   | "漁と流通"
@@ -701,67 +700,10 @@ const storeQuestions: QuizQuestionSpec[] = [
   {
     idBase: "store-name",
     category: "お店",
-    question: "アプリの対象店舗名はどれ？",
+    question: "このサービスで案内している対象店舗名はどれ？",
     options: [STORE_INFO.name, "まぐろ市場 本町店", "海鮮丼ほんまぐろ", "本町まぐろ食堂"],
     answerIndex: 0,
     explanation: `対象店舗は ${STORE_INFO.name} です。`,
-  },
-];
-
-const appQuestions: QuizQuestionSpec[] = [
-  {
-    idBase: "app-auth",
-    category: "アプリ",
-    question: "アプリの利用開始に関する説明として正しいのはどれ？",
-    options: [
-      "表示名だけで始められ（パスワード不要）。マイページで Google や電話を後から紐づけられる",
-      "メールまたは Google アカウントがなければ一切使えない",
-      "電話番号のSMS認証だけが最初の登録方法である",
-      "会員コード入力のみで始められる",
-    ],
-    answerIndex: 0,
-    explanation:
-      "表示名だけで匿名セッションを開始できます。別端末への引き継ぎはマイページから Google・メール・電話などで紐づけます。",
-  },
-  {
-    idBase: "app-weather",
-    category: "アプリ",
-    question: "ホーム画面の天気取得に使うAPIは？",
-    options: ["Open-Meteo", "OpenWeather 有料版", "Yahoo!天気 RSS", "Google Weather API"],
-    answerIndex: 0,
-    explanation: "仕様では Open-Meteo を使います。",
-  },
-  {
-    idBase: "app-photo",
-    category: "アプリ",
-    question: "丼の写真はどこに保存される？",
-    options: ["Supabase Storage", "localStorage", "IndexedDBだけ", "Google Drive"],
-    answerIndex: 0,
-    explanation: "写真は Supabase Storage の `don-photos` に保存します。",
-  },
-  {
-    idBase: "app-record",
-    category: "アプリ",
-    question: "記録で必須なのはどれ？",
-    options: ["メニュー選択", "写真アップロード", "部位入力", "メモ入力"],
-    answerIndex: 0,
-    explanation: "現仕様ではメニュー選択が必須で、写真・部位・メモは任意です。",
-  },
-  {
-    idBase: "app-home-purpose",
-    category: "アプリ",
-    question: "ホーム画面の主目的として仕様に含まれるのはどれ？",
-    options: ["今日行く理由を作る", "ランキングを競う", "クーポンを配る", "通販注文する"],
-    answerIndex: 0,
-    explanation: "ホーム画面は「今日行く理由を作る」ための画面です。",
-  },
-  {
-    idBase: "app-zukan",
-    category: "アプリ",
-    question: "図鑑画面で採用している方式はどれ？",
-    options: ["2カラムの部位カード一覧", "3Dまぐろモデル", "動画図鑑", "ARスキャン"],
-    answerIndex: 0,
-    explanation: "現仕様の図鑑は 2 カラムの部位カード一覧です。",
   },
 ];
 
@@ -1117,160 +1059,11 @@ const storeLieStatements: Statement[] = [
   },
 ];
 
-const appTruthStatements: Statement[] = [
-  {
-    id: "app-truth-1",
-    category: "アプリ",
-    subject: "認証",
-    text: "このアプリは表示名だけで始められ、必要ならマイページから Google や電話番号を紐づけられます。",
-    explanation:
-      "表示名のみで匿名セッションを開始できます。メール・Google ログインも利用でき、紐づけで別端末から同じ記録にアクセスできます。",
-  },
-  {
-    id: "app-truth-2",
-    category: "アプリ",
-    subject: "天気",
-    text: "ホーム画面の天気取得には Open-Meteo を使います。",
-    explanation: "ホーム画面の天気取得には Open-Meteo を使います。",
-  },
-  {
-    id: "app-truth-3",
-    category: "アプリ",
-    subject: "保存先",
-    text: "丼の写真は Supabase Storage に保存します。",
-    explanation: "丼の写真は Supabase Storage に保存します。",
-  },
-  {
-    id: "app-truth-4",
-    category: "アプリ",
-    subject: "記録",
-    text: "記録で必須なのはメニュー選択です。",
-    explanation: "記録で必須なのはメニュー選択です。",
-  },
-  {
-    id: "app-truth-5",
-    category: "アプリ",
-    subject: "シェア",
-    text: "記録やクイズ結果をシェアすると 1.2 倍ボーナスが入ります。",
-    explanation: "記録やクイズ結果をシェアすると 1.2 倍ボーナスが入ります。",
-  },
-  {
-    id: "app-truth-6",
-    category: "アプリ",
-    subject: "採点",
-    text: "クイズはサーバー発行セッションで採点します。",
-    explanation: "クイズはサーバー発行セッションで採点します。",
-  },
-  {
-    id: "app-truth-7",
-    category: "アプリ",
-    subject: "引き継ぎ",
-    text: "別端末では、マイページで紐づけた Google・メール・電話のいずれかで同じ記録にアクセスできます。",
-    explanation:
-      "マイページでアカウントを紐づけたうえで、同じ Google・メール・電話の認証情報でログインすると記録を引き継げます。",
-  },
-  {
-    id: "app-truth-8",
-    category: "アプリ",
-    subject: "図鑑",
-    text: "部位マップはタップで部位の詳細を表示できます。",
-    explanation: "部位マップはタップで部位の詳細を表示できます。",
-  },
-  {
-    id: "app-truth-9",
-    category: "アプリ",
-    subject: "ホーム",
-    text: "ホームでは本日の入荷状況を確認できます。",
-    explanation: "ホームでは本日の入荷状況を確認できます。",
-  },
-  {
-    id: "app-truth-10",
-    category: "アプリ",
-    subject: "在庫管理",
-    text: "入荷状況は available / few / soldout で管理します。",
-    explanation: "入荷状況は available / few / soldout で管理します。",
-  },
-];
-
-const appLieStatements: Statement[] = [
-  {
-    id: "app-false-1",
-    category: "アプリ",
-    subject: "認証",
-    text: "このアプリは最初から Google アカウントの連携が必須で、表示名だけでは始められません。",
-    explanation: "表示名だけで始められます。Google やメールは任意です。",
-  },
-  {
-    id: "app-false-2",
-    category: "アプリ",
-    subject: "天気",
-    text: "ホーム画面の天気取得には Google Weather API を使います。",
-    explanation: "ホーム画面の天気取得には Open-Meteo を使います。",
-  },
-  {
-    id: "app-false-3",
-    category: "アプリ",
-    subject: "保存先",
-    text: "丼の写真は localStorage のみに保存します。",
-    explanation: "丼の写真は Supabase Storage に保存します。",
-  },
-  {
-    id: "app-false-4",
-    category: "アプリ",
-    subject: "記録",
-    text: "記録では写真アップロードが必須です。",
-    explanation: "記録で必須なのはメニュー選択です。",
-  },
-  {
-    id: "app-false-5",
-    category: "アプリ",
-    subject: "シェア",
-    text: "シェアボーナスは同じ結果に何度でも積み上がります。",
-    explanation: "シェアボーナスは 1 対象につき 1 回までです。",
-  },
-  {
-    id: "app-false-6",
-    category: "アプリ",
-    subject: "採点",
-    text: "クイズはブラウザだけで自己採点します。",
-    explanation: "クイズはサーバー発行セッションで採点します。",
-  },
-  {
-    id: "app-false-7",
-    category: "アプリ",
-    subject: "引き継ぎ",
-    text: "記録の引き継ぎには電話認証しか使えません。",
-    explanation: "マイページから Google・メール・電話など複数の方法で紐づけできます。",
-  },
-  {
-    id: "app-false-8",
-    category: "アプリ",
-    subject: "図鑑",
-    text: "部位マップは画像だけで、タップしても詳細は出ません。",
-    explanation: "部位マップはタップで部位の詳細を表示できます。",
-  },
-  {
-    id: "app-false-9",
-    category: "アプリ",
-    subject: "ホーム",
-    text: "ホームではランキングだけが表示されます。",
-    explanation: "ホームでは本日の入荷状況を確認できます。",
-  },
-  {
-    id: "app-false-10",
-    category: "アプリ",
-    subject: "在庫管理",
-    text: "入荷状況は open / closed の 2 値だけで管理します。",
-    explanation: "入荷状況は available / few / soldout で管理します。",
-  },
-];
-
 const mixedTruthStatements = [
   ...partTruthStatements,
   ...menuTruthStatements,
   ...titleTruthStatements,
   ...storeTruthStatements,
-  ...appTruthStatements,
   ...allTunaTruthStatements,
 ];
 const mixedLieStatements = [
@@ -1278,7 +1071,6 @@ const mixedLieStatements = [
   ...menuLieStatements,
   ...titleLieStatements,
   ...storeLieStatements,
-  ...appLieStatements,
   ...allTunaLieStatements,
 ];
 
@@ -1323,23 +1115,13 @@ const tier3QuestionBank = dedupeQuestionSpecs([
 
 const tier4QuestionBank = dedupeQuestionSpecs([
   ...storeQuestions,
-  ...appQuestions,
-  ...buildSingleTruthStatementQuestions("tier4-cui", cuisineTruthStatements, allTunaLieStatements, 160),
-  ...buildSingleTruthStatementQuestions("tier4-tri", triviaTruthStatements, allTunaLieStatements, 140),
-  ...buildMultiTruthStatementQuestions("tier4-cui-m", cuisineTruthStatements, allTunaLieStatements, 2, 140, "食と栄養"),
-  ...buildMultiTruthStatementQuestions("tier4-tri-m", triviaTruthStatements, allTunaLieStatements, 2, 120, "雑学"),
-  ...buildSingleTruthStatementQuestions("tier4-store", storeTruthStatements, storeLieStatements, 120),
-  ...buildMultiTruthStatementQuestions("tier4-store", storeTruthStatements, storeLieStatements, 2, 120, "お店"),
-  ...buildSingleTruthStatementQuestions("tier4-app", appTruthStatements, appLieStatements, 120),
-  ...buildMultiTruthStatementQuestions("tier4-app", appTruthStatements, appLieStatements, 2, 120, "アプリ"),
-  ...buildMultiTruthStatementQuestions(
-    "tier4-mixed",
-    [...storeTruthStatements, ...appTruthStatements],
-    [...storeLieStatements, ...appLieStatements],
-    2,
-    160,
-    "お店",
-  ),
+  ...buildSingleTruthStatementQuestions("tier4-cui", cuisineTruthStatements, allTunaLieStatements, 200),
+  ...buildSingleTruthStatementQuestions("tier4-tri", triviaTruthStatements, allTunaLieStatements, 180),
+  ...buildMultiTruthStatementQuestions("tier4-cui-m", cuisineTruthStatements, allTunaLieStatements, 2, 180, "食と栄養"),
+  ...buildMultiTruthStatementQuestions("tier4-tri-m", triviaTruthStatements, allTunaLieStatements, 2, 160, "雑学"),
+  ...buildSingleTruthStatementQuestions("tier4-store", storeTruthStatements, storeLieStatements, 200),
+  ...buildMultiTruthStatementQuestions("tier4-store", storeTruthStatements, storeLieStatements, 2, 200, "お店"),
+  ...buildMultiTruthStatementQuestions("tier4-mixed", storeTruthStatements, storeLieStatements, 2, 220, "お店"),
 ]);
 
 const tier5QuestionBank = dedupeQuestionSpecs([
@@ -1409,7 +1191,6 @@ export const QUIZ_CATEGORIES = [
   "雑学",
   "称号",
   "お店",
-  "アプリ",
 ] as const;
 
 const quizSessionCache = new Map<string, QuizQuestion[]>();
