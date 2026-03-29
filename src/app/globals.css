@@ -1064,14 +1064,6 @@ body {
   margin-bottom: 14px;
 }
 
-.mypage-account-lead {
-  margin: 0 0 18px;
-  padding: 0 4px;
-  font-size: 13px;
-  line-height: 1.55;
-  color: var(--cream-dark);
-}
-
 .mypage-stat-cell {
   min-height: 84px;
   background: rgba(27, 45, 79, 0.03);

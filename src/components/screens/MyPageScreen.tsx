@@ -140,10 +140,6 @@ export function MyPageScreen() {
     <>
       <NorenBanner label="マイページ" />
 
-      <p className="mypage-account-lead">
-        アカウントの連携・ログアウトはこちらです。称号や来店の記録は「称号」タブを開いてください。
-      </p>
-
       {auth.usingSupabase ? (
         <AccountLinkSection
           error={linkError}
