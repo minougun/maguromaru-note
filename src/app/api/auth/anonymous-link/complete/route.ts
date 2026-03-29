@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 
-import { hasSupabaseServiceEnv } from "@/lib/env";
+import { hasSupabaseServiceEnv, verifyCsrfOrigin } from "@/lib/env";
 import { completeAnonymousLinkMigration } from "@/lib/services/anonymous-link-service";
 import { getAccessTokenFromRequest, toRouteError } from "@/lib/services/app-service";
 
 export async function POST(request: Request) {
   try {
+    if (!verifyCsrfOrigin(request)) {
+      return NextResponse.json({ error: "不正なリクエスト元です。" }, { status: 403 });
+    }
+
     if (!hasSupabaseServiceEnv()) {
       return NextResponse.json(
         { error: "サーバー設定が不足しています（SUPABASE_SERVICE_ROLE_KEY）。" },
