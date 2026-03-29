@@ -87,6 +87,7 @@ export function LoginScreen() {
     return (
       <div className="login-launch">
         <div className="login-launch-icon-stage">
+          <h1 className="login-launch-app-title">まぐろ丸ノート</h1>
           <div className="login-launch-mark-frame">
             <Image
               alt=""
