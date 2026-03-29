@@ -69,16 +69,28 @@ function appUrl(origin: string, pathname: string): string {
   return `${origin.replace(/\/$/, "")}${base}${p}`;
 }
 
-async function ensureSignedIn(page: Page, origin: string): Promise<void> {
-  const entry = appUrl(origin, "/");
+/** Next dev は HMR 等で window.load が遅延・未発火になり得るため、load は短めに試して諦める */
+async function gotoSettle(page: Page, url: string, label: string): Promise<void> {
+  console.info(`[capture] → ${label}: ${url}`);
   try {
-    await page.goto(entry, { waitUntil: "domcontentloaded", timeout: 120_000 });
-    await page.waitForLoadState("load", { timeout: 120_000 });
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 120_000 });
   } catch (err) {
     const hint =
       "npm run dev が起動しているか、別ポートなら CAPTURE_BASE_URL を合わせてください。";
-    throw new Error(`最初の画面へ移動できませんでした (${entry})。${hint}`, { cause: err });
+    throw new Error(`画面へ移動できませんでした (${url})。${hint}`, { cause: err });
   }
+  await page
+    .waitForLoadState("load", { timeout: 8_000 })
+    .catch(() =>
+      console.info(
+        "[capture] (info) window.load はタイムアウトのため続行（dev の常時接続で遅れることがあります）",
+      ),
+    );
+}
+
+async function ensureSignedIn(page: Page, origin: string): Promise<void> {
+  const entry = appUrl(origin, "/");
+  await gotoSettle(page, entry, "open /");
 
   await page.evaluate(
     ([doneKey]) => {
@@ -94,14 +106,19 @@ async function ensureSignedIn(page: Page, origin: string): Promise<void> {
   const startBtn = page.getByRole("button", { name: "今すぐはじめる" });
   const tabBar = page.locator(".tab-bar");
 
+  console.info("[capture] ログイン状態を確認しています…");
   try {
     await startBtn.waitFor({ state: "visible", timeout: 20_000 });
+    console.info('[capture] 「今すぐはじめる」をクリックします');
     await startBtn.click();
   } catch {
     /* 既にログイン済みなど */
+    console.info("[capture] スタートボタンなし（既にログイン済みの可能性）");
   }
 
+  console.info("[capture] 下部タブバー (.tab-bar) を待っています…");
   await tabBar.waitFor({ state: "visible", timeout: 120_000 });
+  console.info("[capture] タブバー表示を確認しました");
 
   await page.evaluate(
     ([sessionKey]) => {
@@ -116,6 +133,7 @@ async function ensureSignedIn(page: Page, origin: string): Promise<void> {
 }
 
 async function waitForNoBlockingSpinner(page: Page): Promise<void> {
+  console.info("[capture] ローディング文言が消えるまで待機…");
   const phrases = ["認証情報を確認しています", "読み込み中"] as const;
   await page.waitForFunction(
     (blocked) => {
@@ -127,6 +145,7 @@ async function waitForNoBlockingSpinner(page: Page): Promise<void> {
   );
   await page.evaluate(() => document.fonts.ready);
   await sleep(400);
+  console.info("[capture] 待機完了");
 }
 
 const ROUTES: { file: string; path: string }[] = [
@@ -169,8 +188,7 @@ async function main() {
 
     for (const { file, path: routePath } of ROUTES) {
       const target = appUrl(origin, routePath);
-      await page.goto(target, { waitUntil: "domcontentloaded", timeout: 120_000 });
-      await page.waitForLoadState("load", { timeout: 120_000 });
+      await gotoSettle(page, target, routePath || "/");
       await waitForNoBlockingSpinner(page);
 
       const outPath = path.join(outDir, file);
