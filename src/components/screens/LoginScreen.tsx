@@ -5,8 +5,6 @@ import { useEffect, useState } from "react";
 
 import { useAuthState } from "@/components/providers/AuthProvider";
 import { Card } from "@/components/ui/Card";
-import { NorenBanner } from "@/components/ui/NorenBanner";
-import { SectionTitle } from "@/components/ui/SectionTitle";
 import {
   requestPhoneSignInSms,
   startAnonymousSession,
@@ -61,7 +59,6 @@ export function LoginScreen() {
       setFormError(null);
       setNotice(null);
       await startAnonymousSession();
-      setNotice("ようこそ、まぐろ丸ノートへ。");
       router.refresh();
     } catch (error) {
       setFormError(authErrorMessage(error));
@@ -84,183 +81,185 @@ export function LoginScreen() {
 
   if (!auth.usingSupabase) {
     return (
-      <Card>
-        <p className="account-copy">
-          この環境では Supabase が未設定のため、ログイン画面は表示されません。開発用のモック動作ではそのまま利用できます。
-        </p>
-      </Card>
+      <div className="login-launch">
+        <div className="login-launch-inner">
+          <Card>
+            <p className="account-copy" style={{ margin: 0 }}>
+              この環境では Supabase が未設定のため、ログイン画面は表示されません。開発用のモック動作ではそのまま利用できます。
+            </p>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (mode === "choose") {
+    return (
+      <div className="login-launch">
+        <div className="login-launch-inner">
+          <div className="login-launch-brand">
+            <div className="login-launch-logo" aria-hidden="true">
+              まぐろ
+              <br />
+              丸
+            </div>
+            <h1 className="login-launch-title">まぐろ丸ノート</h1>
+          </div>
+          {(formError || notice) && (
+            <p
+              className={
+                formError ? "login-launch-flash login-launch-flash--error" : "login-launch-flash login-launch-flash--ok"
+              }
+              role={formError ? "alert" : "status"}
+            >
+              {formError ?? notice}
+            </p>
+          )}
+          <div className="login-launch-actions">
+            <button
+              className="login-launch-btn login-launch-btn--primary"
+              disabled={pendingAction !== null}
+              onClick={() => void handleStartAnonymous()}
+              type="button"
+            >
+              {pendingAction === "anonymous" ? "準備中…" : "今すぐはじめる"}
+            </button>
+            <button
+              className="login-launch-btn login-launch-btn--secondary"
+              disabled={pendingAction !== null}
+              onClick={() => {
+                setMode("signin");
+                setNotice(null);
+                setFormError(null);
+              }}
+              type="button"
+            >
+              サインイン
+            </button>
+          </div>
+        </div>
+      </div>
     );
   }
 
   return (
-    <>
-      <NorenBanner label="はじめる" />
-
-      <Card glow>
-        <p className="account-status-label">ようこそ</p>
-        <h2 className="account-status-title">まぐろ丸ノート</h2>
-        <p className="account-status-copy">
-          {mode === "choose"
-            ? "はじめに、サインインするか、匿名ですぐに試すかを選んでください。匿名のまま始めた場合も、あとからマイページで Google アカウントや電話番号と紐づけて記録を引き継げます。"
-            : "Google アカウント、または電話番号（SMS）のどちらかで連携すると、このブラウザにアカウントが紐づきます。"}
+    <div className="login-signin">
+      <button
+        className="login-signin-back"
+        disabled={pendingAction !== null}
+        onClick={() => setMode("choose")}
+        type="button"
+      >
+        ← 戻る
+      </button>
+      <h2 className="login-signin-heading">サインイン</h2>
+      {formError ? (
+        <p className="login-launch-flash login-launch-flash--error" role="alert">
+          {formError}
         </p>
-      </Card>
-
-      {notice ? <Card className="account-notice-card">{notice}</Card> : null}
-      {formError ? <Card className="account-error-card">{formError}</Card> : null}
-
-      {mode === "choose" ? (
-        <>
-          <SectionTitle subtitle="Start" title="どちらではじめますか？" />
-          <Card>
-            <div className="account-form" style={{ gap: 14 }}>
-              <button
-                className="button-primary"
-                disabled={pendingAction !== null}
-                onClick={() => {
-                  setMode("signin");
-                  setNotice(null);
+      ) : null}
+      {notice ? (
+        <p className="login-launch-flash login-launch-flash--ok" role="status">
+          {notice}
+        </p>
+      ) : null}
+      <p className="login-signin-lead">Google アカウントまたは電話番号（SMS）で連携してください。</p>
+      <button
+        className="login-launch-btn login-launch-btn--primary"
+        disabled={pendingAction !== null}
+        onClick={() => void handleGoogleSignIn()}
+        type="button"
+      >
+        {pendingAction === "google-signin" ? "Google へ移動中…" : "Google でサインイン"}
+      </button>
+      <p className="login-signin-section-label">電話番号</p>
+      {phoneStep === "idle" ? (
+        <div className="login-signin-form">
+          <label className="login-signin-label" htmlFor="login-phone">
+            電話番号（E.164）
+          </label>
+          <input
+            autoComplete="tel"
+            className="login-signin-input"
+            disabled={pendingAction !== null}
+            id="login-phone"
+            onChange={(event) => setPhoneE164(event.target.value)}
+            placeholder="+819012345678"
+            type="tel"
+            value={phoneE164}
+          />
+          <button
+            className="login-launch-btn login-launch-btn--secondary"
+            disabled={pendingAction !== null}
+            onClick={() => {
+              void (async () => {
+                try {
+                  setPendingAction("phone-sms");
                   setFormError(null);
-                }}
-                type="button"
-              >
-                サインイン
-              </button>
-              <p className="account-copy" style={{ margin: 0 }}>
-                Google アカウントまたは電話番号で連携してから利用を開始します。
-              </p>
-              <button
-                className="button-outline"
-                disabled={pendingAction !== null}
-                onClick={() => void handleStartAnonymous()}
-                type="button"
-              >
-                {pendingAction === "anonymous" ? "準備中..." : "今すぐはじめる"}
-              </button>
-              <p className="account-copy" style={{ margin: 0 }}>
-                アカウントは作らず、匿名のまますぐに利用できます。紐づけはマイページからいつでも可能です。
-              </p>
-            </div>
-            <p className="account-meta-note">「今すぐはじめる」には Supabase の Anonymous sign-ins が有効である必要があります。</p>
-          </Card>
-        </>
+                  await requestPhoneSignInSms(phoneE164);
+                  setPhoneStep("sent");
+                } catch (error) {
+                  setFormError(authErrorMessage(error));
+                } finally {
+                  setPendingAction(null);
+                }
+              })();
+            }}
+            type="button"
+          >
+            {pendingAction === "phone-sms" ? "送信中…" : "SMS を送る"}
+          </button>
+        </div>
       ) : (
-        <>
-          <SectionTitle subtitle="Sign in" title="アカウントでサインイン" />
-          <Card>
-            <button
-              className="button-subtle"
-              disabled={pendingAction !== null}
-              onClick={() => setMode("choose")}
-              type="button"
-            >
-              ← 戻る
-            </button>
-            <p className="account-copy" style={{ marginTop: 12 }}>
-              次のいずれかの方法で連携してください。
-            </p>
-            <button
-              className="button-primary"
-              disabled={pendingAction !== null}
-              onClick={() => void handleGoogleSignIn()}
-              style={{ marginTop: 12 }}
-              type="button"
-            >
-              {pendingAction === "google-signin" ? "Google へ移動中..." : "Google でサインイン"}
-            </button>
-            <p className="account-meta-note">Supabase で Google プロバイダを有効にしてください。</p>
-
-            <p className="account-copy" style={{ marginTop: 20 }}>
-              電話番号（国番号付き）に SMS でコードを送り、入力してサインインします。
-            </p>
-            {phoneStep === "idle" ? (
-              <div className="account-form" style={{ marginTop: 10 }}>
-                <label className="form-label">
-                  電話番号（E.164）
-                  <input
-                    autoComplete="tel"
-                    className="memo-input"
-                    onChange={(event) => setPhoneE164(event.target.value)}
-                    placeholder="+819012345678"
-                    type="tel"
-                    value={phoneE164}
-                  />
-                </label>
-                <button
-                  className="button-outline"
-                  disabled={pendingAction !== null}
-                  onClick={() => {
-                    void (async () => {
-                      try {
-                        setPendingAction("phone-sms");
-                        setFormError(null);
-                        await requestPhoneSignInSms(phoneE164);
-                        setPhoneStep("sent");
-                      } catch (error) {
-                        setFormError(authErrorMessage(error));
-                      } finally {
-                        setPendingAction(null);
-                      }
-                    })();
-                  }}
-                  type="button"
-                >
-                  {pendingAction === "phone-sms" ? "送信中..." : "SMS を送る"}
-                </button>
-              </div>
-            ) : (
-              <div className="account-form" style={{ marginTop: 10 }}>
-                <label className="form-label">
-                  SMS の確認コード
-                  <input
-                    className="memo-input"
-                    inputMode="numeric"
-                    onChange={(event) => setPhoneOtp(event.target.value)}
-                    placeholder="6桁のコード"
-                    type="text"
-                    value={phoneOtp}
-                  />
-                </label>
-                <button
-                  className="button-primary"
-                  disabled={pendingAction !== null}
-                  onClick={() => {
-                    void (async () => {
-                      try {
-                        setPendingAction("phone-otp");
-                        setFormError(null);
-                        await verifyPhoneSignInOtp(phoneE164, phoneOtp);
-                        setNotice("サインインしました。");
-                        router.refresh();
-                      } catch (error) {
-                        setFormError(authErrorMessage(error));
-                      } finally {
-                        setPendingAction(null);
-                      }
-                    })();
-                  }}
-                  type="button"
-                >
-                  {pendingAction === "phone-otp" ? "確認中..." : "コードを確定してサインイン"}
-                </button>
-                <button
-                  className="button-subtle"
-                  disabled={pendingAction !== null}
-                  onClick={() => {
-                    setPhoneStep("idle");
-                    setPhoneOtp("");
-                    setFormError(null);
-                  }}
-                  type="button"
-                >
-                  電話番号をやり直す
-                </button>
-              </div>
-            )}
-            <p className="account-meta-note">Supabase で Phone プロバイダと SMS を有効にしてください。</p>
-          </Card>
-        </>
+        <div className="login-signin-form">
+          <label className="login-signin-label" htmlFor="login-otp">
+            SMS の確認コード
+          </label>
+          <input
+            className="login-signin-input"
+            disabled={pendingAction !== null}
+            id="login-otp"
+            inputMode="numeric"
+            onChange={(event) => setPhoneOtp(event.target.value)}
+            placeholder="6桁のコード"
+            type="text"
+            value={phoneOtp}
+          />
+          <button
+            className="login-launch-btn login-launch-btn--primary"
+            disabled={pendingAction !== null}
+            onClick={() => {
+              void (async () => {
+                try {
+                  setPendingAction("phone-otp");
+                  setFormError(null);
+                  await verifyPhoneSignInOtp(phoneE164, phoneOtp);
+                  router.refresh();
+                } catch (error) {
+                  setFormError(authErrorMessage(error));
+                } finally {
+                  setPendingAction(null);
+                }
+              })();
+            }}
+            type="button"
+          >
+            {pendingAction === "phone-otp" ? "確認中…" : "コードを確定"}
+          </button>
+          <button
+            className="login-signin-text-btn"
+            disabled={pendingAction !== null}
+            onClick={() => {
+              setPhoneStep("idle");
+              setPhoneOtp("");
+              setFormError(null);
+            }}
+            type="button"
+          >
+            電話番号をやり直す
+          </button>
+        </div>
       )}
-    </>
+    </div>
   );
 }

@@ -42,22 +42,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   if (auth.usingSupabase && !auth.signedIn) {
     return (
-      <div className="app-shell">
-        <header className="app-header">
-          <div className="header-row">
-            <div className="logo-mark">
-              まぐろ
-              <br />
-              丸
-            </div>
-            <div>
-              <h1 className="header-title">まぐろ丸ノート</h1>
-              <p className="header-subtitle">海鮮丼まぐろ丸 ── 本町</p>
-            </div>
-          </div>
-          <div className="accent-line" aria-hidden="true" />
-        </header>
-        <main className="screen-main">
+      <div className="app-shell app-shell--login">
+        <main className="screen-main screen-main--login">
           <LoginScreen />
         </main>
       </div>
