@@ -111,6 +111,15 @@ export function HomeScreen() {
         )}
       </Card>
 
+      {snapshot.home.storeStatus.recommendation ? (
+        <>
+          <SectionTitle subtitle="Recommendation" title="本日のおすすめ" />
+          <Card glow>
+            <p className="recommendation-copy">{snapshot.home.storeStatus.recommendation}</p>
+          </Card>
+        </>
+      ) : null}
+
       <NorenBanner label="本日の入荷状況" />
       <Card className="stock-card">
         <div className="stock-card-head">
@@ -134,15 +143,6 @@ export function HomeScreen() {
         })}
         <p className="stock-footnote">※ 店舗スタッフが更新しています</p>
       </Card>
-
-      {snapshot.home.storeStatus.recommendation ? (
-        <>
-          <SectionTitle subtitle="Recommendation" title="本日のおすすめ" />
-          <Card glow>
-            <p className="recommendation-copy">{snapshot.home.storeStatus.recommendation}</p>
-          </Card>
-        </>
-      ) : null}
 
       <SectionTitle subtitle="Recent logs" title="最近の記録" />
       {snapshot.home.recentLogs.length > 0 ? (
