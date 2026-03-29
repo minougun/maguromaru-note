@@ -7,7 +7,6 @@ import type { Database } from "@/lib/database.types";
 import {
   authNextPathSchema,
   createEmailAccountInputSchema,
-  displayNameOnlySchema,
   signInWithPasswordInputSchema,
 } from "@/lib/domain/schemas";
 
@@ -124,43 +123,66 @@ export async function getSupabaseAuthProfile(): Promise<BrowserAuthProfile> {
   };
 }
 
-/** 表示名のみで利用開始（匿名セッション + user_metadata.display_name）。パスワード不要。 */
-export async function signInWithDisplayNameOnly(rawDisplayName: string) {
+/** アカウントを作らず匿名セッションだけで利用開始（表示名・メール不要）。 */
+export async function startAnonymousSession() {
   const client = getSupabaseBrowserClient();
   if (!client) {
     throw new Error("Supabase が設定されていません。");
   }
 
-  const displayName = displayNameOnlySchema.parse(rawDisplayName);
-
   const {
     data: { session: existing },
   } = await client.auth.getSession();
 
-  if (existing?.user?.is_anonymous) {
-    const { error } = await client.auth.updateUser({
-      data: { display_name: displayName },
-    });
-    if (error) {
-      throw error;
-    }
-    return;
-  }
-
   if (existing?.access_token) {
-    throw new Error("すでにログインしています。別の方法で入っている場合は一度ログアウトしてください。");
+    if (existing.user?.is_anonymous) {
+      return;
+    }
+    throw new Error("すでにサインイン済みです。別アカウントで始める場合は一度ログアウトしてください。");
   }
 
-  const { error: anonError } = await client.auth.signInAnonymously();
-  if (anonError) {
-    throw anonError;
+  const { error } = await client.auth.signInAnonymously();
+  if (error) {
+    throw error;
+  }
+}
+
+function assertPhoneE164(phoneE164: string) {
+  const phone = phoneE164.trim();
+  if (!phone.startsWith("+")) {
+    throw new Error("国番号から入力してください（例: +819012345678）。");
+  }
+  return phone;
+}
+
+/** 初回サインイン用: 電話番号へ SMS（セッション不要）。 */
+export async function requestPhoneSignInSms(phoneE164: string) {
+  const client = getSupabaseBrowserClient();
+  if (!client) {
+    throw new Error("Supabase が設定されていません。");
   }
 
-  const { error: nameError } = await client.auth.updateUser({
-    data: { display_name: displayName },
+  const phone = assertPhoneE164(phoneE164);
+  const { error } = await client.auth.signInWithOtp({ phone });
+  if (error) {
+    throw error;
+  }
+}
+
+/** 初回サインイン用: SMS コードでセッション確立。 */
+export async function verifyPhoneSignInOtp(phoneE164: string, token: string) {
+  const client = getSupabaseBrowserClient();
+  if (!client) {
+    throw new Error("Supabase が設定されていません。");
+  }
+
+  const { error } = await client.auth.verifyOtp({
+    phone: assertPhoneE164(phoneE164),
+    token: token.trim(),
+    type: "sms",
   });
-  if (nameError) {
-    throw nameError;
+  if (error) {
+    throw error;
   }
 }
 
@@ -246,10 +268,7 @@ export async function requestPhoneLinkSms(phoneE164: string) {
     throw new Error("Supabase が設定されていません。");
   }
 
-  const phone = phoneE164.trim();
-  if (!phone.startsWith("+")) {
-    throw new Error("国番号から入力してください（例: +819012345678）。");
-  }
+  const phone = assertPhoneE164(phoneE164);
 
   const { error } = await client.auth.updateUser({ phone });
   if (error) {

@@ -2,46 +2,42 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ZodError } from "zod";
 
 import { useAuthState } from "@/components/providers/AuthProvider";
 import { Card } from "@/components/ui/Card";
 import { NorenBanner } from "@/components/ui/NorenBanner";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import {
-  signInWithDisplayNameOnly,
-  signInWithEmailPassword,
-  signUpWithEmailPassword,
+  requestPhoneSignInSms,
+  startAnonymousSession,
   startGoogleSignInFlow,
+  verifyPhoneSignInOtp,
 } from "@/lib/supabase/browser";
 
 function authErrorMessage(error: unknown) {
-  if (error instanceof ZodError) {
-    return error.issues[0]?.message ?? "入力内容が不正です。";
-  }
   if (error instanceof Error) {
     return error.message;
   }
   return "認証処理に失敗しました。";
 }
 
+type ScreenMode = "choose" | "signin";
+
 export function LoginScreen() {
   const auth = useAuthState();
   const router = useRouter();
+  const [mode, setMode] = useState<ScreenMode>("choose");
   const [notice, setNotice] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
-  const [displayNameOnly, setDisplayNameOnly] = useState("");
-  const [createEmail, setCreateEmail] = useState("");
-  const [createPassword, setCreatePassword] = useState("");
-  const [createPasswordConfirmation, setCreatePasswordConfirmation] = useState("");
-  const [signInEmail, setSignInEmail] = useState("");
-  const [signInPassword, setSignInPassword] = useState("");
+  const [phoneE164, setPhoneE164] = useState("");
+  const [phoneOtp, setPhoneOtp] = useState("");
+  const [phoneStep, setPhoneStep] = useState<"idle" | "sent">("idle");
 
   useEffect(() => {
     const authResult = new URLSearchParams(window.location.search).get("auth");
     if (authResult === "linked") {
-      setNotice("ログインが完了しました。");
+      setNotice("アカウント連携が完了しました。");
       setFormError(null);
       window.history.replaceState({}, "", window.location.pathname);
       return;
@@ -51,13 +47,20 @@ export function LoginScreen() {
     }
   }, []);
 
-  async function handleNameOnly(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  useEffect(() => {
+    if (mode === "signin") {
+      setPhoneStep("idle");
+      setPhoneOtp("");
+      setFormError(null);
+    }
+  }, [mode]);
+
+  async function handleStartAnonymous() {
     try {
-      setPendingAction("name-only");
+      setPendingAction("anonymous");
       setFormError(null);
       setNotice(null);
-      await signInWithDisplayNameOnly(displayNameOnly);
+      await startAnonymousSession();
       setNotice("ようこそ、まぐろ丸ノートへ。");
       router.refresh();
     } catch (error) {
@@ -75,52 +78,6 @@ export function LoginScreen() {
       await startGoogleSignInFlow("/");
     } catch (error) {
       setFormError(authErrorMessage(error));
-      setPendingAction(null);
-    }
-  }
-
-  async function handleSignUp(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    try {
-      setPendingAction("email-signup");
-      setFormError(null);
-      setNotice(null);
-      const result = await signUpWithEmailPassword({
-        email: createEmail,
-        password: createPassword,
-        passwordConfirmation: createPasswordConfirmation,
-      });
-      setCreatePassword("");
-      setCreatePasswordConfirmation("");
-      if (result.session) {
-        setNotice("アカウントを作成してログインしました。");
-        router.refresh();
-      } else {
-        setNotice("確認メールを送信しました。メール内のリンクを開くとログインできます。");
-      }
-    } catch (error) {
-      setFormError(authErrorMessage(error));
-    } finally {
-      setPendingAction(null);
-    }
-  }
-
-  async function handleSignIn(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    try {
-      setPendingAction("email-signin");
-      setFormError(null);
-      setNotice(null);
-      await signInWithEmailPassword({
-        email: signInEmail,
-        password: signInPassword,
-      });
-      setSignInPassword("");
-      setNotice("ログインしました。");
-      router.refresh();
-    } catch (error) {
-      setFormError(authErrorMessage(error));
-    } finally {
       setPendingAction(null);
     }
   }
@@ -143,128 +100,167 @@ export function LoginScreen() {
         <p className="account-status-label">ようこそ</p>
         <h2 className="account-status-title">まぐろ丸ノート</h2>
         <p className="account-status-copy">
-          表示名だけですぐに始められます。パスワードは不要です。別の端末でも記録を残したいときは、マイページから Google
-          アカウントや電話番号を紐づけられます。Google・メールでのログインも利用できます。
+          {mode === "choose"
+            ? "はじめに、サインインするか、匿名ですぐに試すかを選んでください。匿名のまま始めた場合も、あとからマイページで Google アカウントや電話番号と紐づけて記録を引き継げます。"
+            : "Google アカウント、または電話番号（SMS）のどちらかで連携すると、このブラウザにアカウントが紐づきます。"}
         </p>
       </Card>
 
       {notice ? <Card className="account-notice-card">{notice}</Card> : null}
       {formError ? <Card className="account-error-card">{formError}</Card> : null}
 
-      <SectionTitle subtitle="Name" title="名前だけではじめる" />
-      <Card>
-        <p className="account-copy">
-          同じブラウザでは、次回から自動で続きから使えます。機種変更や別ブラウザでは、マイページの紐づけが必要です。
-        </p>
-        <form className="account-form" onSubmit={handleNameOnly}>
-          <label className="form-label">
-            表示名（アプリ内で使う名前）
-            <input
-              autoComplete="nickname"
-              className="memo-input"
-              onChange={(event) => setDisplayNameOnly(event.target.value)}
-              placeholder="例: まぐろ太郎"
-              type="text"
-              value={displayNameOnly}
-            />
-          </label>
-          <button className="button-primary" disabled={pendingAction !== null} type="submit">
-            {pendingAction === "name-only" ? "準備中..." : "この名前ではじめる"}
-          </button>
-        </form>
-        <p className="account-meta-note">Supabase で匿名サインイン（Anonymous sign-ins）を有効にしてください。</p>
-      </Card>
+      {mode === "choose" ? (
+        <>
+          <SectionTitle subtitle="Start" title="どちらではじめますか？" />
+          <Card>
+            <div className="account-form" style={{ gap: 14 }}>
+              <button
+                className="button-primary"
+                disabled={pendingAction !== null}
+                onClick={() => {
+                  setMode("signin");
+                  setNotice(null);
+                  setFormError(null);
+                }}
+                type="button"
+              >
+                サインイン
+              </button>
+              <p className="account-copy" style={{ margin: 0 }}>
+                Google アカウントまたは電話番号で連携してから利用を開始します。
+              </p>
+              <button
+                className="button-outline"
+                disabled={pendingAction !== null}
+                onClick={() => void handleStartAnonymous()}
+                type="button"
+              >
+                {pendingAction === "anonymous" ? "準備中..." : "今すぐはじめる"}
+              </button>
+              <p className="account-copy" style={{ margin: 0 }}>
+                アカウントは作らず、匿名のまますぐに利用できます。紐づけはマイページからいつでも可能です。
+              </p>
+            </div>
+            <p className="account-meta-note">「今すぐはじめる」には Supabase の Anonymous sign-ins が有効である必要があります。</p>
+          </Card>
+        </>
+      ) : (
+        <>
+          <SectionTitle subtitle="Sign in" title="アカウントでサインイン" />
+          <Card>
+            <button
+              className="button-subtle"
+              disabled={pendingAction !== null}
+              onClick={() => setMode("choose")}
+              type="button"
+            >
+              ← 戻る
+            </button>
+            <p className="account-copy" style={{ marginTop: 12 }}>
+              次のいずれかの方法で連携してください。
+            </p>
+            <button
+              className="button-primary"
+              disabled={pendingAction !== null}
+              onClick={() => void handleGoogleSignIn()}
+              style={{ marginTop: 12 }}
+              type="button"
+            >
+              {pendingAction === "google-signin" ? "Google へ移動中..." : "Google でサインイン"}
+            </button>
+            <p className="account-meta-note">Supabase で Google プロバイダを有効にしてください。</p>
 
-      <SectionTitle subtitle="Google" title="Googleでログイン" />
-      <Card>
-        <p className="account-copy">Google アカウントがあれば、ワンタップで登録・ログインできます。</p>
-        <button
-          className="button-outline"
-          disabled={pendingAction !== null}
-          onClick={() => void handleGoogleSignIn()}
-          type="button"
-        >
-          {pendingAction === "google-signin" ? "Google へ移動中..." : "Google で続ける"}
-        </button>
-        <p className="account-meta-note">Supabase で Google プロバイダを有効にしておいてください。</p>
-      </Card>
-
-      <SectionTitle subtitle="Email" title="メールで新規登録" />
-      <Card>
-        <p className="account-copy">
-          メールアドレスとパスワードでアカウントを作成します。確認メールが届く設定の場合は、リンクを開いて完了してください。
-        </p>
-        <form className="account-form" onSubmit={handleSignUp}>
-          <label className="form-label">
-            メールアドレス
-            <input
-              autoComplete="email"
-              className="memo-input"
-              onChange={(event) => setCreateEmail(event.target.value)}
-              placeholder="you@example.com"
-              type="email"
-              value={createEmail}
-            />
-          </label>
-          <label className="form-label">
-            パスワード
-            <input
-              autoComplete="new-password"
-              className="memo-input"
-              onChange={(event) => setCreatePassword(event.target.value)}
-              placeholder="8文字以上"
-              type="password"
-              value={createPassword}
-            />
-          </label>
-          <label className="form-label">
-            確認用パスワード
-            <input
-              autoComplete="new-password"
-              className="memo-input"
-              onChange={(event) => setCreatePasswordConfirmation(event.target.value)}
-              placeholder="もう一度入力"
-              type="password"
-              value={createPasswordConfirmation}
-            />
-          </label>
-          <button className="button-outline" disabled={pendingAction !== null} type="submit">
-            {pendingAction === "email-signup" ? "登録中..." : "メールアドレスで登録"}
-          </button>
-        </form>
-      </Card>
-
-      <SectionTitle subtitle="Sign in" title="メールでログイン" />
-      <Card>
-        <p className="account-copy">すでに登録済みの方はこちらから入れます。</p>
-        <form className="account-form" onSubmit={handleSignIn}>
-          <label className="form-label">
-            メールアドレス
-            <input
-              autoComplete="email"
-              className="memo-input"
-              onChange={(event) => setSignInEmail(event.target.value)}
-              placeholder="you@example.com"
-              type="email"
-              value={signInEmail}
-            />
-          </label>
-          <label className="form-label">
-            パスワード
-            <input
-              autoComplete="current-password"
-              className="memo-input"
-              onChange={(event) => setSignInPassword(event.target.value)}
-              placeholder="パスワード"
-              type="password"
-              value={signInPassword}
-            />
-          </label>
-          <button className="button-outline" disabled={pendingAction !== null} type="submit">
-            {pendingAction === "email-signin" ? "ログイン中..." : "ログイン"}
-          </button>
-        </form>
-      </Card>
+            <p className="account-copy" style={{ marginTop: 20 }}>
+              電話番号（国番号付き）に SMS でコードを送り、入力してサインインします。
+            </p>
+            {phoneStep === "idle" ? (
+              <div className="account-form" style={{ marginTop: 10 }}>
+                <label className="form-label">
+                  電話番号（E.164）
+                  <input
+                    autoComplete="tel"
+                    className="memo-input"
+                    onChange={(event) => setPhoneE164(event.target.value)}
+                    placeholder="+819012345678"
+                    type="tel"
+                    value={phoneE164}
+                  />
+                </label>
+                <button
+                  className="button-outline"
+                  disabled={pendingAction !== null}
+                  onClick={() => {
+                    void (async () => {
+                      try {
+                        setPendingAction("phone-sms");
+                        setFormError(null);
+                        await requestPhoneSignInSms(phoneE164);
+                        setPhoneStep("sent");
+                      } catch (error) {
+                        setFormError(authErrorMessage(error));
+                      } finally {
+                        setPendingAction(null);
+                      }
+                    })();
+                  }}
+                  type="button"
+                >
+                  {pendingAction === "phone-sms" ? "送信中..." : "SMS を送る"}
+                </button>
+              </div>
+            ) : (
+              <div className="account-form" style={{ marginTop: 10 }}>
+                <label className="form-label">
+                  SMS の確認コード
+                  <input
+                    className="memo-input"
+                    inputMode="numeric"
+                    onChange={(event) => setPhoneOtp(event.target.value)}
+                    placeholder="6桁のコード"
+                    type="text"
+                    value={phoneOtp}
+                  />
+                </label>
+                <button
+                  className="button-primary"
+                  disabled={pendingAction !== null}
+                  onClick={() => {
+                    void (async () => {
+                      try {
+                        setPendingAction("phone-otp");
+                        setFormError(null);
+                        await verifyPhoneSignInOtp(phoneE164, phoneOtp);
+                        setNotice("サインインしました。");
+                        router.refresh();
+                      } catch (error) {
+                        setFormError(authErrorMessage(error));
+                      } finally {
+                        setPendingAction(null);
+                      }
+                    })();
+                  }}
+                  type="button"
+                >
+                  {pendingAction === "phone-otp" ? "確認中..." : "コードを確定してサインイン"}
+                </button>
+                <button
+                  className="button-subtle"
+                  disabled={pendingAction !== null}
+                  onClick={() => {
+                    setPhoneStep("idle");
+                    setPhoneOtp("");
+                    setFormError(null);
+                  }}
+                  type="button"
+                >
+                  電話番号をやり直す
+                </button>
+              </div>
+            )}
+            <p className="account-meta-note">Supabase で Phone プロバイダと SMS を有効にしてください。</p>
+          </Card>
+        </>
+      )}
     </>
   );
 }

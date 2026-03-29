@@ -171,7 +171,7 @@ export function MyPageScreen() {
             ) : profile.isAnonymous ? (
               <>
                 <p className="account-copy">
-                  今は表示名だけの利用中です。Google や電話番号を紐づけると、機種変更や別ブラウザでも同じ記録を引き継げます。
+                  今は匿名で利用中です。Google アカウントや電話番号を紐づけるとアカウントが作成され、機種変更や別ブラウザでも同じ記録を引き継げます。
                 </p>
                 <button
                   className="button-primary"
