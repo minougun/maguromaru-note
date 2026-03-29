@@ -286,24 +286,49 @@ function assertAdminViewer(viewer: ViewerContext) {
   }
 }
 
-async function listMasterData(client?: SupabaseClient<Database>) {
-  if (!client) {
-    return mockMasterData;
+/** スコープに応じて `parts` / `menu_items` の取得を省略する（例: 図鑑は部位マスタのみでよい）。 */
+async function listMasterDataPartial(
+  client: SupabaseClient<Database> | undefined,
+  needParts: boolean,
+  needMenuItems: boolean,
+): Promise<{ parts: Part[]; menuItems: MenuItem[] }> {
+  if (!needParts && !needMenuItems) {
+    return { parts: [], menuItems: [] };
   }
 
-  const [{ data: parts, error: partsError }, { data: menuItems, error: menuItemsError }] = await Promise.all([
-    fromAny(client, "parts").select("*").order("sort_order"),
-    fromAny(client, "menu_items").select("*").order("sort_order"),
+  if (!client) {
+    return {
+      parts: needParts ? mockMasterData.parts : [],
+      menuItems: needMenuItems ? mockMasterData.menuItems : [],
+    };
+  }
+
+  const [partsResult, menuItemsResult] = await Promise.all([
+    needParts
+      ? fromAny(client, "parts").select("*").order("sort_order")
+      : Promise.resolve({ data: [] as Part[], error: null }),
+    needMenuItems
+      ? fromAny(client, "menu_items").select("*").order("sort_order")
+      : Promise.resolve({ data: [] as MenuItem[], error: null }),
   ]);
 
-  if (partsError || menuItemsError || !parts || !menuItems) {
+  const partsError = needParts ? partsResult.error : null;
+  const menuItemsError = needMenuItems ? menuItemsResult.error : null;
+  const parts = (needParts ? partsResult.data : []) as Part[] | null;
+  const menuItems = (needMenuItems ? menuItemsResult.data : []) as MenuItem[] | null;
+
+  if (partsError || menuItemsError || (needParts && !parts) || (needMenuItems && !menuItems)) {
     throw new AppServiceError(500, partsError?.message ?? menuItemsError?.message ?? "マスターデータの取得に失敗しました。");
   }
 
   return {
-    parts: parts as Part[],
-    menuItems: menuItems as MenuItem[],
+    parts: parts ?? [],
+    menuItems: menuItems ?? [],
   };
+}
+
+async function listMasterData(client?: SupabaseClient<Database>) {
+  return listMasterDataPartial(client, true, true);
 }
 
 async function listVisitData(client: SupabaseClient<Database>, userId: string) {
@@ -409,6 +434,10 @@ function createEmptyQuizStats(userId: string): QuizStatsRow {
 }
 
 type SnapshotFetchPlan = {
+  /** `parts` テーブル（図鑑・記録・来店ログの部位解決など） */
+  masterParts: boolean;
+  /** `menu_items`（来店ログの丼名解決・ホーム在庫一覧など）。図鑑スコープでは不要のため省略 */
+  masterMenuItems: boolean;
   menuBundle: boolean;
   store: boolean;
   quizStats: boolean;
@@ -418,14 +447,86 @@ type SnapshotFetchPlan = {
 };
 
 const SNAPSHOT_FETCH_PLANS: Record<SnapshotScope, SnapshotFetchPlan> = {
-  full: { menuBundle: true, store: true, quizStats: true, quizSessions: true, shareBonus: true, visits: true },
-  home: { menuBundle: true, store: true, quizStats: true, quizSessions: false, shareBonus: true, visits: true },
-  admin: { menuBundle: true, store: true, quizStats: true, quizSessions: false, shareBonus: true, visits: true },
-  history: { menuBundle: false, store: false, quizStats: true, quizSessions: true, shareBonus: true, visits: true },
-  mypage: { menuBundle: false, store: false, quizStats: true, quizSessions: true, shareBonus: true, visits: true },
-  zukan: { menuBundle: false, store: false, quizStats: false, quizSessions: false, shareBonus: false, visits: true },
-  record: { menuBundle: false, store: false, quizStats: false, quizSessions: false, shareBonus: false, visits: false },
-  quiz: { menuBundle: false, store: false, quizStats: true, quizSessions: true, shareBonus: true, visits: true },
+  full: {
+    masterParts: true,
+    masterMenuItems: true,
+    menuBundle: true,
+    store: true,
+    quizStats: true,
+    quizSessions: true,
+    shareBonus: true,
+    visits: true,
+  },
+  home: {
+    masterParts: true,
+    masterMenuItems: true,
+    menuBundle: true,
+    store: true,
+    quizStats: true,
+    quizSessions: false,
+    shareBonus: true,
+    visits: true,
+  },
+  admin: {
+    masterParts: true,
+    masterMenuItems: true,
+    menuBundle: true,
+    store: true,
+    quizStats: true,
+    quizSessions: false,
+    shareBonus: true,
+    visits: true,
+  },
+  history: {
+    masterParts: true,
+    masterMenuItems: true,
+    menuBundle: false,
+    store: false,
+    quizStats: true,
+    quizSessions: true,
+    shareBonus: true,
+    visits: true,
+  },
+  mypage: {
+    masterParts: true,
+    masterMenuItems: true,
+    menuBundle: false,
+    store: false,
+    quizStats: true,
+    quizSessions: true,
+    shareBonus: true,
+    visits: true,
+  },
+  zukan: {
+    masterParts: true,
+    masterMenuItems: false,
+    menuBundle: false,
+    store: false,
+    quizStats: false,
+    quizSessions: false,
+    shareBonus: false,
+    visits: true,
+  },
+  record: {
+    masterParts: true,
+    masterMenuItems: true,
+    menuBundle: false,
+    store: false,
+    quizStats: false,
+    quizSessions: false,
+    shareBonus: false,
+    visits: false,
+  },
+  quiz: {
+    masterParts: true,
+    masterMenuItems: true,
+    menuBundle: false,
+    store: false,
+    quizStats: true,
+    quizSessions: true,
+    shareBonus: true,
+    visits: true,
+  },
 };
 
 function defaultMenuStatusesBundle(): {
@@ -677,29 +778,38 @@ export async function getViewerContextSafe(): Promise<ViewerContext | null> {
 }
 
 export async function getAppSnapshot(accessToken?: string, scope: SnapshotScope = "full"): Promise<AppSnapshot> {
+  const plan = SNAPSHOT_FETCH_PLANS[scope];
+
   if (shouldUseMockBackend()) {
     const viewer = createMockViewerContext();
     const state = await readMockState();
-    const { parts, menuItems } = mockMasterData;
-    const quizStatsRow = state.quizStats.find((entry) => entry.user_id === viewer.userId) ?? seededQuizStats;
-    const quizSessions = state.quizSessions.filter((entry) => entry.user_id === viewer.userId);
-    const shareBonusEvents = state.shareBonusEvents.filter((entry) => entry.user_id === viewer.userId);
-    const visitLogs = state.visitLogs
-      .filter((visitLog) => visitLog.user_id === viewer.userId)
-      .sort((left, right) => {
-        const byDate = right.visited_at.localeCompare(left.visited_at);
-        return byDate !== 0 ? byDate : right.created_at.localeCompare(left.created_at);
-      });
+    const { parts, menuItems } = await listMasterDataPartial(undefined, plan.masterParts, plan.masterMenuItems);
+    const quizStatsRow = plan.quizStats
+      ? (state.quizStats.find((entry) => entry.user_id === viewer.userId) ?? seededQuizStats)
+      : createEmptyQuizStats(viewer.userId);
+    const quizSessions = plan.quizSessions ? state.quizSessions.filter((entry) => entry.user_id === viewer.userId) : [];
+    const shareBonusEvents = plan.shareBonus
+      ? state.shareBonusEvents.filter((entry) => entry.user_id === viewer.userId)
+      : [];
+    const visitLogs = plan.visits
+      ? state.visitLogs
+          .filter((visitLog) => visitLog.user_id === viewer.userId)
+          .sort((left, right) => {
+            const byDate = right.visited_at.localeCompare(left.visited_at);
+            return byDate !== 0 ? byDate : right.created_at.localeCompare(left.created_at);
+          })
+      : [];
     const visitLogIds = new Set(visitLogs.map((entry) => entry.id));
-    const visitLogParts = state.visitLogParts.filter((entry) => visitLogIds.has(entry.visit_log_id));
-    const menuBundle = await getMenuItemStatuses(undefined);
+    const visitLogParts = plan.visits ? state.visitLogParts.filter((entry) => visitLogIds.has(entry.visit_log_id)) : [];
+    const menuBundle = plan.menuBundle ? await getMenuItemStatuses(undefined) : defaultMenuStatusesBundle();
+    const storeStatus = plan.store ? state.storeStatus : seededStoreStatus;
     return buildSnapshotFromRecords(
       viewer,
       parts,
       menuItems,
       menuBundle.statuses,
       menuBundle.lastUpdatedAt,
-      state.storeStatus,
+      storeStatus,
       quizStatsRow,
       quizSessions,
       shareBonusEvents,
@@ -711,7 +821,6 @@ export async function getAppSnapshot(accessToken?: string, scope: SnapshotScope 
   const { client, viewer } = accessToken
     ? await getSupabaseContextFromAccessToken(accessToken)
     : await getSupabaseContext();
-  const plan = SNAPSHOT_FETCH_PLANS[scope];
   const serviceRoleClient = snapshotPlanNeedsServiceRole(plan) ? createServiceRoleClient() : null;
 
   const emptyVisits = {
@@ -721,7 +830,7 @@ export async function getAppSnapshot(accessToken?: string, scope: SnapshotScope 
 
   const [{ parts, menuItems }, menuBundle, storeStatus, quizStatsRow, quizSessions, shareBonusEvents, { visitLogs, visitLogParts }] =
     await Promise.all([
-      listMasterData(client),
+      listMasterDataPartial(client, plan.masterParts, plan.masterMenuItems),
       plan.menuBundle ? getMenuItemStatuses(client) : Promise.resolve(defaultMenuStatusesBundle()),
       plan.store ? getStoreStatus(client) : Promise.resolve(seededStoreStatus),
       plan.quizStats ? getQuizStats(client, viewer.userId) : Promise.resolve(createEmptyQuizStats(viewer.userId)),

@@ -29,6 +29,7 @@ export function useAppSnapshot(options?: { scope?: SnapshotScope }) {
     }
 
     let cancelled = false;
+    const abortController = new AbortController();
 
     async function loadSnapshot() {
       setLoading(true);
@@ -41,18 +42,36 @@ export function useAppSnapshot(options?: { scope?: SnapshotScope }) {
       const snapshotUrl =
         scope === "full" ? "/api/app-snapshot" : `/api/app-snapshot?scope=${encodeURIComponent(scope)}`;
 
-      let response = await fetch(snapshotUrl, {
-        cache: "no-store",
+      const fetchInit = {
+        cache: "no-store" as const,
+        signal: abortController.signal,
         headers: buildSupabaseAuthHeaders(initialToken),
-      });
+      };
+
+      let response: Response;
+      try {
+        response = await fetch(snapshotUrl, fetchInit);
+      } catch (err) {
+        if (cancelled || (err instanceof DOMException && err.name === "AbortError")) {
+          return;
+        }
+        throw err;
+      }
 
       if (response.status === 401 && auth.usingSupabase) {
         const retryToken = await readSupabaseAccessToken();
         if (retryToken && retryToken !== initialToken) {
-          response = await fetch(snapshotUrl, {
-            cache: "no-store",
-            headers: buildSupabaseAuthHeaders(retryToken),
-          });
+          try {
+            response = await fetch(snapshotUrl, {
+              ...fetchInit,
+              headers: buildSupabaseAuthHeaders(retryToken),
+            });
+          } catch (err) {
+            if (cancelled || (err instanceof DOMException && err.name === "AbortError")) {
+              return;
+            }
+            throw err;
+          }
         }
       }
 
@@ -75,6 +94,7 @@ export function useAppSnapshot(options?: { scope?: SnapshotScope }) {
     void loadSnapshot();
     return () => {
       cancelled = true;
+      abortController.abort();
     };
   }, [auth.accessToken, auth.error, auth.ready, auth.signedIn, auth.usingSupabase, refreshToken, scope]);
 
