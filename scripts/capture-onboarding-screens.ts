@@ -315,6 +315,31 @@ async function findFreePort(): Promise<number> {
   });
 }
 
+/** Unix では detached + プロセスグループへ SIG* を送り、npx 子の next まで止める */
+function killDevTree(child: ChildProcess, signal: NodeJS.Signals): void {
+  const pid = child.pid;
+  if (pid == null || pid <= 0) {
+    return;
+  }
+  if (process.platform === "win32") {
+    try {
+      child.kill(signal);
+    } catch {
+      /* */
+    }
+    return;
+  }
+  try {
+    process.kill(-pid, signal);
+  } catch {
+    try {
+      child.kill(signal);
+    } catch {
+      /* */
+    }
+  }
+}
+
 async function stopDevChild(child: ChildProcess): Promise<void> {
   if (child.exitCode !== null || child.signalCode !== null) {
     return;
@@ -322,11 +347,7 @@ async function stopDevChild(child: ChildProcess): Promise<void> {
   console.info("[capture] 自動起動した next dev を終了します…");
   await new Promise<void>((resolve) => {
     const killTimer = setTimeout(() => {
-      try {
-        child.kill("SIGKILL");
-      } catch {
-        /* */
-      }
+      killDevTree(child, "SIGKILL");
       resolve();
     }, 10_000);
     child.once("exit", () => {
@@ -334,7 +355,7 @@ async function stopDevChild(child: ChildProcess): Promise<void> {
       resolve();
     });
     try {
-      child.kill("SIGTERM");
+      killDevTree(child, "SIGTERM");
     } catch {
       clearTimeout(killTimer);
       resolve();
@@ -354,6 +375,7 @@ async function startEmbeddedNextDev(cwd: string): Promise<{ child: ChildProcess;
     cwd,
     stdio: ["ignore", "pipe", "pipe"],
     env: { ...process.env },
+    detached: process.platform !== "win32",
   });
 
   let stderrTail = "";
@@ -391,17 +413,9 @@ async function startEmbeddedNextDev(cwd: string): Promise<{ child: ChildProcess;
     }
   }
 
-  try {
-    child.kill("SIGTERM");
-  } catch {
-    /* */
-  }
+  killDevTree(child, "SIGTERM");
   await sleep(1500);
-  try {
-    child.kill("SIGKILL");
-  } catch {
-    /* */
-  }
+  killDevTree(child, "SIGKILL");
   throw new Error(
     "next dev の起動待ちが " +
       maxWait +
