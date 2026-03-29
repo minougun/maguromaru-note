@@ -385,14 +385,22 @@ export function OnboardingDeviceMock({ screen }: { screen: OnboardingMockId }) {
           <MockBody screen={screen} />
         </div>
 
-        <nav
-          aria-hidden
-          className="onboarding-mock-tabbar"
-          style={{ backgroundImage: `url(${TAB_STRIP_IMAGE_URL})` }}
-        >
-          {MOCK_TAB_SLOTS.map((tab) => (
-            <div className="onboarding-mock-tab" data-active={activeHref === tab.href} key={tab.href} />
-          ))}
+        <nav aria-hidden className="onboarding-mock-tabbar">
+          <div
+            className="onboarding-mock-tabbar-bg"
+            style={{ backgroundImage: `url(${TAB_STRIP_IMAGE_URL})` }}
+          />
+          <div className="onboarding-mock-tabbar-cells">
+            {MOCK_TAB_SLOTS.map((tab) => {
+              const active = activeHref === tab.href;
+              return (
+                <div
+                  className={`onboarding-mock-tab${active ? " onboarding-mock-tab--active" : ""}`}
+                  key={tab.href}
+                />
+              );
+            })}
+          </div>
         </nav>
       </div>
     </div>
