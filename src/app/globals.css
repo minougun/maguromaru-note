@@ -1913,13 +1913,6 @@ body {
   cursor: not-allowed;
 }
 
-.account-link-footnote {
-  margin: 12px 0 0;
-  font-size: 11px;
-  line-height: 1.45;
-  color: #8e8e93;
-}
-
 /* 初回オンボーディング（全画面オーバーレイ） */
 .onboarding-root {
   position: fixed;

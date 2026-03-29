@@ -249,9 +249,6 @@ export function AccountLinkSection({
                 </div>
               </div>
             )}
-            <p className="account-link-footnote">
-              Supabase で Email プロバイダを有効にし、リダイレクト URL にコールバック先を登録してください。
-            </p>
           </div>
         ) : null}
       </div>
