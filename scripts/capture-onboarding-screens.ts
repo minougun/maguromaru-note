@@ -6,7 +6,9 @@
  * 1. 初回のみ Chromium を入れる: npx playwright install chromium
  * 2. npm run capture:onboarding
  *    - 既に dev が動いていればそこへ接続。どこにも繋がらなければ **このリポジトリで next dev を自動起動**（終了時に停止）
- * 3. 自動起動を止めたいとき: CAPTURE_AUTO_START_DEV=0（別ターミナルで npm run dev 必須）
+ * 3. チュートリアル用モックの PNG（OnboardingDeviceMock のみ）: npm run capture:tutorial-mock
+ *    - 出力既定: public/onboarding/tutorial/*.png（CAPTURE_TUTORIAL_OUTPUT_DIR で変更可）
+ * 4. 自動起動を止めたいとき: CAPTURE_AUTO_START_DEV=0（別ターミナルで npm run dev 必須）
  *
  * ### WSL の注意
  *
@@ -35,8 +37,13 @@
  * | CAPTURE_AUTO_START_DEV | （既定: 有効） | 0 で既存サーバー必須（自動 next dev オフ） |
  * | CAPTURE_AUTO_DEV_PORT | （未設定） | 指定時はそのポートで自動起動。未指定は空きポート |
  * | CAPTURE_AUTO_DEV_WAIT_MS | 180000 | 自動起動 dev の待ち上限 |
+ * | CAPTURE_MOCK_TUTORIAL | （未設定） | 1 で `/dev/onboarding-mock-capture` からモック要素のみスクショ |
+ * | CAPTURE_TUTORIAL_OUTPUT_DIR | public/onboarding/tutorial | モック PNG の出力先 |
  *
- * 出力: home.png record.png zukan.png quiz.png titles.png account.png
+ * 本番ビルドでモック URL を開くとき: `MAGUROMARU_TUTORIAL_SCREENSHOT_SERVER=1 npx next start -p <port>`（`npm run start:tutorial-capture`）
+ *
+ * 出力（実画面）: home.png record.png zukan.png quiz.png titles.png account.png
+ * 出力（モック）: intro.png home.png … account.png
  *
  * 参照: ローカル /mnt/c/Users/minou/maguromaru-note/scripts/capture-onboarding-screens.ts
  */
@@ -90,6 +97,12 @@ function appUrl(origin: string, pathname: string): string {
   const base = basePrefix();
   const p = pathname.startsWith("/") ? pathname : `/${pathname}`;
   return `${origin.replace(/\/$/, "")}${base}${p}`;
+}
+
+function mockTutorialCaptureUrl(origin: string, screen: string): string {
+  const u = new URL(appUrl(origin, "/dev/onboarding-mock-capture"));
+  u.searchParams.set("screen", screen);
+  return u.toString();
 }
 
 /**
@@ -579,17 +592,52 @@ const ROUTES: { file: string; path: string }[] = [
   { file: "account.png", path: "/mypage" },
 ];
 
+/** OnboardingTutorial の STEPS と同じ順・同じ mockId */
+const MOCK_TUTORIAL_STEPS: { file: string; screen: string }[] = [
+  { file: "intro.png", screen: "intro" },
+  { file: "home.png", screen: "home" },
+  { file: "record.png", screen: "record" },
+  { file: "zukan.png", screen: "zukan" },
+  { file: "quiz.png", screen: "quiz" },
+  { file: "titles.png", screen: "titles" },
+  { file: "account.png", screen: "account" },
+];
+
+async function captureMockTutorialScreens(page: Page, origin: string, outDir: string): Promise<void> {
+  const art = page.locator(".onboarding-art--mock").first();
+
+  for (const { file, screen } of MOCK_TUTORIAL_STEPS) {
+    const target = mockTutorialCaptureUrl(origin, screen);
+    await gotoSettle(page, target, "mock " + screen);
+    await art.waitFor({ state: "visible", timeout: 45_000 });
+    await page.locator(".onboarding-mock-brand-img").first().waitFor({ state: "visible", timeout: 15_000 });
+    await page.evaluate(() => document.fonts.ready);
+    await sleep(500);
+
+    const outPath = path.join(outDir, file);
+    await art.screenshot({
+      path: outPath,
+      animations: "disabled",
+    });
+    console.info("[capture] wrote " + outPath);
+  }
+}
+
 async function main() {
+  const mockTutorial = process.env.CAPTURE_MOCK_TUTORIAL === "1";
   const rawOrigin = (process.env.CAPTURE_BASE_URL ?? "http://127.0.0.1:3000").replace(/\/$/, "");
   let origin = normalizeCaptureOrigin(rawOrigin);
   origin = maybeUseWslWindowsHost(origin);
-  const outRel = process.env.CAPTURE_OUTPUT_DIR?.trim() || "public/onboarding/capture";
+  const outRel = mockTutorial
+    ? process.env.CAPTURE_TUTORIAL_OUTPUT_DIR?.trim() || "public/onboarding/tutorial"
+    : process.env.CAPTURE_OUTPUT_DIR?.trim() || "public/onboarding/capture";
   const outDir = path.isAbsolute(outRel) ? outRel : path.join(process.cwd(), outRel);
 
   const width = envInt("CAPTURE_VIEWPORT_WIDTH", 430);
   const height = envInt("CAPTURE_VIEWPORT_HEIGHT", 932);
   const deviceScaleFactor = envFloat("CAPTURE_DEVICE_SCALE_FACTOR", 1);
 
+  console.info("[capture] mode: " + (mockTutorial ? "tutorial mock（OnboardingDeviceMock）" : "実画面ルート"));
   console.info("[capture] viewport: " + width + "x" + height + " dpr=" + deviceScaleFactor);
   console.info("[capture] output: " + outDir);
 
@@ -621,21 +669,25 @@ async function main() {
     const page = await context.newPage();
 
     try {
-      await ensureSignedIn(page, origin);
-      await waitForNoBlockingSpinner(page);
-
-      for (const { file, path: routePath } of ROUTES) {
-        const target = appUrl(origin, routePath);
-        await gotoSettle(page, target, routePath || "/");
+      if (mockTutorial) {
+        await captureMockTutorialScreens(page, origin, outDir);
+      } else {
+        await ensureSignedIn(page, origin);
         await waitForNoBlockingSpinner(page);
 
-        const outPath = path.join(outDir, file);
-        await page.screenshot({
-          path: outPath,
-          fullPage: false,
-          animations: "disabled",
-        });
-        console.info("[capture] wrote " + outPath);
+        for (const { file, path: routePath } of ROUTES) {
+          const target = appUrl(origin, routePath);
+          await gotoSettle(page, target, routePath || "/");
+          await waitForNoBlockingSpinner(page);
+
+          const outPath = path.join(outDir, file);
+          await page.screenshot({
+            path: outPath,
+            fullPage: false,
+            animations: "disabled",
+          });
+          console.info("[capture] wrote " + outPath);
+        }
       }
     } finally {
       await browser.close();

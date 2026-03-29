@@ -7,10 +7,12 @@
     "dev:host": "next dev -H 0.0.0.0",
     "build": "next build",
     "start": "next start",
+    "start:tutorial-capture": "MAGUROMARU_TUTORIAL_SCREENSHOT_SERVER=1 next start -p 3456 -H 127.0.0.1",
     "lint": "eslint src tests eslint.config.mjs",
     "typecheck": "tsc --noEmit",
     "test": "NEXT_PUBLIC_SITE_URL=http://localhost:3000 tsx --test tests/**/*.test.ts",
     "capture:onboarding": "tsx scripts/capture-onboarding-screens.ts",
+    "capture:tutorial-mock": "CAPTURE_MOCK_TUTORIAL=1 tsx scripts/capture-onboarding-screens.ts",
     "analyze": "ANALYZE=true next build --webpack"
   },
   "dependencies": {

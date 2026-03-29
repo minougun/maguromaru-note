@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import "@/app/globals.css";
-import { AppShell } from "@/components/layout/AppShell";
+import { AppShellRouter } from "@/components/layout/AppShellRouter";
 import { AppSnapshotProvider } from "@/components/providers/AppSnapshotProvider";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 
@@ -20,7 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body suppressHydrationWarning>
         <AuthProvider>
           <AppSnapshotProvider>
-            <AppShell>{children}</AppShell>
+            <AppShellRouter>{children}</AppShellRouter>
           </AppSnapshotProvider>
         </AuthProvider>
       </body>
