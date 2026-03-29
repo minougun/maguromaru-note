@@ -73,7 +73,7 @@ export function OnboardingTutorial({ onComplete }: OnboardingTutorialProps) {
 
       <div className="onboarding-panel">
         <div className="onboarding-art onboarding-art--mock" aria-hidden="true">
-          {/* next/image の SVG は環境によって壊れるため img + basePath 補正に統一 */}
+          {/* next/image の unoptimized でも basePath は付かないため、__NEXT_ROUTER_BASEPATH 対応の publicPath を使う */}
           <img
             alt=""
             className="onboarding-mock-img"
