@@ -1972,6 +1972,23 @@ body {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
+.onboarding-art--mock {
+  max-width: min(280px, 86vw);
+  min-height: unset;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.onboarding-mock-img {
+  width: 100%;
+  max-width: 260px;
+  height: auto;
+  max-height: 46vh;
+  object-fit: contain;
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+}
+
 .onboarding-art-img {
   max-width: 100%;
   height: auto;

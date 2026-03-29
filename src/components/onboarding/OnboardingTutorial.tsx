@@ -7,48 +7,49 @@ type Step = {
   imageSrc: string;
   title: string;
   body: string;
-  /** SVG などは width/height 指定でレイアウト安定 */
-  imageWidth: number;
-  imageHeight: number;
 };
 
+/** 実画面レイアウトに合わせたタブ別モック（public/onboarding/*.svg） */
 const STEPS: Step[] = [
   {
-    imageSrc: "/tuna-placeholder.svg",
+    imageSrc: "/onboarding/mock-intro.svg",
     title: "まぐろ丸ノートへようこそ",
-    body: "海鮮丼まぐろ丸の公式アプリです。来店記録や図鑑、クイズを楽しめます。",
-    imageWidth: 200,
-    imageHeight: 200,
+    body: "海鮮丼まぐろ丸の公式アプリです。次のスライドから、画面下の6つのタブそれぞれでできることを紹介します。",
   },
   {
-    imageSrc: "/tuna-placeholder.svg",
+    imageSrc: "/onboarding/mock-home.svg",
     title: "ホーム",
-    body: "本日の入荷状況やおすすめ、お店の状況をいつでも確認できます。",
-    imageWidth: 200,
-    imageHeight: 200,
+    body: "店舗の営業状況と天気、本日の入荷状況（各丼の「◎ あり」など）、おすすめメッセージ、最近の来店記録の一覧を確認できます。",
   },
   {
-    imageSrc: "/tuna-map-base.svg",
-    title: "記録と図鑑",
-    body: "食べた丼を記録すると、まぐろの部位が図鑑に集まります。コンプを目指しましょう。",
-    imageWidth: 260,
-    imageHeight: 200,
+    imageSrc: "/onboarding/mock-record.svg",
+    title: "記録",
+    body: "今日食べた丼を選び、食べた部位にチェックを入れて保存します。写真やメモを添えられるので、思い出として残せます。",
   },
   {
-    imageSrc: "/tuna-map-base.svg",
-    title: "クイズと称号",
-    body: "まぐろクイズに挑戦して正解数を伸ばすと、新しい称号が解放されます。",
-    imageWidth: 260,
-    imageHeight: 200,
+    imageSrc: "/onboarding/mock-zukan.svg",
+    title: "図鑑",
+    body: "記録した部位が図鑑にライトアップされていきます。コンプリート進捗やマグロの部位マップから、解説を読めます。",
   },
   {
-    imageSrc: "/tuna-placeholder.svg",
-    title: "さあ、はじめよう",
-    body: "画面下のタブでホーム・記録・図鑑・クイズ・称号・アカウント連携に移動できます。アカウント連携で端末を変えてもデータを引き継げます。",
-    imageWidth: 200,
-    imageHeight: 200,
+    imageSrc: "/onboarding/mock-quiz.svg",
+    title: "クイズ",
+    body: "ステージごとにまぐろの4択クイズに挑戦できます。ステージを順にクリアしていくと、難易度と報酬が上がっていきます。",
+  },
+  {
+    imageSrc: "/onboarding/mock-titles.svg",
+    title: "称号",
+    body: "来店回数・図鑑・クイズ成績に応じて称号が解放されます。いまの称号と、次の条件もこの画面で確認できます。",
+  },
+  {
+    imageSrc: "/onboarding/mock-account.svg",
+    title: "アカウント連携",
+    body: "Apple・Google・メールのいずれかで連携すると、機種変更や再インストール後もデータを引き継ぎやすくなります。",
   },
 ];
+
+const MOCK_WIDTH = 320;
+const MOCK_HEIGHT = 560;
 
 type OnboardingTutorialProps = {
   onComplete: () => void;
@@ -70,14 +71,14 @@ export function OnboardingTutorial({ onComplete }: OnboardingTutorialProps) {
       </button>
 
       <div className="onboarding-panel">
-        <div className="onboarding-art" aria-hidden="true">
+        <div className="onboarding-art onboarding-art--mock" aria-hidden="true">
           <Image
             alt=""
-            className="onboarding-art-img"
-            height={step.imageHeight}
+            className="onboarding-mock-img"
+            height={MOCK_HEIGHT}
             src={step.imageSrc}
             unoptimized
-            width={step.imageWidth}
+            width={MOCK_WIDTH}
           />
         </div>
 
