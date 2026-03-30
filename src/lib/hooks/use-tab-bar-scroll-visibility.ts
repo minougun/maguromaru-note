@@ -7,7 +7,8 @@ const DELTA_THRESHOLD = 10;
 const MIN_SCROLLABLE_GAP = 32;
 
 /**
- * メイン縦スクロールに応じて下部タブを隠す（下方向）／出す（上方向・先頭付近）。
+ * メイン縦スクロールに応じて下部タブを隠す（下方向）。
+ * 一度隠したら、上方向にスクロールするか先頭付近に戻るまで表示しない。
  * prefers-reduced-motion では常に表示。
  */
 export function useTabBarScrollVisibility(scrollRoot: HTMLElement | null, pathname: string) {
@@ -31,21 +32,6 @@ export function useTabBarScrollVisibility(scrollRoot: HTMLElement | null, pathna
     }
 
     lastScrollTopRef.current = el.scrollTop;
-
-    let idleTimer: ReturnType<typeof setTimeout> | null = null;
-
-    const scheduleShowAfterIdle = () => {
-      if (idleTimer != null) {
-        clearTimeout(idleTimer);
-      }
-      idleTimer = setTimeout(() => {
-        idleTimer = null;
-        if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-          return;
-        }
-        setVisible(true);
-      }, 420);
-    };
 
     const applyScroll = () => {
       if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -77,7 +63,6 @@ export function useTabBarScrollVisibility(scrollRoot: HTMLElement | null, pathna
     };
 
     const onScroll = () => {
-      scheduleShowAfterIdle();
       if (rafRef.current != null) {
         cancelAnimationFrame(rafRef.current);
       }
@@ -92,9 +77,6 @@ export function useTabBarScrollVisibility(scrollRoot: HTMLElement | null, pathna
 
     return () => {
       el.removeEventListener("scroll", onScroll);
-      if (idleTimer != null) {
-        clearTimeout(idleTimer);
-      }
       if (rafRef.current != null) {
         cancelAnimationFrame(rafRef.current);
       }
