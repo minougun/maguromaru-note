@@ -1,6 +1,5 @@
 "use client";
 
-import clsx from "clsx";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -13,7 +12,7 @@ export function AppHeaderAccountLink() {
   return (
     <Link
       aria-current={active ? "page" : undefined}
-      className={clsx("header-account-link", active && "header-account-link--active")}
+      className="header-account-link"
       href="/mypage"
       prefetch={false}
     >

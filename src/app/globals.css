@@ -128,12 +128,8 @@ body {
 }
 
 .header-account-link:focus-visible {
-  outline: 2px solid #5cdbef;
+  outline: 2px solid rgba(255, 255, 255, 0.65);
   outline-offset: 2px;
-}
-
-.header-account-link--active {
-  color: #5cdbef;
 }
 
 .header-account-link-icon {
