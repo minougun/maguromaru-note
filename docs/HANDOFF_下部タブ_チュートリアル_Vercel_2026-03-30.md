@@ -8,11 +8,11 @@
 
 ## 1. 何をしたか（要約）
 
-- **下部タブ帯**はリポジトリ同梱の **中立 SVG**（`bottom-tabs.svg`、430×75）。どのタブも未選択トーン・選択表示は CSS グロー。絵文字タブは廃止。
-- **寸法**: `public/tabbar/bottom-tabs.svg` の viewBox **430×75**（アプリ `max-width: 430px` と論理幅を揃える）。
-- **実機 `TabBar`**: セーフエリアは外枠 `nav.tab-bar` の `padding-bottom` のみ。**内側**を **背景レイヤー**（`tab-bar-strip-bg`）と **リンク用オーバーレイ**（`tab-bar-strip-cells`）に分割し、帯画像より手前に **選択インジケータ**（CSS グロー）を描画。
+- **下部タブ帯**は **DOM ラベル**（`TabBarStripDecoration`＋`globals.css` の `.main-tab-strip-decor*`）。SVG の `<text>` は `background-image` / `img` でも環境によって非表示になるため廃止。どのタブも未選択トーン・選択表示は CSS グロー。絵文字タブは廃止。
+- **寸法**: 帯は **430×75**（`aspect-ratio: 430 / 75`、アプリ `max-width: 430px` と論理幅を揃える）。
+- **実機 `TabBar`**: セーフエリアは外枠 `nav.tab-bar` の `padding-bottom` のみ。**内側**を **ラベル装飾レイヤー**（`tab-bar-strip-bg` 内の `TabBarStripDecoration`）と **リンク用オーバーレイ**（`tab-bar-strip-cells`）に分割し、ラベルより手前に **選択インジケータ**（CSS グロー）を描画。
 - **選択表示**: `data-active` ではなく **`aria-current="page"`** の **`::before`** でセル全体に柔らかい水色のグロー（ドットは廃止）。`[data-active="true"]` は React の DOM 表現差で外れることがあるため使わない。
-- **チュートリアル用モック**（`OnboardingDeviceMock`）: 同じ SVG・同じ二層構造（`onboarding-mock-tabbar-bg` / `onboarding-mock-tabbar-cells`）。選択タブは **`onboarding-mock-tab--active`** クラス＋同様のグロー。
+- **チュートリアル用モック**（`OnboardingDeviceMock`）: 同じ DOM 装飾（`TabBarStripDecoration compact`）・同じ二層構造（`onboarding-mock-tabbar-bg` / `onboarding-mock-tabbar-cells`）。選択タブは **`onboarding-mock-tab--active`** クラス＋同様のグロー。
 - **`OnboardingTutorial`**: 各ステップの **`screenshotSrc`（WebP）を削除**済み。常に `OnboardingDeviceMock` を表示（旧スクショに焼き込まれたタブだと「変更が反映されない」ように見えていた）。
 - **オンボーディング完了キー**: `src/lib/onboarding-storage.ts` の **`maguro_note_onboarding_v5_done`**（内容更新のたびにキー名を上げる方針。`v4` 完了済みユーザーは v5 でチュートリアル再表示）。
 
@@ -22,8 +22,8 @@
 
 | 内容 | パス |
 |------|------|
-| タブ帯 SVG | `/mnt/c/Users/minou/maguromaru-note/public/tabbar/bottom-tabs.svg` |
-| 画像 URL＋キャッシュクエリ | `/mnt/c/Users/minou/maguromaru-note/src/lib/tabbar-strip.ts`（`?v=` を画像差し替え時に更新） |
+| タブ定義（順序・ラベル） | `/mnt/c/Users/minou/maguromaru-note/src/lib/main-tabs.ts` |
+| タブ帯の装飾 DOM | `/mnt/c/Users/minou/maguromaru-note/src/components/ui/TabBarStripDecoration.tsx` |
 | 実機タブ | `/mnt/c/Users/minou/maguromaru-note/src/components/ui/TabBar.tsx` |
 | チュートリアルステップ定義 | `/mnt/c/Users/minou/maguromaru-note/src/components/onboarding/OnboardingTutorial.tsx` |
 | デバイスモック | `/mnt/c/Users/minou/maguromaru-note/src/components/onboarding/OnboardingDeviceMock.tsx` |

@@ -11,7 +11,7 @@ type Step = {
   body: string;
   /**
    * 任意: 静的 WebP を置くとそのステップでは画像を表示する。
-   * 下部タブは `OnboardingDeviceMock`＋`bottom-tabs.svg` と同期させるため、通常は未指定（常にモック）とする。
+   * 下部タブは `OnboardingDeviceMock`＋`TabBarStripDecoration`（実機と同じ DOM ラベル）と同期させるため、通常は未指定（常にモック）とする。
    */
   screenshotSrc?: string;
 };

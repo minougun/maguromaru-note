@@ -1,20 +1,11 @@
 "use client";
 
 import { ShareBonusCallout } from "@/components/share/ShareBonusCallout";
+import { TabBarStripDecoration } from "@/components/ui/TabBarStripDecoration";
+import { MAIN_NAV_TABS } from "@/lib/main-tabs";
 import { publicPath } from "@/lib/public-path";
-import { TAB_STRIP_IMAGE_URL } from "@/lib/tabbar-strip";
 
 export type OnboardingMockId = "intro" | "home" | "record" | "zukan" | "quiz" | "titles" | "account";
-
-/** 下部タブ帯のセル数・ルート対応（ラベルは PNG に含まれる） */
-const MOCK_TAB_SLOTS = [
-  { href: "/" },
-  { href: "/record" },
-  { href: "/zukan" },
-  { href: "/quiz" },
-  { href: "/titles" },
-  { href: "/mypage" },
-] as const;
 
 function activeHrefForScreen(screen: OnboardingMockId): string | null {
   switch (screen) {
@@ -63,16 +54,7 @@ function MockIntro() {
       <p className="onboarding-mock-intro-lead">画面下のタブから主要機能へ</p>
       <div className="onboarding-mock-intro-strip-wrap">
         <div className="onboarding-mock-intro-tabstrip" aria-hidden="true">
-          {/* eslint-disable-next-line @next/next/no-img-element -- タブ帯 SVG は img で表示（background では text が消える） */}
-          <img
-            alt=""
-            className="onboarding-mock-intro-tabstrip-img"
-            decoding="async"
-            draggable={false}
-            height={75}
-            src={TAB_STRIP_IMAGE_URL}
-            width={430}
-          />
+          <TabBarStripDecoration compact />
         </div>
       </div>
       <p className="onboarding-mock-intro-note">次のスライドで、それぞれの画面イメージを紹介します。</p>
@@ -395,19 +377,10 @@ export function OnboardingDeviceMock({ screen }: { screen: OnboardingMockId }) {
 
         <nav aria-hidden className="onboarding-mock-tabbar">
           <div className="onboarding-mock-tabbar-bg" aria-hidden="true">
-            {/* eslint-disable-next-line @next/next/no-img-element -- タブ帯 SVG は img で表示 */}
-            <img
-              alt=""
-              className="onboarding-mock-tabbar-bg-img"
-              decoding="async"
-              draggable={false}
-              height={75}
-              src={TAB_STRIP_IMAGE_URL}
-              width={430}
-            />
+            <TabBarStripDecoration compact />
           </div>
           <div className="onboarding-mock-tabbar-cells">
-            {MOCK_TAB_SLOTS.map((tab) => {
+            {MAIN_NAV_TABS.map((tab) => {
               const active = activeHref === tab.href;
               return (
                 <div
