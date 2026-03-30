@@ -29,45 +29,56 @@ interface MapRegionDef {
 
 /**
  * viewBox 1365×768。背景は `src/assets/zukan-tuna-map.webp` を import し `/_next/static/media/` で配信。
- * 楕円・ラベル位置は参考図（655546.jpg, 714×429）を 1365/714・768/429 で線形スケールして合わせた。
- * 腹部は前後2領域：前＝大トロのみ、後＝大トロ・中トロ（記録は部位ごと）。
- * 中とろは背のブロック＋腹の後方の両方でハイライトされる。
+ * 座標は図鑑スクリーンショット（部位マップ表示）に合わせた値。
+ * 腹部：前＝大トロ、中後＝大トロ（別楕円）・中トロ（腹）。背＝中トロ（背）（いずれも部位 id は otoro / chutoro）。
  */
 const MAP_REGIONS: MapRegionDef[] = [
-  { key: "noten", partIds: ["noten"], type: "ellipse", cx: 359, cy: 176, rx: 46, ry: 28, label: { x: 315, y: 75 } },
-  { key: "hoho", partIds: ["hoho"], type: "ellipse", cx: 328, cy: 452, rx: 50, ry: 38, label: { x: 92, y: 555 } },
-  { key: "meura", partIds: ["meura"], type: "ellipse", cx: 422, cy: 326, rx: 40, ry: 30, label: { x: 245, y: 247 } },
+  { key: "noten", partIds: ["noten"], type: "ellipse", cx: 292, cy: 178, rx: 48, ry: 30, label: { x: 228, y: 92 } },
+  { key: "hoho", partIds: ["hoho"], type: "ellipse", cx: 206, cy: 426, rx: 52, ry: 40, label: { x: 92, y: 486 } },
+  { key: "meura", partIds: ["meura"], type: "ellipse", cx: 238, cy: 342, rx: 42, ry: 32, label: { x: 158, y: 262 } },
   {
     key: "chutoro-back",
     partIds: ["chutoro"],
     type: "ellipse",
-    cx: 812,
-    cy: 212,
-    rx: 188,
-    ry: 62,
-    label: { x: 698, y: 70 },
+    cx: 712,
+    cy: 248,
+    rx: 208,
+    ry: 70,
+    label: { x: 668, y: 82, text: "中トロ（背）" },
+    labelWidth: 200,
   },
-  { key: "akami", partIds: ["akami"], type: "ellipse", cx: 768, cy: 354, rx: 220, ry: 84, label: { x: 1008, y: 342 } },
+  { key: "akami", partIds: ["akami"], type: "ellipse", cx: 718, cy: 394, rx: 238, ry: 90, label: { x: 1040, y: 336 } },
   {
-    key: "belly-otoro-chutoro-rear",
-    partIds: ["otoro", "chutoro"],
+    key: "belly-otoro-rear",
+    partIds: ["otoro"],
     type: "ellipse",
-    cx: 836,
-    cy: 488,
-    rx: 128,
-    ry: 50,
-    label: { x: 968, y: 576, text: "大トロ・中トロ" },
-    labelWidth: 248,
+    cx: 678,
+    cy: 548,
+    rx: 78,
+    ry: 52,
+    label: { x: 808, y: 628, text: "大トロ" },
+    labelWidth: 132,
+  },
+  {
+    key: "belly-chutoro",
+    partIds: ["chutoro"],
+    type: "ellipse",
+    cx: 802,
+    cy: 548,
+    rx: 78,
+    ry: 52,
+    label: { x: 1008, y: 608, text: "中トロ（腹）" },
+    labelWidth: 210,
   },
   {
     key: "belly-otoro-front",
     partIds: ["otoro"],
     type: "ellipse",
-    cx: 448,
-    cy: 534,
-    rx: 104,
-    ry: 46,
-    label: { x: 392, y: 652, text: "大トロ" },
+    cx: 438,
+    cy: 556,
+    rx: 112,
+    ry: 48,
+    label: { x: 352, y: 692, text: "大トロ" },
     labelWidth: 132,
   },
 ];
