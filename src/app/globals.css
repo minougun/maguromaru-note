@@ -74,6 +74,60 @@ body {
   gap: 10px;
 }
 
+.header-row--split {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.header-account-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  padding: 4px 2px 4px 8px;
+  margin: -4px -2px -4px 0;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.88);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.header-account-link:hover {
+  color: #fff;
+}
+
+.header-account-link:focus-visible {
+  outline: 2px solid #5cdbef;
+  outline-offset: 2px;
+}
+
+.header-account-link--active {
+  color: #5cdbef;
+}
+
+.header-account-link-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: currentColor;
+}
+
+.header-account-link-text {
+  white-space: nowrap;
+}
+
 .logo-mark {
   width: 42px;
   height: 42px;
@@ -212,7 +266,7 @@ body {
 .tab-bar-strip {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   align-items: stretch;
   border-top: 2px solid var(--navy);
   aspect-ratio: 430 / 84;
@@ -2599,7 +2653,7 @@ body {
 .onboarding-mock-intro-tabstrip {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   align-items: center;
   aspect-ratio: 430 / 84;
   width: 100%;
@@ -3208,7 +3262,7 @@ body {
   flex-shrink: 0;
   position: relative;
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   align-items: stretch;
   width: 100%;
   border-top: 2px solid var(--navy);

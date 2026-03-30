@@ -22,7 +22,7 @@ function activeHrefForScreen(screen: OnboardingMockId): string | null {
     case "titles":
       return "/titles";
     case "account":
-      return "/mypage";
+      return null;
     default:
       return null;
   }
