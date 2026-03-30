@@ -226,9 +226,15 @@ body {
   width: 100%;
   height: 100%;
   min-height: 0;
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: 100% 100%;
+  overflow: hidden;
+}
+
+.tab-bar-strip-bg-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  pointer-events: none;
 }
 
 .tab-bar-strip-cells {
@@ -2553,9 +2559,15 @@ body {
   aspect-ratio: 430 / 75;
   width: 100%;
   background-color: rgba(27, 45, 79, 0.97);
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: 100% 100%;
+  overflow: hidden;
+}
+
+.onboarding-mock-intro-tabstrip-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  pointer-events: none;
 }
 
 .onboarding-mock-intro-note {
@@ -3126,9 +3138,15 @@ body {
   width: 100%;
   height: 100%;
   min-height: 0;
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: 100% 100%;
+  overflow: hidden;
+}
+
+.onboarding-mock-tabbar-bg-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  pointer-events: none;
 }
 
 .onboarding-mock-tabbar-cells {

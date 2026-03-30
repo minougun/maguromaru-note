@@ -20,12 +20,19 @@ export function TabBar() {
   return (
     <nav aria-label="メインタブ" className="tab-bar">
       <div className="tab-bar-strip">
-        <div
-          className="tab-bar-strip-bg"
-          style={{
-            backgroundImage: `url(${TAB_STRIP_IMAGE_URL})`,
-          }}
-        />
+        <div className="tab-bar-strip-bg" aria-hidden="true">
+          {/* SVG 内の text は CSS background-image だと環境によって一切描画されない。img なら表示される */}
+          {/* eslint-disable-next-line @next/next/no-img-element -- タブ帯は SVG 静的アセット（public） */}
+          <img
+            alt=""
+            className="tab-bar-strip-bg-img"
+            decoding="async"
+            draggable={false}
+            height={75}
+            src={TAB_STRIP_IMAGE_URL}
+            width={430}
+          />
+        </div>
         <div className="tab-bar-strip-cells">
           {tabs.map((tab) => {
             const active = pathname === tab.href;

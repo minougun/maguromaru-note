@@ -62,10 +62,18 @@ function MockIntro() {
     <div className="onboarding-mock-intro">
       <p className="onboarding-mock-intro-lead">画面下のタブから主要機能へ</p>
       <div className="onboarding-mock-intro-strip-wrap">
-        <div
-          className="onboarding-mock-intro-tabstrip"
-          style={{ backgroundImage: `url(${TAB_STRIP_IMAGE_URL})` }}
-        />
+        <div className="onboarding-mock-intro-tabstrip" aria-hidden="true">
+          {/* eslint-disable-next-line @next/next/no-img-element -- タブ帯 SVG は img で表示（background では text が消える） */}
+          <img
+            alt=""
+            className="onboarding-mock-intro-tabstrip-img"
+            decoding="async"
+            draggable={false}
+            height={75}
+            src={TAB_STRIP_IMAGE_URL}
+            width={430}
+          />
+        </div>
       </div>
       <p className="onboarding-mock-intro-note">次のスライドで、それぞれの画面イメージを紹介します。</p>
     </div>
@@ -386,10 +394,18 @@ export function OnboardingDeviceMock({ screen }: { screen: OnboardingMockId }) {
         </div>
 
         <nav aria-hidden className="onboarding-mock-tabbar">
-          <div
-            className="onboarding-mock-tabbar-bg"
-            style={{ backgroundImage: `url(${TAB_STRIP_IMAGE_URL})` }}
-          />
+          <div className="onboarding-mock-tabbar-bg" aria-hidden="true">
+            {/* eslint-disable-next-line @next/next/no-img-element -- タブ帯 SVG は img で表示 */}
+            <img
+              alt=""
+              className="onboarding-mock-tabbar-bg-img"
+              decoding="async"
+              draggable={false}
+              height={75}
+              src={TAB_STRIP_IMAGE_URL}
+              width={430}
+            />
+          </div>
           <div className="onboarding-mock-tabbar-cells">
             {MOCK_TAB_SLOTS.map((tab) => {
               const active = activeHref === tab.href;
