@@ -112,8 +112,8 @@ def main() -> None:
     # 脳天: TunaMap では楕円 (308,251) 参考。ここは頭頂ピンクの凸包（別位置）
     noten = path_from_set(flood_rgba(px, w, h, 402, 182, thresh=20, maxn=550), max_pts=350, rng=rng)
 
-    # 目裏: TunaMap では目付近の楕円 (313,244)。参考用 flood
-    meura = path_from_set(flood_rgba(px, w, h, 313, 244, thresh=12, maxn=450), max_pts=350, rng=rng)
+    # 目裏: TunaMap では目〜ほほの間の楕円 (236,294)。参考用 flood
+    meura = path_from_set(flood_rgba(px, w, h, 236, 294, thresh=22, maxn=500), max_pts=350, rng=rng)
     hoho = path_from_set(flood_rgba(px, w, h, 268, 425, thresh=34, maxn=20000), max_pts=1000, rng=rng)
     # 背中の中とろ: 左ブロック＋背中中央の大きなピンク＋尾寄りの3つ
     chu_l = path_from_set(flood_rgba(px, w, h, 500, 240, thresh=60, maxn=12000), max_pts=1000, rng=rng)

@@ -50,14 +50,14 @@ const MAP_REGIONS: MapRegionDef[] = [
     partIds: ["meura"],
     shape: {
       type: "ellipse",
-      // イラスト上の目（暗色塗りの重心付近）
-      cx: 313,
-      cy: 244,
-      rx: 28,
-      ry: 24,
+      // 目とほほ肉のあいだのピンク塗り。脳天 (308,251) 楕円と角で重ならないよう左寄せ
+      cx: 236,
+      cy: 294,
+      rx: 24,
+      ry: 22,
     },
-    label: { x: 188, y: 268 },
-    lineTo: { x: 313, y: 244 },
+    label: { x: 155, y: 288 },
+    lineTo: { x: 236, y: 294 },
   },
   {
     key: "hoho",
