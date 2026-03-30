@@ -366,20 +366,33 @@ body {
   z-index: 2;
 }
 
-/* 選択タブ: アイコン直上の白ドットのみ（背景グローなし） */
-.tab-link[aria-current="page"]::after,
+/* 選択タブ: 白ドットは stack 上の ::after（Link 内でアイコンより手前に描画） */
+.tab-link[aria-current="page"] .tab-link-stack::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0;
+  transform: translate(-50%, calc(-100% - 3px));
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #ffffff;
+  pointer-events: none;
+  z-index: 5;
+}
+
 .onboarding-mock-tab--active::after {
   content: "";
   position: absolute;
   top: 4px;
   left: 50%;
   transform: translateX(-50%);
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
   border-radius: 999px;
   background: #ffffff;
   pointer-events: none;
-  z-index: 3;
+  z-index: 5;
 }
 
 .tab-icon {
