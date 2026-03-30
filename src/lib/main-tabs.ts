@@ -1,6 +1,7 @@
 /**
  * メイン下部タブ（順序は帯の左→右と一致させる）。
- * `a11yLabel`: リンクのスクリーンリーダー用。`stripLabel`: 帯上の短い表記。`emoji`: 帯上の装飾（名前は aria-label のみ）。
+ * `a11yLabel`: リンクのスクリーンリーダー用。`stripLabel`: 帯上の短い表記。
+ * `emoji`: 実機タブ帯とオンボーディング内モックで共通（1 か所の定義）。
  */
 export const MAIN_NAV_TABS = [
   { href: "/", a11yLabel: "ホーム", stripLabel: "ホーム", emoji: "🏠" },
