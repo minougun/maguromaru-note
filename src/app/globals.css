@@ -21,6 +21,10 @@
   box-sizing: border-box;
 }
 
+html {
+  scrollbar-gutter: stable;
+}
+
 html,
 body {
   margin: 0;
@@ -45,20 +49,34 @@ textarea {
 body {
   display: flex;
   justify-content: center;
+  overflow-x: hidden;
 }
 
 .app-shell {
+  display: flex;
+  flex-direction: column;
   width: 100%;
   max-width: 430px;
   min-height: 100vh;
+  min-height: 100dvh;
+  max-height: 100vh;
+  max-height: 100dvh;
   background: #ffffff;
   box-shadow: 0 0 48px rgba(0, 0, 0, 0.08);
   position: relative;
   padding-bottom: calc(84px + var(--safe-bottom));
   overflow-x: clip;
+  overflow-y: hidden;
+}
+
+.app-shell > .screen-state {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .app-header {
+  flex-shrink: 0;
   position: sticky;
   top: 0;
   z-index: 40;
@@ -180,6 +198,11 @@ body {
 }
 
 .screen-main {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: clip;
+  -webkit-overflow-scrolling: touch;
   padding: 14px 14px 8px;
 }
 
@@ -1727,6 +1750,10 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-height: 100dvh;
+  max-height: 100vh;
+  max-height: 100dvh;
+  overflow: hidden;
   background: #121212;
   box-shadow: none;
   padding-bottom: var(--safe-bottom);
@@ -1742,6 +1769,9 @@ body {
   flex-direction: column;
   padding: 0;
   min-height: 0;
+  overflow-y: auto;
+  overflow-x: clip;
+  -webkit-overflow-scrolling: touch;
 }
 
 .login-launch {
