@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 
-import tunaMapBackground from "@/assets/zukan-tuna-map.webp";
+import tunaMapBase from "@/assets/zukan-tuna-map.webp";
+import tunaMapReveal from "@/assets/zukan-tuna-map-reveal.webp";
 
 import type { Part, PartId } from "@/lib/domain/types";
 
@@ -28,9 +29,13 @@ interface MapRegionDef {
 }
 
 /**
- * viewBox 1365×768。背景は `src/assets/zukan-tuna-map.webp`（Gemini 生成 PNG を 1365×768 cover クロップ）を import。
- * 座標は図鑑スクリーンショット（部位マップ表示）に合わせた値。
- * 腹部：前＝大トロ、中後＝大トロ（別楕円）・中トロ（腹）。背＝中トロ（背）（いずれも部位 id は otoro / chutoro）。
+ * viewBox 1365×768。
+ * ベース画（未記録時の見た目）と、同寸法・同一クロップの「色付き」画を積層する。
+ * 記録済み部位だけ clipPath（楕円＝旧マップと同じヒット領域）で上層を切り出して表示する。
+ * 参照元 PNG:
+ * - ベース: Gemini_Generated_Image_5bs0vj5bs0vj5bs0.png
+ * - 色付き: Gemini_Generated_Image_gkdhirgkdhirgkdh.png
+ * （`src/assets/` の WebP は scripts/generate-zukan-map-webp.py で再生成可能）
  */
 const MAP_REGIONS: MapRegionDef[] = [
   { key: "noten", partIds: ["noten"], type: "ellipse", cx: 292, cy: 178, rx: 48, ry: 30, label: { x: 228, y: 92 } },
@@ -98,12 +103,24 @@ function regionPrimaryPart(region: MapRegionDef, partsById: Map<PartId, Part>, c
   return partsById.get(id!) ?? null;
 }
 
+function clipShapeEl(r: MapRegionDef) {
+  if (r.type === "circle") {
+    return <circle cx={r.cx} cy={r.cy} r={r.r} />;
+  }
+  return <ellipse cx={r.cx} cy={r.cy} rx={r.rx} ry={r.ry} />;
+}
+
 export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
   const partsById = new Map(parts.map((part) => [part.id, part]));
   const collected = new Set(collectedPartIds);
   const [selectedRegionKey, setSelectedRegionKey] = useState<string | null>(null);
+  const clipUid = useId().replace(/:/g, "");
 
   const selectedRegion = selectedRegionKey ? MAP_REGIONS.find((r) => r.key === selectedRegionKey) : null;
+
+  function clipId(key: string) {
+    return `${clipUid}-clip-${key}`;
+  }
 
   function handleTapRegion(region: MapRegionDef) {
     setSelectedRegionKey((current) => (current === region.key ? null : region.key));
@@ -126,21 +143,26 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
       <div className="map-wrap">
         <svg viewBox="0 0 1365 768" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="まぐろ部位マップ">
           <defs>
-            <filter id="glowF" x="-40%" y="-40%" width="180%" height="180%">
-              <feGaussianBlur stdDeviation="4" result="b" />
-              <feMerge>
-                <feMergeNode in="b" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
+            {MAP_REGIONS.map((r) => (
+              <clipPath id={clipId(r.key)} key={`clip-${r.key}`}>
+                {clipShapeEl(r)}
+              </clipPath>
+            ))}
           </defs>
 
-          <image
-            href={tunaMapBackground.src}
-            width="1365"
-            height="768"
-            preserveAspectRatio="xMidYMid meet"
-          />
+          <image href={tunaMapBase.src} width="1365" height="768" preserveAspectRatio="xMidYMid meet" />
+
+          {MAP_REGIONS.map((r) => {
+            const hasAllParts = r.partIds.every((id) => partsById.has(id));
+            if (!hasAllParts) return null;
+            const eaten = regionEaten(r, collected);
+            if (!eaten) return null;
+            return (
+              <g key={`reveal-${r.key}`} clipPath={`url(#${clipId(r.key)})`}>
+                <image href={tunaMapReveal.src} width="1365" height="768" preserveAspectRatio="xMidYMid meet" />
+              </g>
+            );
+          })}
 
           {MAP_REGIONS.map((r) => {
             const hasAllParts = r.partIds.every((id) => partsById.has(id));
@@ -151,13 +173,6 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
             if (!primary) return null;
 
             const isSelected = selectedRegionKey === r.key;
-            const fill = eaten ? primary.color : "transparent";
-            const fillOpacity = eaten ? (isSelected ? 0.6 : 0.4) : 0;
-            const stroke = eaten ? primary.color : "rgba(0,0,0,0.6)";
-            const strokeDasharray = eaten ? "none" : "4 4";
-            const strokeWidth = isSelected ? 3 : 2;
-            const filterAttr = eaten ? "url(#glowF)" : undefined;
-
             const lw = (r.labelWidth ?? 152) / 2;
 
             return (
@@ -172,37 +187,6 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
                   if (e.key === "Enter" || e.key === " ") handleTapRegion(r);
                 }}
               >
-                {r.type === "circle" ? (
-                  <circle
-                    cx={r.cx}
-                    cy={r.cy}
-                    r={r.r}
-                    fill={fill}
-                    fillOpacity={fillOpacity}
-                    stroke={stroke}
-                    strokeWidth={strokeWidth}
-                    strokeDasharray={strokeDasharray}
-                    filter={filterAttr}
-                  />
-                ) : (
-                  <ellipse
-                    cx={r.cx}
-                    cy={r.cy}
-                    rx={r.rx}
-                    ry={r.ry}
-                    fill={fill}
-                    fillOpacity={fillOpacity}
-                    stroke={stroke}
-                    strokeWidth={strokeWidth}
-                    strokeDasharray={strokeDasharray}
-                    filter={filterAttr}
-                  />
-                )}
-                {r.type === "circle" ? (
-                  <circle cx={r.cx} cy={r.cy} r={(r.r ?? 20) + 10} fill="transparent" />
-                ) : (
-                  <ellipse cx={r.cx} cy={r.cy} rx={(r.rx ?? 30) + 10} ry={(r.ry ?? 20) + 10} fill="transparent" />
-                )}
                 <line
                   x1={r.label.x}
                   y1={r.label.y + 18}
@@ -213,6 +197,30 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
                   opacity="0.9"
                   fill="none"
                 />
+                {isSelected ? (
+                  r.type === "circle" ? (
+                    <circle
+                      cx={r.cx}
+                      cy={r.cy}
+                      r={r.r}
+                      fill="none"
+                      stroke={primary.color}
+                      strokeWidth="3"
+                      opacity="0.95"
+                    />
+                  ) : (
+                    <ellipse
+                      cx={r.cx}
+                      cy={r.cy}
+                      rx={r.rx}
+                      ry={r.ry}
+                      fill="none"
+                      stroke={primary.color}
+                      strokeWidth="3"
+                      opacity="0.95"
+                    />
+                  )
+                ) : null}
                 <rect
                   x={r.label.x - lw}
                   y={r.label.y - 26}
@@ -235,13 +243,18 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
                 >
                   {labelForRegion(r)}
                 </text>
+                {r.type === "circle" ? (
+                  <circle cx={r.cx} cy={r.cy} r={(r.r ?? 20) + 10} fill="transparent" />
+                ) : (
+                  <ellipse cx={r.cx} cy={r.cy} rx={(r.rx ?? 30) + 10} ry={(r.ry ?? 20) + 10} fill="transparent" />
+                )}
               </g>
             );
           })}
         </svg>
       </div>
 
-      <p className="map-hint">タップで部位の詳細を表示 ・ 色付き＝食べた部位</p>
+      <p className="map-hint">タップで部位の詳細を表示 ・ 記録済みの部位だけ色付きイラストが重なります</p>
 
       {selectedRegion && selectedRegion.partIds.length === 1 ? (
         (() => {
