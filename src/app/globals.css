@@ -285,8 +285,9 @@ body {
   z-index: 2;
 }
 
-/* 実機・選択タブ: グロー（::before）はラベル・絵文字（z-index:2）の下（チュートリアル用モックとは別） */
-.tab-link[aria-current="page"]::before {
+/* 実機 TabBar とチュートリアル用モックの「選択タブ」で同一仕様（グロー + 上ドット） */
+.tab-link[aria-current="page"]::before,
+.onboarding-mock-tab--active::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -301,8 +302,8 @@ body {
   box-shadow: inset 0 0 22px rgba(92, 219, 239, 0.18);
 }
 
-/* 実機・選択タブ: 絵文字の上に水色ドット（::after は最前面） */
-.tab-link[aria-current="page"]::after {
+.tab-link[aria-current="page"]::after,
+.onboarding-mock-tab--active::after {
   content: "";
   position: absolute;
   top: 4px;
@@ -3214,17 +3215,6 @@ body {
   min-height: 0;
   padding: 2px 1px;
   border-left: 1px solid rgba(42, 64, 102, 0.95);
-  /* チュートリアル用のみ: 選択タブ以外を薄暗く（実機 TabBar とは別） */
-  opacity: 0.32;
-  transition: opacity 0.2s ease;
-}
-
-.onboarding-mock-tabbar--no-selection .onboarding-mock-tab {
-  opacity: 1;
-}
-
-.onboarding-mock-tab--active {
-  opacity: 1;
 }
 
 .onboarding-mock-tab-emoji {
@@ -3247,22 +3237,6 @@ body {
   letter-spacing: 0.01em;
   color: #b9cae0;
   text-align: center;
-}
-
-/* チュートリアル用モック: 非選択を opacity で抑え、選択は上ドットのみ（グローなし） */
-.onboarding-mock-tab--active::after {
-  content: "";
-  position: absolute;
-  top: 2px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 5px;
-  height: 5px;
-  border-radius: 999px;
-  background: #5cdbef;
-  pointer-events: none;
-  z-index: 3;
-  box-shadow: 0 0 4px rgba(92, 219, 239, 0.65);
 }
 
 .onboarding-art-img {
