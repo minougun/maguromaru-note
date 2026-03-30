@@ -11,8 +11,8 @@
 - **下部タブ帯**は **各タブセル内のラベル**（実機は `TabBar` の各 `Link` 内、モックは `OnboardingDeviceMock` の各セル内）。二層重ねない（背面ラベル＋透明リンクは環境・色継承で見えなくなることがある）。SVG は廃止。選択表示は CSS グロー。絵文字タブは廃止。
 - **寸法**: 帯は **430×84** 前後（`aspect-ratio: 430 / 84`、絵文字＋ラベル用。アプリ `max-width: 430px` と論理幅を揃える）。
 - **実機 `TabBar`**: セーフエリアは外枠 `nav.tab-bar` の `padding-bottom` のみ。`tab-bar-strip` は **6 列 1 層グリッド**で各セルが `Link`。ラベルは `tab-link-label`（`z-index:2`）、選択グローは `::before`（`z-index:1`）。`nav.tab-bar` に `color: #b9cae0` を指定し `a` の inherit 問題を避ける。
-- **選択表示**: **`aria-current="page"`** の **`::before`** でセル全体に水色グロー、**`::after`** で絵文字直上に水色ドット（`#5cdbef`、6px 前後）。モックは **`onboarding-mock-tab--active`** で同様。`data-active` は React の表現差で使わない。
-- **チュートリアル用モック**（`OnboardingDeviceMock`）: `onboarding-mock-tabbar` も **6 列 1 層**で各セルに絵文字＋ラベル。選択は **`onboarding-mock-tab--active`** ＋グロー＋上ドット。
+- **実機の選択表示**: **`aria-current="page"`** の **`::before`** で水色グロー、**`::after`** で絵文字直上に水色ドット（`#5cdbef`）。`data-active` は React の表現差で使わない。
+- **チュートリアル用モック**（`OnboardingDeviceMock`）: `onboarding-mock-tabbar` は **6 列 1 層**。**非選択タブは `opacity: 0.4`**、選択は通常の明るさ（**`onboarding-mock-tab--active`**）。グローは付けず、上ドット（`::after`）のみ。イントロ等 **`activeHref === null`** のときは **`onboarding-mock-tabbar--no-selection`** で全タブを通常表示。
 - **`OnboardingTutorial`**: 各ステップの **`screenshotSrc`（WebP）を削除**済み。常に `OnboardingDeviceMock` を表示（旧スクショに焼き込まれたタブだと「変更が反映されない」ように見えていた）。
 - **オンボーディング完了キー**: `src/lib/onboarding-storage.ts` の **`maguro_note_onboarding_v5_done`**（内容更新のたびにキー名を上げる方針。`v4` 完了済みユーザーは v5 でチュートリアル再表示）。
 

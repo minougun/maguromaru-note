@@ -379,7 +379,10 @@ export function OnboardingDeviceMock({ screen }: { screen: OnboardingMockId }) {
           <MockBody screen={screen} />
         </div>
 
-        <nav aria-hidden className="onboarding-mock-tabbar">
+        <nav
+          aria-hidden
+          className={`onboarding-mock-tabbar${activeHref === null ? " onboarding-mock-tabbar--no-selection" : ""}`}
+        >
           {MAIN_NAV_TABS.map((tab) => {
             const active = activeHref === tab.href;
             return (
