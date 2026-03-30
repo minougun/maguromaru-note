@@ -8,11 +8,11 @@
 
 ## 1. 何をしたか（要約）
 
-- **下部タブ帯**は **DOM ラベル**（`TabBarStripDecoration`＋`globals.css` の `.main-tab-strip-decor*`）。SVG の `<text>` は `background-image` / `img` でも環境によって非表示になるため廃止。どのタブも未選択トーン・選択表示は CSS グロー。絵文字タブは廃止。
+- **下部タブ帯**は **各タブセル内のラベル**（実機は `TabBar` の各 `Link` 内、モックは `OnboardingDeviceMock` の各セル内）。二層重ねない（背面ラベル＋透明リンクは環境・色継承で見えなくなることがある）。SVG は廃止。選択表示は CSS グロー。絵文字タブは廃止。
 - **寸法**: 帯は **430×75**（`aspect-ratio: 430 / 75`、アプリ `max-width: 430px` と論理幅を揃える）。
-- **実機 `TabBar`**: セーフエリアは外枠 `nav.tab-bar` の `padding-bottom` のみ。**内側**を **ラベル装飾レイヤー**（`tab-bar-strip-bg` 内の `TabBarStripDecoration`）と **リンク用オーバーレイ**（`tab-bar-strip-cells`）に分割し、ラベルより手前に **選択インジケータ**（CSS グロー）を描画。
+- **実機 `TabBar`**: セーフエリアは外枠 `nav.tab-bar` の `padding-bottom` のみ。`tab-bar-strip` は **6 列 1 層グリッド**で各セルが `Link`。ラベルは `tab-link-label`（`z-index:2`）、選択グローは `::before`（`z-index:1`）。`nav.tab-bar` に `color: #b9cae0` を指定し `a` の inherit 問題を避ける。
 - **選択表示**: `data-active` ではなく **`aria-current="page"`** の **`::before`** でセル全体に柔らかい水色のグロー（ドットは廃止）。`[data-active="true"]` は React の DOM 表現差で外れることがあるため使わない。
-- **チュートリアル用モック**（`OnboardingDeviceMock`）: 同じ DOM 装飾（`TabBarStripDecoration compact`）・同じ二層構造（`onboarding-mock-tabbar-bg` / `onboarding-mock-tabbar-cells`）。選択タブは **`onboarding-mock-tab--active`** クラス＋同様のグロー。
+- **チュートリアル用モック**（`OnboardingDeviceMock`）: `onboarding-mock-tabbar` も **6 列 1 層**で各セルに `onboarding-mock-tab-label`。選択は **`onboarding-mock-tab--active`** ＋グロー。
 - **`OnboardingTutorial`**: 各ステップの **`screenshotSrc`（WebP）を削除**済み。常に `OnboardingDeviceMock` を表示（旧スクショに焼き込まれたタブだと「変更が反映されない」ように見えていた）。
 - **オンボーディング完了キー**: `src/lib/onboarding-storage.ts` の **`maguro_note_onboarding_v5_done`**（内容更新のたびにキー名を上げる方針。`v4` 完了済みユーザーは v5 でチュートリアル再表示）。
 
@@ -23,7 +23,6 @@
 | 内容 | パス |
 |------|------|
 | タブ定義（順序・ラベル） | `/mnt/c/Users/minou/maguromaru-note/src/lib/main-tabs.ts` |
-| タブ帯の装飾 DOM | `/mnt/c/Users/minou/maguromaru-note/src/components/ui/TabBarStripDecoration.tsx` |
 | 実機タブ | `/mnt/c/Users/minou/maguromaru-note/src/components/ui/TabBar.tsx` |
 | チュートリアルステップ定義 | `/mnt/c/Users/minou/maguromaru-note/src/components/onboarding/OnboardingTutorial.tsx` |
 | デバイスモック | `/mnt/c/Users/minou/maguromaru-note/src/components/onboarding/OnboardingDeviceMock.tsx` |

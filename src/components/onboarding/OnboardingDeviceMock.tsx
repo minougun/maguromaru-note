@@ -1,7 +1,6 @@
 "use client";
 
 import { ShareBonusCallout } from "@/components/share/ShareBonusCallout";
-import { TabBarStripDecoration } from "@/components/ui/TabBarStripDecoration";
 import { MAIN_NAV_TABS } from "@/lib/main-tabs";
 import { publicPath } from "@/lib/public-path";
 
@@ -54,7 +53,11 @@ function MockIntro() {
       <p className="onboarding-mock-intro-lead">画面下のタブから主要機能へ</p>
       <div className="onboarding-mock-intro-strip-wrap">
         <div className="onboarding-mock-intro-tabstrip" aria-hidden="true">
-          <TabBarStripDecoration compact />
+          {MAIN_NAV_TABS.map((tab) => (
+            <span className="onboarding-mock-intro-tabstrip-cell" key={tab.href}>
+              {tab.stripLabel}
+            </span>
+          ))}
         </div>
       </div>
       <p className="onboarding-mock-intro-note">次のスライドで、それぞれの画面イメージを紹介します。</p>
@@ -376,20 +379,17 @@ export function OnboardingDeviceMock({ screen }: { screen: OnboardingMockId }) {
         </div>
 
         <nav aria-hidden className="onboarding-mock-tabbar">
-          <div className="onboarding-mock-tabbar-bg" aria-hidden="true">
-            <TabBarStripDecoration compact />
-          </div>
-          <div className="onboarding-mock-tabbar-cells">
-            {MAIN_NAV_TABS.map((tab) => {
-              const active = activeHref === tab.href;
-              return (
-                <div
-                  className={`onboarding-mock-tab${active ? " onboarding-mock-tab--active" : ""}`}
-                  key={tab.href}
-                />
-              );
-            })}
-          </div>
+          {MAIN_NAV_TABS.map((tab) => {
+            const active = activeHref === tab.href;
+            return (
+              <div
+                className={`onboarding-mock-tab${active ? " onboarding-mock-tab--active" : ""}`}
+                key={tab.href}
+              >
+                <span className="onboarding-mock-tab-label">{tab.stripLabel}</span>
+              </div>
+            );
+          })}
         </nav>
       </div>
     </div>
