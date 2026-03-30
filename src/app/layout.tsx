@@ -14,10 +14,16 @@ export const metadata: Metadata = {
   },
 };
 
+/** 本番キャッシュや「反映されない」調査用。開発者ツールで body の data-mgn-revision を確認 */
+const mgnRevision =
+  process.env.VERCEL_GIT_COMMIT_SHA?.trim() ||
+  process.env.VERCEL_DEPLOYMENT_ID?.trim() ||
+  "";
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ja" suppressHydrationWarning>
-      <body suppressHydrationWarning>
+      <body data-mgn-revision={mgnRevision} suppressHydrationWarning>
         <AuthProvider>
           <AppSnapshotProvider>
             <AppShellRouter>{children}</AppShellRouter>

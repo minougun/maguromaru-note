@@ -1772,6 +1772,15 @@ body {
   gap: 12px;
 }
 
+.login-launch-footnote {
+  margin: 14px 0 0;
+  padding: 0 8px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--cream-faint);
+  text-align: center;
+}
+
 .login-launch-btn {
   width: 100%;
   margin: 0;

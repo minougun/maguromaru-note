@@ -154,6 +154,9 @@ export function LoginScreen({
                 サインイン
               </button>
             </div>
+            <p className="login-launch-footnote">
+              ログイン後、画面下に6つのタブ（カラーアイコン）が表示されます。この画面だけではタブは出ません。
+            </p>
           </div>
         </div>
       </div>
