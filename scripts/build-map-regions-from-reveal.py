@@ -8,8 +8,10 @@ TunaMap.tsx の MAP_REGIONS に貼れる `d:` 文字列を標準出力する。
 - **穴埋め**: ほほなど塗りに穴があると外周グラフが分岐するため、バウンディングボックス内の
   囲まれた背景を前景で埋めてから外周を取る。
 
-**注意**: `TunaMap.tsx` の **赤身**・**中トロ（背）** は広い flood に対する輪郭＋RDP が階段状に見えるため、
-本番では手調整の `d` を使う。ここでの chutoro / akami 出力は参考用。
+**注意**:
+- **赤身**は広い flood の輪郭が階段状に見えるため、`TunaMap.tsx` では手調整の `d` を維持。
+- **中トロ（背）**は左・中央を手 path、**尾寄り第3ブロックだけ**本番でも `path_contour_from_pixels`（シード 930,298, thresh 38, RDP ε7）を採用。
+  スクリプトの `chutoro-back R` 出力はそのブロックの再生成用。
 
 Pillow が必要: pip install pillow
 
@@ -306,7 +308,8 @@ def main() -> None:
 
     chu_l_d = ppath(chu_l, 4.0)
     chu_m_d = ppath(chu_m, 6.0)
-    chu_r_d = ppath(chu_r, 6.0)
+    # TunaMap 本番の尾ブロックと一致（狭い flood なので ε 小さめで手 path に近い角丸感）
+    chu_r_d = ppath(chu_r, 7.0)
     chutoro_combined = f"{chu_l_d} {chu_m_d} {chu_r_d}".strip()
 
     ak_main_d = ppath(ak_main, 4.5)
