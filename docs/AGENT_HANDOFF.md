@@ -57,7 +57,7 @@
 - 旧 **`public/onboarding/mock-*.svg`** は削除。
 - **実 UI に寄せた CSS モック** `OnboardingDeviceMock`（`src/components/onboarding/OnboardingDeviceMock.tsx`）を追加。ヘッダー・暖簾・カード・**下部タブは各 `Link` 内ラベルの 6 列 1 層**（430×75）で実機 `TabBar` と整合（絵文字・SVG 帯は廃止。`nav.tab-bar` でタブ用文字色を明示）。
 - `OnboardingTutorial` は **常にモック表示**。各ステップの **`screenshotSrc`（WebP）は削除済み**（静的スクショに焼き込まれたタブと実機の見た目差を防ぐ）。
-- チュートリアル再表示用に **`onboarding-storage.ts` のキーを v5**（`maguro_note_onboarding_v5_done`）へ更新（内容差し替えのたびにキーを上げる方針）。
+- チュートリアル再表示用に **`onboarding-storage.ts` のキーを v6**（`maguro_note_onboarding_v6_done`）へ更新（内容差し替えのたびにキーを上げる方針）。
 
 ### 関連ファイル
 

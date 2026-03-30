@@ -1,5 +1,5 @@
-/** チュートリアル内容を差し替えたらキーを上げて再表示できる（v5: タブ帯画像・選択ドットUI 更新） */
-const ONBOARDING_DONE_KEY = "maguro_note_onboarding_v5_done";
+/** チュートリアル内容を差し替えたらキーを上げて再表示できる（v6: タブは非選択を薄暗く・オンボーディング再表示） */
+const ONBOARDING_DONE_KEY = "maguro_note_onboarding_v6_done";
 
 export function readOnboardingDone(): boolean {
   if (typeof window === "undefined") {

@@ -248,6 +248,13 @@ body {
   color: #b9cae0;
   text-decoration: none;
   outline-offset: -2px;
+  /* 非選択タブを薄暗く（選択はコントラストで目立たせる） */
+  opacity: 0.32;
+  transition: opacity 0.2s ease;
+}
+
+.tab-link[aria-current="page"] {
+  opacity: 1;
 }
 
 .tab-link:first-child {
@@ -280,28 +287,13 @@ body {
 }
 
 .tab-link:focus-visible {
+  opacity: 1;
   outline: 2px solid #5cdbef;
   border-radius: 4px;
   z-index: 2;
 }
 
-/* 選択タブ: グロー（::before）はラベル・絵文字（z-index:2）の下 */
-.tab-link[aria-current="page"]::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 1;
-  background: radial-gradient(
-    ellipse 90% 130% at 50% 0%,
-    rgba(92, 219, 239, 0.38) 0%,
-    rgba(92, 219, 239, 0.12) 42%,
-    transparent 72%
-  );
-  box-shadow: inset 0 0 22px rgba(92, 219, 239, 0.18);
-}
-
-/* 選択タブ: 絵文字の上に水色ドット（::after は最前面） */
+/* 選択タブ: 絵文字の上に水色ドット（グローは使わず非選択の薄暗さと対比） */
 .tab-link[aria-current="page"]::after {
   content: "";
   position: absolute;
@@ -3214,8 +3206,8 @@ body {
   min-height: 0;
   padding: 2px 1px;
   border-left: 1px solid rgba(42, 64, 102, 0.95);
-  /* 選択タブ以外を薄暗く（実機 TabBar とは別デザイン） */
-  opacity: 0.4;
+  /* 選択タブ以外を薄暗く（実機 TabBar と同じ考え方） */
+  opacity: 0.32;
   transition: opacity 0.2s ease;
 }
 
