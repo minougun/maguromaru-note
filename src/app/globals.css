@@ -325,7 +325,7 @@ body {
   pointer-events: none;
 }
 
-/* 非選択: シャドウ＋薄く。選択: 水色・シャドウなし（スクショ 2026-03-31 準拠） */
+/* 非選択: シャドウ＋薄く。選択: アイコン・ラベル・上部ドットは白・シャドウなし */
 .tab-link-icon {
   width: 22px;
   height: 22px;
@@ -340,7 +340,7 @@ body {
 }
 
 .tab-link[aria-current="page"] .tab-link-icon {
-  color: #5cdbef;
+  color: #ffffff;
   opacity: 1;
   filter: none;
 }
@@ -357,7 +357,7 @@ body {
 }
 
 .tab-link[aria-current="page"] .tab-link-label {
-  color: #5cdbef;
+  color: #ffffff;
 }
 
 .tab-link:focus-visible {
@@ -366,7 +366,7 @@ body {
   z-index: 2;
 }
 
-/* 選択タブ: アイコン直上の水色ドットのみ（背景グローなし） */
+/* 選択タブ: アイコン直上の白ドットのみ（背景グローなし） */
 .tab-link[aria-current="page"]::after,
 .onboarding-mock-tab--active::after {
   content: "";
@@ -377,7 +377,7 @@ body {
   width: 5px;
   height: 5px;
   border-radius: 999px;
-  background: #5cdbef;
+  background: #ffffff;
   pointer-events: none;
   z-index: 3;
 }
@@ -3319,7 +3319,7 @@ body {
 }
 
 .onboarding-mock-tab--active .onboarding-mock-tab-icon {
-  color: #5cdbef;
+  color: #ffffff;
   opacity: 1;
   filter: none;
 }
@@ -3341,7 +3341,7 @@ body {
 }
 
 .onboarding-mock-tab--active .onboarding-mock-tab-label {
-  color: #5cdbef;
+  color: #ffffff;
 }
 
 .onboarding-art-img {
