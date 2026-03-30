@@ -109,17 +109,20 @@ def main() -> None:
     w, h = im.size
     px = im.load()
 
-    noten = "M 262,192 L 328,186 L 342,218 L 312,238 L 252,222 Z"
+    # 脳天: 頭頂ピンクを厳しめに flood（maxn で打ち切り）→ イラスト外にはみ出しにくい
+    noten = path_from_set(flood_rgba(px, w, h, 378, 232, thresh=18, maxn=500), max_pts=300, rng=rng)
 
-    meura = path_from_set(flood_rgba(px, w, h, 298, 275, thresh=18, maxn=2500), max_pts=350, rng=rng)
-    hoho = path_from_set(flood_rgba(px, w, h, 260, 400, thresh=28, maxn=12000), max_pts=700, rng=rng)
-    chu_l = path_from_set(flood_rgba(px, w, h, 450, 235, thresh=26, maxn=4000), max_pts=400, rng=rng)
-    chu_r = path_from_set(flood_rgba(px, w, h, 1020, 285, thresh=34, maxn=8000), max_pts=600, rng=rng)
+    # 目裏: 目の斜め後ろ（背中寄り）の塗り
+    meura = path_from_set(flood_rgba(px, w, h, 326, 258, thresh=20, maxn=900), max_pts=350, rng=rng)
+    hoho = path_from_set(flood_rgba(px, w, h, 268, 425, thresh=34, maxn=20000), max_pts=1000, rng=rng)
+    # 背中前後の中とろ: 下側のピンク帯から flood して縦方向も取る
+    chu_l = path_from_set(flood_rgba(px, w, h, 440, 248, thresh=42, maxn=25000), max_pts=900, rng=rng)
+    chu_r = path_from_set(flood_rgba(px, w, h, 1025, 275, thresh=36, maxn=10000), max_pts=900, rng=rng)
     ak_main = path_from_set(flood_rgba(px, w, h, 700, 360, thresh=22, maxn=25000), max_pts=900, rng=rng)
     tail = path_from_set(flood_rgba(px, w, h, 1168, 385, thresh=32, maxn=2000), max_pts=400, rng=rng)
     ot_f = path_from_set(flood_rgba(px, w, h, 440, 530, thresh=28, maxn=9000), max_pts=600, rng=rng)
     ot_r = path_from_set(flood_rgba(px, w, h, 670, 525, thresh=28, maxn=9000), max_pts=600, rng=rng)
-    chu_belly = path_from_set(flood_rgba(px, w, h, 880, 480, thresh=26, maxn=6000), max_pts=500, rng=rng)
+    chu_belly = path_from_set(flood_rgba(px, w, h, 880, 485, thresh=38, maxn=12000), max_pts=900, rng=rng)
 
     blocks = [
         ("noten (手調整)", noten),
