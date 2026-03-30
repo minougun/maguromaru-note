@@ -5,8 +5,8 @@
 export const MAIN_NAV_TABS = [
   { href: "/", a11yLabel: "ホーム", stripLabel: "ホーム", emoji: "🏠" },
   { href: "/record", a11yLabel: "記録", stripLabel: "記録", emoji: "✏️" },
-  { href: "/zukan", a11yLabel: "図鑑", stripLabel: "図鑑", emoji: "🐟" },
-  { href: "/quiz", a11yLabel: "クイズ", stripLabel: "クイズ", emoji: "❓" },
+  { href: "/zukan", a11yLabel: "図鑑", stripLabel: "図鑑", emoji: "📖" },
+  { href: "/quiz", a11yLabel: "クイズ", stripLabel: "クイズ", emoji: "🐟" },
   { href: "/titles", a11yLabel: "称号", stripLabel: "称号", emoji: "🏅" },
   { href: "/mypage", a11yLabel: "アカウント連携", stripLabel: "マイページ", emoji: "👤" },
 ] as const;
