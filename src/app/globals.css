@@ -265,16 +265,17 @@ body {
 }
 
 .tab-link-icon {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   flex-shrink: 0;
-  opacity: 0.65;
-  transition: opacity 0.15s ease, filter 0.15s ease;
+  color: #b9cae0;
+  opacity: 0.72;
+  transition: opacity 0.18s ease, color 0.18s ease;
 }
 
 .tab-link[aria-current="page"] .tab-link-icon {
+  color: #ffffff;
   opacity: 1;
-  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.35));
 }
 
 .tab-link[aria-current="page"] .tab-link-label {
@@ -1772,15 +1773,6 @@ body {
   gap: 12px;
 }
 
-.login-launch-footnote {
-  margin: 14px 0 0;
-  padding: 0 8px;
-  font-size: 11px;
-  line-height: 1.45;
-  color: var(--cream-faint);
-  text-align: center;
-}
-
 .login-launch-btn {
   width: 100%;
   margin: 0;
@@ -2656,6 +2648,8 @@ body {
   width: 10px;
   height: 10px;
   display: block;
+  color: #b9cae0;
+  opacity: 0.75;
 }
 
 .onboarding-mock-intro-tabstrip-text {
@@ -3263,12 +3257,13 @@ body {
   width: 11px;
   height: 11px;
   display: block;
-  opacity: 0.65;
+  color: #b9cae0;
+  opacity: 0.72;
 }
 
 .onboarding-mock-tab--active .onboarding-mock-tab-icon {
+  color: #ffffff;
   opacity: 1;
-  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.35));
 }
 
 .onboarding-mock-tab:first-child {
