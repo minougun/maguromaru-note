@@ -364,7 +364,7 @@ export function OnboardingDeviceMock({ screen }: { screen: OnboardingMockId }) {
               alt=""
               className="onboarding-mock-brand-img"
               height={26}
-              src={publicPath("/brand/maguromaru-mark.webp")}
+              src={publicPath("/brand/maguromaru-mark.png")}
               width={26}
             />
             <div className="onboarding-mock-header-text">

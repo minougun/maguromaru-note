@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ZodError } from "zod";
@@ -99,14 +98,13 @@ export function LoginScreen() {
         <div className="login-launch-body">
           <div className="login-launch-icon-stage">
             <div className="login-launch-mark-frame">
-              <Image
+              {/* GIF アニメーション（ループなし）。Next.js Image は GIF アニメ非対応のため img を使用 */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
                 alt=""
                 className="login-launch-mark-img"
-                fill
-                priority
-                sizes="100vw"
-                src="/brand/login-launch-mark.webp"
-                style={{ objectFit: "contain" }}
+                draggable={false}
+                src="/brand/login-launch-mark.gif"
               />
             </div>
           </div>

@@ -1,6 +1,6 @@
 import Image from "next/image";
 
-const BRAND_MARK_SRC = "/brand/maguromaru-mark.webp";
+const BRAND_MARK_SRC = "/brand/maguromaru-mark.png";
 
 /** ヘッダー・入荷カードなどで使う「まぐろ丸」マーク（円相風アート） */
 export function BrandMark({ className }: { className?: string }) {
@@ -9,11 +9,11 @@ export function BrandMark({ className }: { className?: string }) {
       <Image
         alt=""
         className="brand-mark-img"
-        height={256}
+        height={512}
         priority
         sizes="42px"
         src={BRAND_MARK_SRC}
-        width={256}
+        width={512}
       />
     </span>
   );

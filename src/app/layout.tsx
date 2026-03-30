@@ -9,8 +9,8 @@ export const metadata: Metadata = {
   title: "まぐろ丸ノート",
   description: "海鮮丼まぐろ丸の公式Webアプリ",
   icons: {
-    icon: [{ url: "/maguromaru-mark.webp", type: "image/webp" }],
-    apple: "/maguromaru-mark.webp",
+    icon: [{ url: "/maguromaru-mark.png", type: "image/png" }],
+    apple: "/maguromaru-mark.png",
   },
 };
 
