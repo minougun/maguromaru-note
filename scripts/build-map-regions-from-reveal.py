@@ -121,8 +121,9 @@ def main() -> None:
     chu_r = path_from_set(flood_rgba(px, w, h, 1000, 268, thresh=36, maxn=12000), max_pts=800, rng=rng)
     ak_main = path_from_set(flood_rgba(px, w, h, 700, 360, thresh=22, maxn=25000), max_pts=900, rng=rng)
     tail = path_from_set(flood_rgba(px, w, h, 1168, 385, thresh=32, maxn=2000), max_pts=400, rng=rng)
-    ot_f = path_from_set(flood_rgba(px, w, h, 455, 505, thresh=38, maxn=12000), max_pts=800, rng=rng)
-    ot_r = path_from_set(flood_rgba(px, w, h, 680, 510, thresh=38, maxn=12000), max_pts=800, rng=rng)
+    # 大トロ腹2ブロック: サンプル縮小すると凸包が小さくなるため max_pts 大きめ・thresh で塗り全体を取る
+    ot_f = path_from_set(flood_rgba(px, w, h, 455, 505, thresh=52, maxn=60000), max_pts=50000, rng=rng)
+    ot_r = path_from_set(flood_rgba(px, w, h, 680, 510, thresh=52, maxn=60000), max_pts=50000, rng=rng)
     chu_belly = path_from_set(flood_rgba(px, w, h, 900, 455, thresh=42, maxn=15000), max_pts=900, rng=rng)
 
     blocks = [
