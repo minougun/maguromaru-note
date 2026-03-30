@@ -285,7 +285,7 @@ body {
   z-index: 2;
 }
 
-/* 選択タブ: グローはラベル（z-index:2）の下に */
+/* 選択タブ: グロー（::before）はラベル・絵文字（z-index:2）の下 */
 .tab-link[aria-current="page"]::before {
   content: "";
   position: absolute;
@@ -299,6 +299,22 @@ body {
     transparent 72%
   );
   box-shadow: inset 0 0 22px rgba(92, 219, 239, 0.18);
+}
+
+/* 選択タブ: 絵文字の上に水色ドット（::after は最前面） */
+.tab-link[aria-current="page"]::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #5cdbef;
+  pointer-events: none;
+  z-index: 3;
+  box-shadow: 0 0 6px rgba(92, 219, 239, 0.55);
 }
 
 .tab-icon {
@@ -3222,7 +3238,7 @@ body {
   text-align: center;
 }
 
-/* チュートリアル用モック: 実機タブと同じくグローで選択表示 */
+/* チュートリアル用モック: 実機と同じくグロー + 絵文字上ドット */
 .onboarding-mock-tab--active::before {
   content: "";
   position: absolute;
@@ -3236,6 +3252,21 @@ body {
     transparent 72%
   );
   box-shadow: inset 0 0 16px rgba(92, 219, 239, 0.16);
+}
+
+.onboarding-mock-tab--active::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: #5cdbef;
+  pointer-events: none;
+  z-index: 3;
+  box-shadow: 0 0 4px rgba(92, 219, 239, 0.65);
 }
 
 .onboarding-art-img {
