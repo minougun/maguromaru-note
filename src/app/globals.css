@@ -215,7 +215,7 @@ body {
   grid-template-columns: repeat(6, 1fr);
   align-items: stretch;
   border-top: 2px solid var(--navy);
-  aspect-ratio: 430 / 75;
+  aspect-ratio: 430 / 84;
   width: 100%;
   min-height: 0;
   background-color: #1b2d4f;
@@ -235,11 +235,13 @@ body {
   position: relative;
   z-index: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 2px;
   min-width: 0;
   min-height: 0;
-  padding: 0 2px;
+  padding: 5px 2px 4px;
   border: 0;
   border-left: 1px solid rgba(42, 64, 102, 0.95);
   background: transparent;
@@ -252,17 +254,29 @@ body {
   border-left: none;
 }
 
-.tab-link-label {
+.tab-link-stack {
   position: relative;
   z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  pointer-events: none;
+}
+
+.tab-link-emoji {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.tab-link-label {
   font-family: inherit;
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 600;
-  line-height: 1.15;
+  line-height: 1.1;
   letter-spacing: 0.02em;
   color: #b9cae0;
   text-align: center;
-  pointer-events: none;
 }
 
 .tab-link:focus-visible {
@@ -2553,7 +2567,7 @@ body {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   align-items: center;
-  aspect-ratio: 430 / 75;
+  aspect-ratio: 430 / 84;
   width: 100%;
   background-color: #1b2d4f;
   color: #b9cae0;
@@ -2572,14 +2586,28 @@ body {
 .onboarding-mock-intro-tabstrip-cell {
   position: relative;
   z-index: 1;
-  padding: 0 1px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  padding: 2px 1px;
   border-left: 1px solid rgba(42, 64, 102, 0.95);
-  font-size: 6.5px;
-  font-weight: 600;
-  line-height: 1.15;
-  letter-spacing: 0.01em;
   color: #b9cae0;
   text-align: center;
+}
+
+.onboarding-mock-intro-tabstrip-emoji {
+  font-size: 10px;
+  line-height: 1;
+}
+
+.onboarding-mock-intro-tabstrip-text {
+  font-size: 5.5px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+  color: #b9cae0;
 }
 
 .onboarding-mock-intro-tabstrip-cell:first-child {
@@ -3143,7 +3171,7 @@ body {
   align-items: stretch;
   width: 100%;
   border-top: 2px solid var(--navy);
-  aspect-ratio: 430 / 75;
+  aspect-ratio: 430 / 84;
   background-color: #1b2d4f;
   color: #b9cae0;
   overflow: hidden;
@@ -3162,12 +3190,21 @@ body {
   position: relative;
   z-index: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 1px;
   min-width: 0;
   min-height: 0;
-  padding: 0 1px;
+  padding: 2px 1px;
   border-left: 1px solid rgba(42, 64, 102, 0.95);
+}
+
+.onboarding-mock-tab-emoji {
+  position: relative;
+  z-index: 2;
+  font-size: 11px;
+  line-height: 1;
 }
 
 .onboarding-mock-tab:first-child {
@@ -3177,9 +3214,9 @@ body {
 .onboarding-mock-tab-label {
   position: relative;
   z-index: 2;
-  font-size: 6.5px;
+  font-size: 5.5px;
   font-weight: 600;
-  line-height: 1.15;
+  line-height: 1.1;
   letter-spacing: 0.01em;
   color: #b9cae0;
   text-align: center;

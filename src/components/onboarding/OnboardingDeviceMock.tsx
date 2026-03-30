@@ -55,7 +55,8 @@ function MockIntro() {
         <div className="onboarding-mock-intro-tabstrip" aria-hidden="true">
           {MAIN_NAV_TABS.map((tab) => (
             <span className="onboarding-mock-intro-tabstrip-cell" key={tab.href}>
-              {tab.stripLabel}
+              <span className="onboarding-mock-intro-tabstrip-emoji">{tab.emoji}</span>
+              <span className="onboarding-mock-intro-tabstrip-text">{tab.stripLabel}</span>
             </span>
           ))}
         </div>
@@ -386,6 +387,7 @@ export function OnboardingDeviceMock({ screen }: { screen: OnboardingMockId }) {
                 className={`onboarding-mock-tab${active ? " onboarding-mock-tab--active" : ""}`}
                 key={tab.href}
               >
+                <span className="onboarding-mock-tab-emoji">{tab.emoji}</span>
                 <span className="onboarding-mock-tab-label">{tab.stripLabel}</span>
               </div>
             );

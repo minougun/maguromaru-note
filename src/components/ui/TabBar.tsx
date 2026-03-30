@@ -22,8 +22,9 @@ export function TabBar() {
               key={tab.href}
               prefetch={false}
             >
-              <span aria-hidden="true" className="tab-link-label">
-                {tab.stripLabel}
+              <span aria-hidden="true" className="tab-link-stack">
+                <span className="tab-link-emoji">{tab.emoji}</span>
+                <span className="tab-link-label">{tab.stripLabel}</span>
               </span>
             </Link>
           );
