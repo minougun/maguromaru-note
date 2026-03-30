@@ -194,7 +194,7 @@ body {
   text-transform: uppercase;
 }
 
-/* 下部タブ帯: public/tabbar/bottom-tabs.png は 430×75（アプリ max 幅 430px と同一スケール） */
+/* 下部タブ帯: public/tabbar/bottom-tabs.svg は 430×75（アプリ max 幅 430px と同一スケール） */
 .tab-bar {
   position: fixed;
   left: 50%;
@@ -260,20 +260,20 @@ body {
   z-index: 2;
 }
 
-/* data-active より aria-current の方が DOM が安定（React の data 真偽値の表現差を避ける） */
+/* 選択タブ: 上から柔らかく光る（ドットは廃止。PNG に焼き込まれた擬似選択と二重にならないよう中立帯画像を推奨） */
 .tab-link[aria-current="page"]::before {
   content: "";
   position: absolute;
-  top: 8px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 6px;
-  height: 6px;
-  border-radius: 999px;
-  background: #5cdbef;
+  inset: 0;
   pointer-events: none;
-  box-shadow: 0 0 6px rgba(92, 219, 239, 0.55);
   z-index: 1;
+  background: radial-gradient(
+    ellipse 90% 130% at 50% 0%,
+    rgba(92, 219, 239, 0.38) 0%,
+    rgba(92, 219, 239, 0.12) 42%,
+    transparent 72%
+  );
+  box-shadow: inset 0 0 22px rgba(92, 219, 239, 0.18);
 }
 
 .tab-link-sr {
@@ -3149,19 +3149,19 @@ body {
   align-self: stretch;
 }
 
-/* 選択タブ: 帯の上側に水色ドット（[data-active] は React の真偽値で空文字になりセレクタ不一致しうるためクラスで明示） */
+/* チュートリアル用モック: 実機タブと同じくグローで選択表示（クラスは OnboardingDeviceMock が付与） */
 .onboarding-mock-tab--active::before {
   content: "";
   position: absolute;
-  top: 4px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 5px;
-  height: 5px;
-  border-radius: 999px;
-  background: #5cdbef;
+  inset: 0;
   pointer-events: none;
-  box-shadow: 0 0 4px rgba(92, 219, 239, 0.65);
+  background: radial-gradient(
+    ellipse 90% 130% at 50% 0%,
+    rgba(92, 219, 239, 0.36) 0%,
+    rgba(92, 219, 239, 0.1) 42%,
+    transparent 72%
+  );
+  box-shadow: inset 0 0 16px rgba(92, 219, 239, 0.16);
 }
 
 .onboarding-art-img {
