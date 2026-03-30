@@ -1,6 +1,7 @@
 "use client";
 
 import { ShareBonusCallout } from "@/components/share/ShareBonusCallout";
+import { TabIcon } from "@/components/ui/TabIcon";
 import { MAIN_NAV_TABS } from "@/lib/main-tabs";
 import { publicPath } from "@/lib/public-path";
 
@@ -55,7 +56,7 @@ function MockIntro() {
         <div className="onboarding-mock-intro-tabstrip" aria-hidden="true">
           {MAIN_NAV_TABS.map((tab) => (
             <span className="onboarding-mock-intro-tabstrip-cell" key={tab.href}>
-              <span className="onboarding-mock-intro-tabstrip-emoji">{tab.emoji}</span>
+              <TabIcon className="onboarding-mock-intro-tabstrip-icon" name={tab.icon} />
               <span className="onboarding-mock-intro-tabstrip-text">{tab.stripLabel}</span>
             </span>
           ))}
@@ -387,7 +388,7 @@ export function OnboardingDeviceMock({ screen }: { screen: OnboardingMockId }) {
                 className={`onboarding-mock-tab${active ? " onboarding-mock-tab--active" : ""}`}
                 key={tab.href}
               >
-                <span className="onboarding-mock-tab-emoji">{tab.emoji}</span>
+                <TabIcon className="onboarding-mock-tab-icon" name={tab.icon} />
                 <span className="onboarding-mock-tab-label">{tab.stripLabel}</span>
               </div>
             );
