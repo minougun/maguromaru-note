@@ -10,8 +10,8 @@ TunaMap.tsx の MAP_REGIONS に貼れる `d:` 文字列を標準出力する。
 
 **注意**:
 - **赤身**は広い flood の輪郭が階段状に見えるため、`TunaMap.tsx` では手調整の `d` を維持。
-- **中トロ（背）**は左・中央を手 path、**尾寄り第3ブロックだけ**本番でも `path_contour_from_pixels`（シード 930,298, thresh 38, RDP ε7）を採用。
-  スクリプトの `chutoro-back R` 出力はそのブロックの再生成用。
+- **中トロ（背）**は本番も 3 ブロックとも `path_contour_from_pixels`（左 ε2.5・中央 ε5・尾 ε7、尾はシード 930,298）。
+  WebP 差し替え後は本スクリプトの `chutoro-back` 出力を `TunaMap.tsx` に反映する。
 
 Pillow が必要: pip install pillow
 
@@ -306,9 +306,8 @@ def main() -> None:
     meura = ppath(meura_pts, 2.5)
     hoho = ppath(hoho_pts, 4.0)
 
-    chu_l_d = ppath(chu_l, 4.0)
-    chu_m_d = ppath(chu_m, 6.0)
-    # TunaMap 本番の尾ブロックと一致（狭い flood なので ε 小さめで手 path に近い角丸感）
+    chu_l_d = ppath(chu_l, 2.5)
+    chu_m_d = ppath(chu_m, 5.0)
     chu_r_d = ppath(chu_r, 7.0)
     chutoro_combined = f"{chu_l_d} {chu_m_d} {chu_r_d}".strip()
 
