@@ -109,11 +109,11 @@ def main() -> None:
     w, h = im.size
     px = im.load()
 
-    # 脳天: 目より上の頭部ピンク（目上〜やや後ろ）
-    noten = path_from_set(flood_rgba(px, w, h, 308, 222, thresh=18, maxn=1200), max_pts=400, rng=rng)
+    # 脳天: 頭頂のピンク（目より右・上の塊）。TunaMap では path 固定、ここは近似再生成用
+    noten = path_from_set(flood_rgba(px, w, h, 402, 182, thresh=20, maxn=550), max_pts=350, rng=rng)
 
-    # 目裏: 目周りを狭い閾値で取る
-    meura = path_from_set(flood_rgba(px, w, h, 318, 252, thresh=14, maxn=600), max_pts=400, rng=rng)
+    # 目裏: TunaMap では目中心の楕円。スクリプト出力は参考用の狭い flood
+    meura = path_from_set(flood_rgba(px, w, h, 308, 251, thresh=14, maxn=500), max_pts=400, rng=rng)
     hoho = path_from_set(flood_rgba(px, w, h, 268, 425, thresh=34, maxn=20000), max_pts=1000, rng=rng)
     # 背中の中とろ: 左ブロック＋背中中央の大きなピンク＋尾寄りの3つ
     chu_l = path_from_set(flood_rgba(px, w, h, 500, 240, thresh=60, maxn=12000), max_pts=1000, rng=rng)
