@@ -32,7 +32,15 @@ function authErrorMessage(error: unknown) {
 
 type ScreenMode = "choose" | "signin";
 
-export function LoginScreen() {
+const GIF_DURATION_MS = 5000;
+
+export function LoginScreen({
+  onAnimationEnd,
+  revealed,
+}: {
+  onAnimationEnd: () => void;
+  revealed: boolean;
+}) {
   const auth = useAuthState();
   const router = useRouter();
   const [mode, setMode] = useState<ScreenMode>("choose");
@@ -43,6 +51,11 @@ export function LoginScreen() {
   const [emailOtp, setEmailOtp] = useState("");
   const [emailStep, setEmailStep] = useState<"idle" | "sent">("idle");
   const [emailPanelOpen, setEmailPanelOpen] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(onAnimationEnd, GIF_DURATION_MS);
+    return () => clearTimeout(timer);
+  }, [onAnimationEnd]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -108,7 +121,7 @@ export function LoginScreen() {
               />
             </div>
           </div>
-          <div className="login-launch-inner">
+          <div className={`login-launch-inner login-reveal ${revealed ? "login-reveal--visible" : ""}`}>
             {(formError || notice) && (
               <p
                 className={

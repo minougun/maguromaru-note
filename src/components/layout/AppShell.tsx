@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useLayoutEffect, useState } from "react";
+import { useCallback, useLayoutEffect, useState } from "react";
 
 import { AppHeader } from "@/components/layout/AppHeader";
 import { useAuthState } from "@/components/providers/AuthProvider";
@@ -50,14 +50,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   if (!auth.signedIn) {
-    return (
-      <div className="app-shell app-shell--login">
-        <AppHeader />
-        <main className="screen-main screen-main--login">
-          <LoginScreen />
-        </main>
-      </div>
-    );
+    return <LoginShell />;
   }
 
   return (
@@ -73,6 +66,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           }}
         />
       ) : null}
+    </div>
+  );
+}
+
+/** ログイン画面：GIF アニメ完了後にヘッダー＋ボタンをフェードイン */
+function LoginShell() {
+  const [revealed, setRevealed] = useState(false);
+  const onAnimationEnd = useCallback(() => setRevealed(true), []);
+
+  return (
+    <div className="app-shell app-shell--login">
+      <div className={`login-reveal ${revealed ? "login-reveal--visible" : ""}`}>
+        <AppHeader />
+      </div>
+      <main className="screen-main screen-main--login">
+        <LoginScreen onAnimationEnd={onAnimationEnd} revealed={revealed} />
+      </main>
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { TabIcon } from "@/components/ui/TabIcon";
 import { MAIN_NAV_TABS } from "@/lib/main-tabs";
 
 export function TabBar() {
@@ -23,7 +24,7 @@ export function TabBar() {
               prefetch={false}
             >
               <span aria-hidden="true" className="tab-link-stack">
-                <span className="tab-link-emoji">{tab.emoji}</span>
+                <TabIcon className="tab-link-icon" name={tab.icon} />
                 <span className="tab-link-label">{tab.stripLabel}</span>
               </span>
             </Link>

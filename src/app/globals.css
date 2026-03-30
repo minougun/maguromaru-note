@@ -264,9 +264,21 @@ body {
   pointer-events: none;
 }
 
-.tab-link-emoji {
-  font-size: 15px;
-  line-height: 1;
+.tab-link-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  opacity: 0.65;
+  transition: opacity 0.15s ease, filter 0.15s ease;
+}
+
+.tab-link[aria-current="page"] .tab-link-icon {
+  opacity: 1;
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.35));
+}
+
+.tab-link[aria-current="page"] .tab-link-label {
+  color: #ffffff;
 }
 
 .tab-link-label {
@@ -1711,6 +1723,20 @@ body {
 .login-launch-mark-img {
   /* 筆書きの円をフレーム内でやや上寄せ（contain 時の見かけ重心） */
   object-position: center 28%;
+}
+
+/* GIF アニメ完了後のフェードイン演出 */
+.login-reveal {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+  pointer-events: none;
+}
+
+.login-reveal--visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
 }
 
 .login-launch-inner {
