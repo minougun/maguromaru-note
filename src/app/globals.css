@@ -273,15 +273,6 @@ body {
   transition: opacity 0.18s ease, color 0.18s ease;
 }
 
-.tab-link[aria-current="page"] .tab-link-icon {
-  color: #ffffff;
-  opacity: 1;
-}
-
-.tab-link[aria-current="page"] .tab-link-label {
-  color: #ffffff;
-}
-
 .tab-link-label {
   font-family: inherit;
   font-size: 8px;
@@ -298,23 +289,7 @@ body {
   z-index: 2;
 }
 
-/* 実機 TabBar とチュートリアル用モックの「選択タブ」で同一仕様（グロー + 上ドット） */
-.tab-link[aria-current="page"]::before,
-.onboarding-mock-tab--active::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 1;
-  background: radial-gradient(
-    ellipse 90% 130% at 50% 0%,
-    rgba(92, 219, 239, 0.38) 0%,
-    rgba(92, 219, 239, 0.12) 42%,
-    transparent 72%
-  );
-  box-shadow: inset 0 0 22px rgba(92, 219, 239, 0.18);
-}
-
+/* 選択タブ: 上部ドットのみ（白）。背景グローや発光は付けない */
 .tab-link[aria-current="page"]::after,
 .onboarding-mock-tab--active::after {
   content: "";
@@ -325,10 +300,9 @@ body {
   width: 6px;
   height: 6px;
   border-radius: 999px;
-  background: #5cdbef;
+  background: #ffffff;
   pointer-events: none;
   z-index: 3;
-  box-shadow: 0 0 6px rgba(92, 219, 239, 0.55);
 }
 
 .tab-icon {
@@ -3259,11 +3233,6 @@ body {
   display: block;
   color: #b9cae0;
   opacity: 0.72;
-}
-
-.onboarding-mock-tab--active .onboarding-mock-tab-icon {
-  color: #ffffff;
-  opacity: 1;
 }
 
 .onboarding-mock-tab:first-child {
