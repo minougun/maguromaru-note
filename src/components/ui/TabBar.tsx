@@ -4,13 +4,22 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { TabIcon } from "@/components/ui/TabIcon";
+import { useTabBarScrollVisibility } from "@/lib/hooks/use-tab-bar-scroll-visibility";
 import { MAIN_NAV_TABS } from "@/lib/main-tabs";
 
-export function TabBar() {
+type TabBarProps = {
+  scrollRoot: HTMLElement | null;
+};
+
+export function TabBar({ scrollRoot }: TabBarProps) {
   const pathname = usePathname();
+  const tabBarVisible = useTabBarScrollVisibility(scrollRoot, pathname);
 
   return (
-    <nav aria-label="メインタブ" className="tab-bar">
+    <nav
+      aria-label="メインタブ"
+      className={`tab-bar${tabBarVisible ? "" : " tab-bar--scroll-hidden"}`}
+    >
       <div className="tab-bar-strip">
         {MAIN_NAV_TABS.map((tab) => {
           const active = pathname === tab.href;

@@ -18,6 +18,7 @@ const OnboardingTutorial = dynamic(
 export function AppShell({ children }: { children: React.ReactNode }) {
   const auth = useAuthState();
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [scrollMainEl, setScrollMainEl] = useState<HTMLElement | null>(null);
 
   useLayoutEffect(() => {
     /* localStorage と認証状態の同期。ルールは意図的に抑止 */
@@ -56,8 +57,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="app-shell">
       <AppHeader />
-      <main className="screen-main">{children}</main>
-      <TabBar />
+      <main className="screen-main" ref={setScrollMainEl}>
+        {children}
+      </main>
+      <TabBar scrollRoot={scrollMainEl} />
       {showOnboarding ? (
         <OnboardingTutorial
           onComplete={() => {

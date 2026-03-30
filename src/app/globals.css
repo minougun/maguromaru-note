@@ -287,6 +287,19 @@ body {
   box-sizing: border-box;
   background: transparent;
   color: #b9cae0;
+  transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+  will-change: transform;
+}
+
+.tab-bar.tab-bar--scroll-hidden {
+  transform: translate(-50%, calc(100% + 16px));
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tab-bar {
+    transition: none;
+  }
 }
 
 .tab-bar-strip {
