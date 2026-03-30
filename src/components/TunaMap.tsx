@@ -28,34 +28,36 @@ interface MapRegionDef {
 /**
  * viewBox 1365×768。ベース画＋記録済みクリップ用の色付き画（同一クロップ）。
  * 各部位は `zukan-tuna-map-reveal.webp` 上の色塗り境界に沿うよう、
- * 輪郭追従（類似色 flood + 凸包）と脳天のみ手調整ポリゴンで path を定義。
- * WebP を差し替えた場合は scripts/build-map-regions-from-reveal.py で path を再生成できる（脳天は手調整）。
+ * 脳天・目裏は楕円。WebP を差し替えた場合は scripts/build-map-regions-from-reveal.py で参考 path を再生成できる。
  */
 const MAP_REGIONS: MapRegionDef[] = [
   {
     key: "noten",
     partIds: ["noten"],
     shape: {
-      type: "path",
-      // 頭頂〜目より背中寄りの上端ピンク（スクリーンショット 2026-03-31 080035 の脳天位置に合わせた凸包）
-      d: "M 387,183 L 390,178 L 402,166 L 417,180 L 419,182 L 418,183 L 402,198 Z",
+      type: "ellipse",
+      // 以前の目裏と同じ中心でやや大きめ（頭部〜目周りの塗りをまとめてクリップ）
+      cx: 308,
+      cy: 251,
+      rx: 48,
+      ry: 40,
     },
     label: { x: 228, y: 92 },
-    lineTo: { x: 402, y: 182 },
+    lineTo: { x: 308, y: 251 },
   },
   {
     key: "meura",
     partIds: ["meura"],
     shape: {
       type: "ellipse",
-      // 目の中心付近を覆う（目と重なってよい）
-      cx: 308,
-      cy: 251,
-      rx: 34,
-      ry: 28,
+      // イラスト上の目（暗色塗りの重心付近）
+      cx: 313,
+      cy: 244,
+      rx: 28,
+      ry: 24,
     },
     label: { x: 188, y: 268 },
-    lineTo: { x: 308, y: 251 },
+    lineTo: { x: 313, y: 244 },
   },
   {
     key: "hoho",
