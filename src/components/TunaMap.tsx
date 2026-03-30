@@ -28,7 +28,7 @@ interface MapRegionDef {
 }
 
 /**
- * viewBox 1365×768。背景は `src/assets/zukan-tuna-map.webp` を import し `/_next/static/media/` で配信。
+ * viewBox 1365×768。背景は `src/assets/zukan-tuna-map.webp`（Gemini 生成 PNG を 1365×768 cover クロップ）を import。
  * 座標は図鑑スクリーンショット（部位マップ表示）に合わせた値。
  * 腹部：前＝大トロ、中後＝大トロ（別楕円）・中トロ（腹）。背＝中トロ（背）（いずれも部位 id は otoro / chutoro）。
  */
