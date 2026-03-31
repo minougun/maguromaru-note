@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { VisitLogCard } from "@/components/logs/VisitLogCard";
+import { VisitLogCardDynamic } from "@/components/logs/VisitLogCardDynamic";
 import { ShareBonusCallout } from "@/components/share/ShareBonusCallout";
 import { ShareModalDynamic } from "@/components/share/ShareModalDynamic";
 import { useAuthState } from "@/components/providers/AuthProvider";
@@ -186,7 +186,7 @@ export function HistoryScreen() {
         <>
           <div className="stack-list">
             {displayedLogs.map((log) => (
-              <VisitLogCard
+              <VisitLogCardDynamic
                 deleting={deletingId === log.id}
                 key={log.id}
                 log={log}

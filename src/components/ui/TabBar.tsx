@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { memo } from "react";
 
 import { TabIcon } from "@/components/ui/TabIcon";
 import { useTabBarScrollVisibility } from "@/lib/hooks/use-tab-bar-scroll-visibility";
@@ -11,7 +12,7 @@ type TabBarProps = {
   scrollRoot: HTMLElement | null;
 };
 
-export function TabBar({ scrollRoot }: TabBarProps) {
+export const TabBar = memo(function TabBar({ scrollRoot }: TabBarProps) {
   const pathname = usePathname();
   const tabBarVisible = useTabBarScrollVisibility(scrollRoot, pathname);
 
@@ -42,4 +43,4 @@ export function TabBar({ scrollRoot }: TabBarProps) {
       </div>
     </nav>
   );
-}
+});

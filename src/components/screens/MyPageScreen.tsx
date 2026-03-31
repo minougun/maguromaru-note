@@ -1,10 +1,11 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { ZodError } from "zod";
 
-import { AccountLinkSection, isProviderLinked } from "@/components/mypage/AccountLinkSection";
+import { isProviderLinked } from "@/components/mypage/is-provider-linked";
 import { requestAppSnapshotRefresh } from "@/components/providers/AppSnapshotProvider";
 import { useAuthState } from "@/components/providers/AuthProvider";
 import { Card } from "@/components/ui/Card";
@@ -26,6 +27,17 @@ import {
   startAppleLinkFlow,
   startGoogleLinkFlow,
 } from "@/lib/supabase/browser";
+
+const AccountLinkSection = dynamic(
+  () => import("@/components/mypage/AccountLinkSection").then((m) => ({ default: m.AccountLinkSection })),
+  {
+    loading: () => (
+      <Card>
+        <p className="helper-text">連携オプションを読み込んでいます…</p>
+      </Card>
+    ),
+  },
+);
 
 function profileErrorMessage(error: unknown) {
   if (error instanceof ZodError) {

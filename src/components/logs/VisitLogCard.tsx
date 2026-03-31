@@ -6,17 +6,19 @@ import { mapDisplayColorForPart } from "@/lib/domain/part-brand-colors";
 import type { VisitRecord } from "@/lib/domain/types";
 import { formatDisplayDate } from "@/lib/utils/date";
 
+export type VisitLogCardProps = {
+  log: VisitRecord;
+  onShare: (log: VisitRecord) => void;
+  onDelete?: (log: VisitRecord) => void;
+  deleting?: boolean;
+};
+
 export function VisitLogCard({
   log,
   onDelete,
   onShare,
   deleting = false,
-}: {
-  log: VisitRecord;
-  onShare: (log: VisitRecord) => void;
-  onDelete?: (log: VisitRecord) => void;
-  deleting?: boolean;
-}) {
+}: VisitLogCardProps) {
   return (
     <article className="card">
       <div className="visit-card-head">

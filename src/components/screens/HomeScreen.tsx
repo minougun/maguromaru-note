@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { VisitLogCard } from "@/components/logs/VisitLogCard";
+import { VisitLogCardDynamic } from "@/components/logs/VisitLogCardDynamic";
 import { ShareModalDynamic } from "@/components/share/ShareModalDynamic";
 import { Card } from "@/components/ui/Card";
 import { NorenBanner } from "@/components/ui/NorenBanner";
@@ -220,7 +220,7 @@ export function HomeScreen() {
       {snapshot.home.recentLogs.length > 0 ? (
         <div className="stack-list">
           {snapshot.home.recentLogs.map((log) => (
-            <VisitLogCard key={log.id} log={log} onShare={openShare} />
+            <VisitLogCardDynamic key={log.id} log={log} onShare={openShare} />
           ))}
         </div>
       ) : (

@@ -18,7 +18,6 @@ import { FetchJsonError, fetchJsonWithAuth } from "@/lib/http/fetch-json";
 import { withAppBasePath } from "@/lib/public-path";
 import { buildRecordShare, type SharePayload } from "@/lib/share/share";
 import { formatCount } from "@/lib/utils/format";
-import { resizeImageToDataUrl } from "@/lib/utils/image";
 
 function todayString() {
   return new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
@@ -75,6 +74,7 @@ export function RecordScreen() {
       return;
     }
 
+    const { resizeImageToDataUrl } = await import("@/lib/utils/image");
     const dataUrl = await resizeImageToDataUrl(file);
     setPreviewUrl(dataUrl);
     setPhotoDataUrl(dataUrl);

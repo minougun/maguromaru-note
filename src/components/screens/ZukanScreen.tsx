@@ -1,15 +1,36 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
 
 import { ShareModalDynamic } from "@/components/share/ShareModalDynamic";
-import { TunaMap } from "@/components/TunaMap";
 import { Card } from "@/components/ui/Card";
 import { NorenBanner } from "@/components/ui/NorenBanner";
 import { ScreenState } from "@/components/ui/ScreenState";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import { useAppSnapshot } from "@/lib/hooks/use-app-snapshot";
 import { buildZukanShare, type SharePayload } from "@/lib/share/share";
+
+const TunaMap = dynamic(
+  () => import("@/components/TunaMap").then((m) => ({ default: m.TunaMap })),
+  {
+    loading: () => (
+      <div
+        aria-busy="true"
+        className="card"
+        style={{
+          aspectRatio: "1365 / 768",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          maxWidth: "100%",
+        }}
+      >
+        <p className="helper-text">部位マップを読み込んでいます…</p>
+      </div>
+    ),
+  },
+);
 
 export function ZukanScreen() {
   const { snapshot, loading, error, refresh } = useAppSnapshot();

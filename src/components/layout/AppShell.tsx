@@ -5,10 +5,16 @@ import { useCallback, useLayoutEffect, useState } from "react";
 
 import { AppHeader } from "@/components/layout/AppHeader";
 import { useAuthState } from "@/components/providers/AuthProvider";
-import { LoginScreen } from "@/components/screens/LoginScreen";
 import { ScreenState } from "@/components/ui/ScreenState";
 import { TabBar } from "@/components/ui/TabBar";
 import { markOnboardingDone, readOnboardingDone } from "@/lib/onboarding-storage";
+
+const LoginScreen = dynamic(
+  () => import("@/components/screens/LoginScreen").then((m) => ({ default: m.LoginScreen })),
+  {
+    loading: () => <ScreenState description="ログイン画面を読み込んでいます。" title="読み込み中" />,
+  },
+);
 
 const OnboardingTutorial = dynamic(
   () => import("@/components/onboarding/OnboardingTutorial").then((m) => ({ default: m.OnboardingTutorial })),
