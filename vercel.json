@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "ignoreCommand": "exit 0",
   "functions": {
     "src/app/api/app-snapshot/route.ts": {
       "maxDuration": 30
