@@ -1,9 +1,12 @@
 /**
- * 図鑑マップのティント／ラベル用。表示スウォッチの HSL 明度 L のみを調整する。
- * 同一 hex はキャッシュして再計算を避ける。
+ * 図鑑マップのティント／ラベル用。表示スウォッチを HSL で調整する。
+ * - 明度 L: MAP_OVERLAY_LIGHTNESS_MULTIPLIER
+ * - 彩度 S（赤の濃さ）: MAP_OVERLAY_SATURATION_MULTIPLIER
+ * キャッシュキーに倍率を含め、定数変更後も古い結果を返さない。
  */
 
 const MAP_OVERLAY_LIGHTNESS_MULTIPLIER = 1.2;
+const MAP_OVERLAY_SATURATION_MULTIPLIER = 1.5;
 
 const overlayTintCache = new Map<string, string>();
 
@@ -73,15 +76,17 @@ function hslToRgb(h: number, s: number, l: number): { r: number; g: number; b: n
 }
 
 export function mapOverlayTintHex(hex: string): string {
-  const hit = overlayTintCache.get(hex);
+  const cacheKey = `${hex}|${MAP_OVERLAY_LIGHTNESS_MULTIPLIER}|${MAP_OVERLAY_SATURATION_MULTIPLIER}`;
+  const hit = overlayTintCache.get(cacheKey);
   if (hit) return hit;
 
   const rgb = parseHexRgb(hex);
   if (!rgb) return hex;
   const { h, s, l } = rgbToHsl(rgb.r, rgb.g, rgb.b);
+  const s2 = Math.max(0, Math.min(1, s * MAP_OVERLAY_SATURATION_MULTIPLIER));
   const l2 = Math.max(0, Math.min(1, l * MAP_OVERLAY_LIGHTNESS_MULTIPLIER));
-  const out = hslToRgb(h, s, l2);
+  const out = hslToRgb(h, s2, l2);
   const next = rgbToHex(out.r, out.g, out.b);
-  overlayTintCache.set(hex, next);
+  overlayTintCache.set(cacheKey, next);
   return next;
 }
