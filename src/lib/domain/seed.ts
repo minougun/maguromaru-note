@@ -14,8 +14,8 @@ export const MOCK_USER_ID = "00000000-0000-4000-8000-000000000001";
 export const MOCK_ADMIN_EMAIL = "admin@example.com";
 
 export const seededParts: Part[] = [
-  { id: "otoro", name: "大とろ", area: "腹部", rarity: 3, description: "最高級の脂のり", color: "#ff6b6b", sort_order: 1 },
-  { id: "chutoro", name: "中とろ", area: "背部・腹部", rarity: 2, description: "脂と赤身のバランス", color: "#e85555", sort_order: 2 },
+  { id: "otoro", name: "大とろ", area: "腹部", rarity: 3, description: "最高級の脂のり", color: "#eb7e7c", sort_order: 1 },
+  { id: "chutoro", name: "中とろ", area: "背部・腹部", rarity: 2, description: "脂と赤身のバランス", color: "#d66078", sort_order: 2 },
   { id: "akami", name: "赤身", area: "背部", rarity: 1, description: "旨味の王道", color: "#cc3333", sort_order: 3 },
   { id: "noten", name: "脳天", area: "頭部", rarity: 3, description: "大とろ級のとろける食感", color: "#ff8585", sort_order: 4 },
   { id: "hoho", name: "ほほ肉", area: "頭部", rarity: 3, description: "肉のような弾力と濃厚な旨味", color: "#d94444", sort_order: 5 },
