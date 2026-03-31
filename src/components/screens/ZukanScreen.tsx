@@ -17,7 +17,7 @@ const TunaMap = dynamic(
     loading: () => (
       <div
         aria-busy="true"
-        className="card zukan-map-tuna-loading"
+        className="card"
         style={{
           aspectRatio: "1365 / 768",
           display: "flex",
@@ -81,10 +81,8 @@ export function ZukanScreen() {
         </Card>
       ) : null}
 
-      <div className="zukan-map-reference-block">
-        <SectionTitle subtitle="Tuna map" title="部位マップ" />
-        <TunaMap collectedPartIds={snapshot.zukan.collectedPartIds} parts={snapshot.parts} />
-      </div>
+      <SectionTitle subtitle="Tuna map" title="部位マップ" />
+      <TunaMap collectedPartIds={snapshot.zukan.collectedPartIds} parts={snapshot.parts} />
 
       <SectionTitle subtitle="All parts" title="部位一覧" />
       <div className="parts-grid">
