@@ -3,31 +3,25 @@ import type { Part } from "@/lib/domain/types";
 /**
  * 図鑑・記録・マップなど UI 表示用の部位スウォッチ。
  *
- * 赤身はスクリーンショット中央部の RGB 各チャンネル中央値:
- * - 赤身: `C:\Users\minou\Downloads\スクリーンショット 2026-03-31 153206.png`
- *
- * 大トロ・脳天・中トロは表示色を循環（大トロ←旧中トロ、中トロ←旧脳天、脳天←旧大トロ）。
+ * 部位マップの配色: `C:\Users\minou\Downloads\スクリーンショット 2026-03-31 160835.png`
+ * - 脳天: 明るいピンク、中トロ（背・腹）・ほほ: サーモン、大トロ: ローズ、赤身: 深赤
+ * - 目裏: イラスト地色に近い青みグレー（#96a2ae は同画像内のベース色サンプル）
+ * カマ・ハラモ・背側脂帯は図中ラベルなしのため大トロ／中トロ系で統一。
  */
-export const PART_DISPLAY_COLOR_OTORO = "#ea7e7b";
-export const PART_DISPLAY_COLOR_CHUTORO = "#b43854";
+export const PART_DISPLAY_COLOR_OTORO = "#cc4c64";
+export const PART_DISPLAY_COLOR_CHUTORO = "#f48c8c";
 
 export const PART_DISPLAY_SWATCHES = {
   otoro: PART_DISPLAY_COLOR_OTORO,
   chutoro: PART_DISPLAY_COLOR_CHUTORO,
-  /** 脳天（大トロ・中トロと循環配置） */
-  noten: "#e6708a",
-  /** 目裏 */
-  meura: "#de7c7c",
-  /** ほほ肉 */
-  hoho: "#e9817e",
-  /** カマ */
-  kama: "#ea7f7d",
-  /** ハラモ */
-  haramo: "#b1354b",
-  /** 背側の脂（図中の背部トロ帯） */
-  senaka: "#d77a7b",
-  /** 赤身 */
-  akami: "#b2354b",
+  noten: "#ff82a5",
+  /** 地色寄り（マップ上はベーストーンに近づける） */
+  meura: "#96a2ae",
+  hoho: "#f48c8c",
+  kama: "#cc4c64",
+  haramo: "#cc4c64",
+  senaka: "#f48c8c",
+  akami: "#b61c28",
 } as const;
 
 export type PartDisplaySwatchId = keyof typeof PART_DISPLAY_SWATCHES;
