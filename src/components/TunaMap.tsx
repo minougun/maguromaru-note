@@ -1,11 +1,12 @@
 "use client";
 
-import { useId, useState } from "react";
+import { memo, useId, useState } from "react";
 
 import tunaMapBase from "@/assets/zukan-tuna-map.webp";
 import tunaMapReveal from "@/assets/zukan-tuna-map-reveal.webp";
 
 import { mapDisplayColorForPart } from "@/lib/domain/part-brand-colors";
+import { mapOverlayTintHex } from "@/lib/map-overlay-tint";
 import type { Part, PartId } from "@/lib/domain/types";
 
 type RegionShape =
@@ -137,87 +138,35 @@ const MAP_REGIONS: MapRegionDef[] = [
   },
 ];
 
-/** 部位マップのティント／ラベル色: 表示スウォッチの HSL 明度 L をこの倍率にする */
-const MAP_OVERLAY_LIGHTNESS_MULTIPLIER = 1.3;
-
-function parseHexRgb(hex: string): { r: number; g: number; b: number } | null {
-  const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex.trim());
-  if (!m) return null;
-  return { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) };
-}
-
-function rgbToHex(r: number, g: number, b: number): string {
-  const q = (n: number) =>
-    Math.max(0, Math.min(255, Math.round(n)))
-      .toString(16)
-      .padStart(2, "0");
-  return `#${q(r)}${q(g)}${q(b)}`;
-}
-
-function rgbToHsl(r: number, g: number, b: number): { h: number; s: number; l: number } {
-  r /= 255;
-  g /= 255;
-  b /= 255;
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  const l = (max + min) / 2;
-  let h = 0;
-  let s = 0;
-  if (max !== min) {
-    const d = max - min;
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-    switch (max) {
-      case r:
-        h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
-        break;
-      case g:
-        h = ((b - r) / d + 2) / 6;
-        break;
-      default:
-        h = ((r - g) / d + 4) / 6;
-        break;
-    }
-  }
-  return { h, s, l };
-}
-
-function hueToRgb(p: number, q: number, t: number): number {
-  let tt = t;
-  if (tt < 0) tt += 1;
-  if (tt > 1) tt -= 1;
-  if (tt < 1 / 6) return p + (q - p) * 6 * tt;
-  if (tt < 1 / 2) return q;
-  if (tt < 2 / 3) return p + (q - p) * (2 / 3 - tt) * 6;
-  return p;
-}
-
-function hslToRgb(h: number, s: number, l: number): { r: number; g: number; b: number } {
-  if (s === 0) {
-    const v = Math.round(l * 255);
-    return { r: v, g: v, b: v };
-  }
-  const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-  const p = 2 * l - q;
-  return {
-    r: Math.round(hueToRgb(p, q, h + 1 / 3) * 255),
-    g: Math.round(hueToRgb(p, q, h) * 255),
-    b: Math.round(hueToRgb(p, q, h - 1 / 3) * 255),
-  };
-}
-
-/** 部位マップの塗り・ラベル用に表示色の明度（HSL L）だけ調整する */
-function mapOverlayTintHex(hex: string): string {
-  const rgb = parseHexRgb(hex);
-  if (!rgb) return hex;
-  const { h, s, l } = rgbToHsl(rgb.r, rgb.g, rgb.b);
-  const l2 = Math.max(0, Math.min(1, l * MAP_OVERLAY_LIGHTNESS_MULTIPLIER));
-  const out = hslToRgb(h, s, l2);
-  return rgbToHex(out.r, out.g, out.b);
-}
-
 interface TunaMapProps {
   parts: Part[];
   collectedPartIds: PartId[];
+}
+
+function tunaMapPropsEqual(prev: TunaMapProps, next: TunaMapProps): boolean {
+  if (prev.parts === next.parts && prev.collectedPartIds === next.collectedPartIds) {
+    return true;
+  }
+  if (prev.collectedPartIds.length !== next.collectedPartIds.length) return false;
+  for (let i = 0; i < prev.collectedPartIds.length; i++) {
+    if (prev.collectedPartIds[i] !== next.collectedPartIds[i]) return false;
+  }
+  if (prev.parts.length !== next.parts.length) return false;
+  for (let i = 0; i < prev.parts.length; i++) {
+    const a = prev.parts[i]!;
+    const b = next.parts[i]!;
+    if (
+      a.id !== b.id ||
+      a.color !== b.color ||
+      a.name !== b.name ||
+      a.area !== b.area ||
+      a.rarity !== b.rarity ||
+      a.description !== b.description
+    ) {
+      return false;
+    }
+  }
+  return true;
 }
 
 function regionEaten(region: MapRegionDef, collected: Set<PartId>): boolean {
@@ -253,11 +202,12 @@ function selectionOutlineEl(r: MapRegionDef["shape"], color: string) {
   return <path d={r.d} fill="none" stroke={color} strokeWidth="3" opacity="0.95" />;
 }
 
-export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
+function TunaMapInner({ parts, collectedPartIds }: TunaMapProps) {
   const partsById = new Map(parts.map((part) => [part.id, part]));
   const collected = new Set(collectedPartIds);
   const [selectedRegionKey, setSelectedRegionKey] = useState<string | null>(null);
   const clipUid = useId().replace(/:/g, "");
+  const revealImageId = `${clipUid}-reveal`;
 
   const selectedRegion = selectedRegionKey ? MAP_REGIONS.find((r) => r.key === selectedRegionKey) : null;
 
@@ -286,6 +236,13 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
       <div className="map-wrap">
         <svg viewBox="0 0 1365 768" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="まぐろ部位マップ">
           <defs>
+            <image
+              id={revealImageId}
+              href={tunaMapReveal.src}
+              width="1365"
+              height="768"
+              preserveAspectRatio="xMidYMid meet"
+            />
             {MAP_REGIONS.map((r) => (
               <clipPath id={clipId(r.key)} key={`clip-${r.key}`} clipPathUnits="userSpaceOnUse">
                 {clipShapeEl(r.shape)}
@@ -306,7 +263,7 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
               primary?.id === "otoro" || primary?.id === "chutoro" ? "0.56" : "0.48";
             return (
               <g key={`reveal-${r.key}`} clipPath={`url(#${clipId(r.key)})`}>
-                <image href={tunaMapReveal.src} width="1365" height="768" preserveAspectRatio="xMidYMid meet" />
+                <use href={`#${revealImageId}`} width="1365" height="768" />
                 {tint != null ? (
                   <rect width="1365" height="768" fill={tint} opacity={tintOpacity} />
                 ) : null}
@@ -442,3 +399,5 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
     </div>
   );
 }
+
+export const TunaMap = memo(TunaMapInner, tunaMapPropsEqual);

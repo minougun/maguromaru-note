@@ -1,8 +1,7 @@
 "use client";
 
 /**
- * 以前は `next/dynamic` で遅延読み込みしていたが、クライアントのチャンクキャッシュで
- * マップ修正が反映されない報告があったため、通常の再 export に変更した。
- * 図鑑は `ZukanScreen` から `TunaMap` を直接 import している。
+ * `TunaMap` の再エクスポート。図鑑ルートは `zukan/page.tsx` で `ZukanScreen` を dynamic import し、
+ * 初回チャンクを分割する。マップ本体は `memo`＋共有 reveal ビットマップ参照で描画コストを抑える。
  */
 export { TunaMap as TunaMapDynamic } from "./TunaMap";
