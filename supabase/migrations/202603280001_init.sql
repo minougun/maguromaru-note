@@ -186,8 +186,8 @@ with check (auth.uid() = user_id);
 
 insert into public.parts (id, name, area, rarity, description, color, sort_order)
 values
-  ('otoro', '大とろ', '腹部', 3, '最高級の脂のり', '#ff6b6b', 1),
-  ('chutoro', '中とろ', '腹部', 2, '脂と赤身のバランス', '#e85555', 2),
+  ('otoro', '大とろ', '腹部', 3, '最高級の脂のり', '#e85555', 1),
+  ('chutoro', '中とろ', '腹部', 2, '脂と赤身のバランス', '#ff6b6b', 2),
   ('akami', '赤身', '背部', 1, '旨味の王道', '#cc3333', 3),
   ('noten', '脳天', '頭部', 3, '大とろ級のとろける食感', '#ff8585', 4),
   ('hoho', 'ほほ肉', '頭部', 3, '肉のような弾力と濃厚な旨味', '#d94444', 5),
