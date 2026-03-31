@@ -244,8 +244,8 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
                   <rect
                     fill={masterTint}
                     height="768"
-                    opacity={0.92}
-                    style={{ mixBlendMode: "color" }}
+                    opacity={0.72}
+                    style={{ mixBlendMode: "multiply" }}
                     width="1365"
                   />
                 ) : null}

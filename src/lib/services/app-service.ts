@@ -54,6 +54,7 @@ const SHARE_BONUS_COLUMNS = "target_type, target_id, bonus_visit_tenths, bonus_c
 const QUIZ_SESSION_PROGRESS_COLUMNS =
   "submitted_at, question_ids, correct_question_ids, score, question_count" as const;
 const MENU_ITEM_STATUS_COLUMNS = "menu_item_id, status, updated_at" as const;
+import { applyCanonicalPartDisplayColors } from "@/lib/domain/part-display-colors";
 import { filterTrackedParts, isTrackedPartId } from "@/lib/domain/tracked-parts";
 import { readBearerToken } from "@/lib/auth-bearer";
 import { getAdminEmail, getSupabaseEnv, getSupabaseServiceEnv, hasSupabaseEnv, isMockAllowed } from "@/lib/env";
@@ -315,7 +316,7 @@ async function listMasterDataPartial(
 
   if (!client) {
     return {
-      parts: needParts ? mockMasterData.parts : [],
+      parts: needParts ? applyCanonicalPartDisplayColors(mockMasterData.parts) : [],
       menuItems: needMenuItems ? mockMasterData.menuItems : [],
     };
   }
@@ -339,7 +340,7 @@ async function listMasterDataPartial(
   }
 
   return {
-    parts: parts ?? [],
+    parts: applyCanonicalPartDisplayColors(parts ?? []),
     menuItems: menuItems ?? [],
   };
 }
