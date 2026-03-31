@@ -32,7 +32,7 @@ import type {
   VisitRecord,
 } from "@/lib/domain/types";
 import { defaultMenuStockById, quizQuestionsPerStage, quizStageCount, type MenuStockStatus } from "@/lib/domain/constants";
-import { applyOtoroChutoroDisplayColors } from "@/lib/domain/part-brand-colors";
+import { applyPartDisplayColors } from "@/lib/domain/part-brand-colors";
 import { seededQuizStats, seededShareBonusEvents, seededStoreStatus } from "@/lib/domain/seed";
 import { applyCustomerFacingStoreAndStock } from "@/lib/domain/store-business-hours";
 import {
@@ -316,7 +316,7 @@ async function listMasterDataPartial(
 
   if (!client) {
     return {
-      parts: needParts ? applyOtoroChutoroDisplayColors(mockMasterData.parts) : [],
+      parts: needParts ? applyPartDisplayColors(mockMasterData.parts) : [],
       menuItems: needMenuItems ? mockMasterData.menuItems : [],
     };
   }
@@ -340,7 +340,7 @@ async function listMasterDataPartial(
   }
 
   return {
-    parts: applyOtoroChutoroDisplayColors(parts ?? []),
+    parts: applyPartDisplayColors(parts ?? []),
     menuItems: menuItems ?? [],
   };
 }
