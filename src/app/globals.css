@@ -82,7 +82,15 @@ body {
   position: sticky;
   top: 0;
   z-index: 40;
+  /* 右端は従来どおり var(--navy)。左へ行くほど同一色相帯で淡く（color-mix 非対応は単色） */
   background: var(--navy);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--navy) 48%, #c8d8ea) 0%,
+    color-mix(in srgb, var(--navy) 82%, #8fa3bf) 36%,
+    var(--navy) 68%,
+    var(--navy) 100%
+  );
   padding: 12px 16px 10px;
   border-bottom: none;
   color: #fff;
