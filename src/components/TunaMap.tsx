@@ -107,7 +107,7 @@ const MAP_REGIONS: MapRegionDef[] = [
     },
     label: { x: 808, y: 628, text: "大トロ" },
     labelWidth: 132,
-    lineTo: { x: 678, y: 490 },
+    lineTo: { x: 696, y: 486 },
   },
   {
     key: "belly-chutoro",
