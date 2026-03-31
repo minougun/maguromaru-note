@@ -318,7 +318,7 @@ body {
   box-sizing: border-box;
   /* 選択ドット（stack::after）が上にはみ出す。hidden だと特に縮小後にクリップされる */
   padding-top: 4px;
-  background-color: #1b2d4f;
+  background-color: var(--navy);
   overflow: visible;
 }
 
@@ -416,22 +416,9 @@ body {
   height: 5px;
   border-radius: 999px;
   background: #ffffff;
-  /* OS ダーク／強制カラーで帯が明るくなっても縁で判別できるように */
-  box-shadow:
-    0 0 0 1px rgba(27, 45, 79, 0.95),
-    0 1px 2px rgba(0, 0, 0, 0.35);
+  box-shadow: none;
   pointer-events: none;
   z-index: 5;
-}
-
-@media (prefers-color-scheme: dark) {
-  .tab-link[aria-current="page"] .tab-link-stack::after {
-    background: #e8f4ff;
-    box-shadow:
-      0 0 0 1px rgba(0, 0, 0, 0.65),
-      0 0 0 2px rgba(255, 255, 255, 0.35),
-      0 1px 2px rgba(0, 0, 0, 0.45);
-  }
 }
 
 .onboarding-mock-tab--active::after {
