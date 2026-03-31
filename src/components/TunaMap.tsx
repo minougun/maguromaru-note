@@ -5,13 +5,7 @@ import { useId, useState } from "react";
 import tunaMapBase from "@/assets/zukan-tuna-map.webp";
 import tunaMapReveal from "@/assets/zukan-tuna-map-reveal.webp";
 
-import {
-  MAP_OTORO_MAP_MILK,
-  MAP_OTORO_MAP_MILK_OPACITY,
-  MAP_OTORO_MAP_SAKURA_OPACITY,
-  MAP_OTORO_MAP_SAKURA_TINT,
-  mapDisplayColorForPart,
-} from "@/lib/domain/part-brand-colors";
+import { mapDisplayColorForPart } from "@/lib/domain/part-brand-colors";
 import type { Part, PartId } from "@/lib/domain/types";
 
 type RegionShape =
@@ -145,17 +139,6 @@ const MAP_REGIONS: MapRegionDef[] = [
   },
 ];
 
-/** クリップ内はベース画＋薄ピンク（reveal は使わない）。`part.id` 判定は避け、key で固定する。 */
-function isOtoroBellyMapRegion(r: MapRegionDef): boolean {
-  return r.key === "belly-otoro-rear" || r.key === "belly-otoro-front";
-}
-
-/** SVG は後描きが上になる。腹の大トロを必ず最後に描いて他部位の reveal に潰されないようにする */
-const MAP_REGIONS_REVEAL_PAINT_ORDER: MapRegionDef[] = [
-  ...MAP_REGIONS.filter((r) => !isOtoroBellyMapRegion(r)),
-  ...MAP_REGIONS.filter((r) => isOtoroBellyMapRegion(r)),
-];
-
 interface TunaMapProps {
   parts: Part[];
   collectedPartIds: PartId[];
@@ -225,13 +208,7 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
   return (
     <div>
       <div className="map-wrap">
-        <svg
-          viewBox="0 0 1365 768"
-          xmlns="http://www.w3.org/2000/svg"
-          role="img"
-          aria-label="まぐろ部位マップ"
-          data-zukan-map-renderer="otoro-base-v4-key-paint"
-        >
+        <svg viewBox="0 0 1365 768" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="まぐろ部位マップ">
           <defs>
             {MAP_REGIONS.map((r) => (
               <clipPath id={clipId(r.key)} key={`clip-${r.key}`} clipPathUnits="userSpaceOnUse">
@@ -242,40 +219,21 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
 
           <image href={tunaMapBase.src} width="1365" height="768" preserveAspectRatio="xMidYMid meet" />
 
-          {MAP_REGIONS_REVEAL_PAINT_ORDER.map((r) => {
+          {MAP_REGIONS.map((r) => {
             const hasAllParts = r.partIds.every((id) => partsById.has(id));
             if (!hasAllParts) return null;
             const eaten = regionEaten(r, collected);
             if (!eaten) return null;
             const primary = regionPrimaryPart(r, partsById, collected);
             const tint = primary ? mapDisplayColorForPart(primary) : null;
-            const tintOpacity = primary?.id === "chutoro" ? "0.56" : "0.48";
+            const tintOpacity =
+              primary?.id === "otoro" || primary?.id === "chutoro" ? "0.56" : "0.48";
             return (
               <g key={`reveal-${r.key}`} clipPath={`url(#${clipId(r.key)})`}>
-                {isOtoroBellyMapRegion(r) ? (
-                  <>
-                    <image href={tunaMapBase.src} width="1365" height="768" preserveAspectRatio="xMidYMid meet" />
-                    <rect
-                      width="1365"
-                      height="768"
-                      fill={MAP_OTORO_MAP_SAKURA_TINT}
-                      opacity={MAP_OTORO_MAP_SAKURA_OPACITY}
-                    />
-                    <rect
-                      width="1365"
-                      height="768"
-                      fill={MAP_OTORO_MAP_MILK}
-                      opacity={MAP_OTORO_MAP_MILK_OPACITY}
-                    />
-                  </>
-                ) : (
-                  <>
-                    <image href={tunaMapReveal.src} width="1365" height="768" preserveAspectRatio="xMidYMid meet" />
-                    {tint != null ? (
-                      <rect width="1365" height="768" fill={tint} opacity={tintOpacity} />
-                    ) : null}
-                  </>
-                )}
+                <image href={tunaMapReveal.src} width="1365" height="768" preserveAspectRatio="xMidYMid meet" />
+                {tint != null ? (
+                  <rect width="1365" height="768" fill={tint} opacity={tintOpacity} />
+                ) : null}
               </g>
             );
           })}
@@ -346,11 +304,6 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
       </div>
 
       <p className="map-hint">タップで部位の詳細を表示 ・ 記録済みの部位だけ色付きイラストが重なります</p>
-      {process.env.NODE_ENV === "development" ? (
-        <p className="map-hint map-hint--dev">
-          開発ビルド: 大トロ腹は region key 固定でベース画＋薄ピンク、描画は必ず最後（v4）。
-        </p>
-      ) : null}
 
       {selectedRegion && selectedRegion.partIds.length === 1 ? (
         (() => {

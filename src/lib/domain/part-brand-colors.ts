@@ -4,13 +4,13 @@ import type { Part } from "@/lib/domain/types";
  * 図鑑・記録・マップなど UI 表示用の部位スウォッチ。
  * 赤身（akami）は意図的に含めず、DB / シードの `color` をそのまま使う。
  *
- * 大トロ＝白っぽい薄ピンク、中トロ＝赤身より白く・大トロより赤い（段階は akami > senaka ≳ chutoro > otoro）。
+ * 大トロ・中トロは参照 UI（reveal 焼き付け）に合わせて表示色だけ入れ替え。
  */
 export const PART_DISPLAY_SWATCHES = {
-  /** 大トロ：ラベル等で「薄ピンク」と分かる程度の彩度（ほぼ白にすると変化が見えない） */
-  otoro: "#ffcee0",
-  /** 中トロ：大トロより赤みのあるローズサーモン（赤身 #cc3333 より明るい） */
-  chutoro: "#e87384",
+  /** 大トロ（参照では腹がやや濃いローズ側） */
+  otoro: "#e87384",
+  /** 中トロ（参照では背・腹がやや淡いピンク側） */
+  chutoro: "#ffcee0",
   /** 脳天：とろけ感の淡い桃白 */
   noten: "#fde8e6",
   /** 目裏：明るい珊瑚ピンク */
@@ -30,15 +30,6 @@ export type PartDisplaySwatchId = keyof typeof PART_DISPLAY_SWATCHES;
 /** 後方互換・短い参照用 */
 export const DISPLAY_COLOR_OTORO = PART_DISPLAY_SWATCHES.otoro;
 export const DISPLAY_COLOR_CHUTORO = PART_DISPLAY_SWATCHES.chutoro;
-
-/**
- * 図鑑マップの大トロ：reveal 画像は腹が濃ピンクで焼き付いているため、
- * クリップ内ではベース画＋チントだけにして「薄ピンクの脂」に見せる。
- */
-export const MAP_OTORO_MAP_SAKURA_TINT = "#ffb8d4";
-export const MAP_OTORO_MAP_SAKURA_OPACITY = "0.78";
-export const MAP_OTORO_MAP_MILK = "#ffffff";
-export const MAP_OTORO_MAP_MILK_OPACITY = "0.48";
 
 /**
  * Supabase の `parts.color` が未更新でも、スナップショット経由の UI を表示スウォッチに揃える。
