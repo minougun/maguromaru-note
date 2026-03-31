@@ -64,9 +64,28 @@ export function HomeScreen() {
       setWeatherText(`${weather.icon} ${Math.round(weather.temperature)}℃ ${weather.label}`);
     }
 
-    void loadWeather();
+    /** スナップショット取得と帯域を奪い合わないよう、描画後のアイドル時に開始 */
+    const start = () => {
+      if (!cancelled) void loadWeather();
+    };
+
+    let idleCallbackId: number | undefined;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+    if (typeof requestIdleCallback !== "undefined") {
+      idleCallbackId = requestIdleCallback(start, { timeout: 2500 });
+    } else {
+      timeoutId = setTimeout(start, 1);
+    }
+
     return () => {
       cancelled = true;
+      if (idleCallbackId !== undefined && typeof cancelIdleCallback !== "undefined") {
+        cancelIdleCallback(idleCallbackId);
+      }
+      if (timeoutId !== undefined) {
+        clearTimeout(timeoutId);
+      }
     };
   }, []);
 
