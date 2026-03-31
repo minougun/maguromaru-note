@@ -156,6 +156,11 @@ function regionMasterColor(region: MapRegionDef, partsById: Map<PartId, Part>): 
   return id ? partsById.get(id)?.color : undefined;
 }
 
+/** reveal への色ティントは大とろ・中とろだけ（赤身などはイラストの焼き付き色のまま） */
+function regionUsesToroRevealTint(r: MapRegionDef): boolean {
+  return r.partIds.some((id) => id === "otoro" || id === "chutoro");
+}
+
 function clipShapeEl(r: MapRegionDef["shape"]) {
   if (r.type === "ellipse") {
     return <ellipse cx={r.cx} cy={r.cy} rx={r.rx} ry={r.ry} />;
@@ -226,9 +231,14 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
             if (!hasAllParts) return null;
             const eaten = regionEaten(r, collected);
             if (!eaten) return null;
-            const masterTint = regionMasterColor(r, partsById);
+            const toroTint = regionUsesToroRevealTint(r);
+            const masterTint = toroTint ? regionMasterColor(r, partsById) : undefined;
             return (
-              <g key={`reveal-${r.key}`} clipPath={`url(#${clipId(r.key)})`} style={{ isolation: "isolate" }}>
+              <g
+                key={`reveal-${r.key}`}
+                clipPath={`url(#${clipId(r.key)})`}
+                style={toroTint ? { isolation: "isolate" } : undefined}
+              >
                 <image href={tunaMapReveal.src} width="1365" height="768" preserveAspectRatio="xMidYMid meet" />
                 {masterTint ? (
                   <rect
