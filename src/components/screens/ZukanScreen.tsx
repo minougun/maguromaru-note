@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { ShareModalDynamic } from "@/components/share/ShareModalDynamic";
-import { TunaMapDynamic } from "@/components/TunaMapDynamic";
+import { TunaMap } from "@/components/TunaMap";
 import { Card } from "@/components/ui/Card";
 import { NorenBanner } from "@/components/ui/NorenBanner";
 import { ScreenState } from "@/components/ui/ScreenState";
@@ -59,7 +59,7 @@ export function ZukanScreen() {
       ) : null}
 
       <SectionTitle subtitle="Tuna map" title="部位マップ" />
-      <TunaMapDynamic collectedPartIds={snapshot.zukan.collectedPartIds} parts={snapshot.parts} />
+      <TunaMap collectedPartIds={snapshot.zukan.collectedPartIds} parts={snapshot.parts} />
 
       <SectionTitle subtitle="All parts" title="部位一覧" />
       <div className="parts-grid">

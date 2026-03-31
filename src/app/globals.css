@@ -1561,6 +1561,12 @@ body {
   letter-spacing: 0.02em;
 }
 
+.map-hint--dev {
+  margin-top: -6px;
+  font-size: 11px;
+  opacity: 0.9;
+}
+
 .map-detail-card {
   background: var(--wood-light);
   border-radius: 12px;

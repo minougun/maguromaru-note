@@ -213,7 +213,13 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
   return (
     <div>
       <div className="map-wrap">
-        <svg viewBox="0 0 1365 768" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="まぐろ部位マップ">
+        <svg
+          viewBox="0 0 1365 768"
+          xmlns="http://www.w3.org/2000/svg"
+          role="img"
+          aria-label="まぐろ部位マップ"
+          data-zukan-map-renderer="otoro-base-v2"
+        >
           <defs>
             {MAP_REGIONS.map((r) => (
               <clipPath id={clipId(r.key)} key={`clip-${r.key}`} clipPathUnits="userSpaceOnUse">
@@ -231,8 +237,7 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
             if (!eaten) return null;
             const primary = regionPrimaryPart(r, partsById, collected);
             const tint = primary ? mapDisplayColorForPart(primary) : null;
-            const tintOpacity =
-              primary?.id === "otoro" ? "0.64" : primary?.id === "chutoro" ? "0.56" : "0.48";
+            const tintOpacity = primary?.id === "chutoro" ? "0.56" : "0.48";
             return (
               <g key={`reveal-${r.key}`} clipPath={`url(#${clipId(r.key)})`}>
                 {primary?.id === "otoro" ? (
@@ -329,6 +334,11 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
       </div>
 
       <p className="map-hint">タップで部位の詳細を表示 ・ 記録済みの部位だけ色付きイラストが重なります</p>
+      {process.env.NODE_ENV === "development" ? (
+        <p className="map-hint map-hint--dev">
+          開発ビルド: 大トロの魚体は reveal ではなくベース画＋薄ピンクです。表示にこの行が無い場合は古い JS がキャッシュされています。
+        </p>
+      ) : null}
 
       {selectedRegion && selectedRegion.partIds.length === 1 ? (
         (() => {
