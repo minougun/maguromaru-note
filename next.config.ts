@@ -5,7 +5,11 @@ import bundleAnalyzer from "@next/bundle-analyzer";
 import { loadEnvConfig } from "@next/env";
 import type { NextConfig } from "next";
 
-const withBundleAnalyzer = bundleAnalyzer({ enabled: process.env.ANALYZE === "true" });
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === "true",
+  /** GitHub Actions 等でヘッドレス環境が固まらないようにする */
+  openAnalyzer: process.env.CI !== "true",
+});
 
 const projectDir = process.cwd();
 

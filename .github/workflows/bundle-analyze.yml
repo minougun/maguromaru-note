@@ -1,0 +1,29 @@
+# 週次で webpack バンドル分析ビルドを回し、`.next/analyze/*.html` を Artifact に残す。
+# ローカル: `npm run analyze`（`ANALYZE=true`・`next build --webpack`）
+name: Bundle analyze
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - name: Build with bundle analyzer
+        env:
+          CI: true
+        run: npm run analyze
+      - name: Upload analyzer reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: next-bundle-analyze
+          path: .next/analyze/
+          if-no-files-found: warn

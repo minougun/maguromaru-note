@@ -35,6 +35,30 @@ function readSnapshotStaleMs(): number {
 
 const SNAPSHOT_STALE_MS = readSnapshotStaleMs();
 
+const SNAPSHOT_FETCH_MAX_ATTEMPTS = 3;
+const SNAPSHOT_FETCH_RETRY_BASE_MS = 400;
+
+/** オフライン・一時的なネットワーク失敗向けに短い間隔で再試行（Abort は即中断）。 */
+async function fetchWithNetworkRetry(url: string, init: RequestInit): Promise<Response> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < SNAPSHOT_FETCH_MAX_ATTEMPTS; attempt++) {
+    try {
+      return await fetch(url, init);
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        throw err;
+      }
+      lastError = err;
+      if (attempt < SNAPSHOT_FETCH_MAX_ATTEMPTS - 1) {
+        await new Promise((r) =>
+          setTimeout(r, SNAPSHOT_FETCH_RETRY_BASE_MS * (attempt + 1)),
+        );
+      }
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error("network");
+}
+
 /** タブ共通の一括スナップショット（`scope=full`）。タブ切替では再フェッチしない。 */
 function buildFullSnapshotRequestUrl(): string {
   const params = new URLSearchParams();
@@ -157,7 +181,7 @@ export function AppSnapshotProvider({ children }: { children: React.ReactNode })
 
         let response: Response;
         try {
-          response = await fetch(snapshotUrl, fetchInit);
+          response = await fetchWithNetworkRetry(snapshotUrl, fetchInit);
         } catch (err) {
           if (err instanceof DOMException && err.name === "AbortError") {
             return;
@@ -169,7 +193,7 @@ export function AppSnapshotProvider({ children }: { children: React.ReactNode })
           const retryToken = await readSupabaseAccessToken();
           if (retryToken && retryToken !== initialToken) {
             try {
-              response = await fetch(snapshotUrl, {
+              response = await fetchWithNetworkRetry(snapshotUrl, {
                 ...fetchInit,
                 headers: buildSupabaseAuthHeaders(retryToken),
               });
