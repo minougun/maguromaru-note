@@ -18,3 +18,10 @@ export function applyOtoroChutoroDisplayColors(parts: Part[]): Part[] {
     return p;
   });
 }
+
+/** 図鑑マップなど、DB の `color` が旧値でも大トロ・中トロだけ必ず表示用スウォッチに揃える */
+export function mapDisplayColorForPart(part: Part): string {
+  if (part.id === "otoro") return DISPLAY_COLOR_OTORO;
+  if (part.id === "chutoro") return DISPLAY_COLOR_CHUTORO;
+  return part.color;
+}

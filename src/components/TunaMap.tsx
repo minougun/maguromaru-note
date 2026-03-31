@@ -5,6 +5,7 @@ import { useId, useState } from "react";
 import tunaMapBase from "@/assets/zukan-tuna-map.webp";
 import tunaMapReveal from "@/assets/zukan-tuna-map-reveal.webp";
 
+import { mapDisplayColorForPart } from "@/lib/domain/part-brand-colors";
 import type { Part, PartId } from "@/lib/domain/types";
 
 type RegionShape =
@@ -80,7 +81,8 @@ const MAP_REGIONS: MapRegionDef[] = [
         // 上: y 減で拡張 / 下: y 増で拡張（akami 上縁より上に抑える）。3 サブパスで 560,212 を共有
         "M 373,232 L 388,229 L 434,221 L 462,218 L 491,215 L 536,212 L 550,212 L 553,218 L 556,229 L 559,246 L 560,263 L 560,266 L 558,288 L 405,310 L 403,312 L 395,300 L 374,258 Z " +
         "M 560,212 L 761,207 L 766,207 L 792,213 L 797,221 L 797,223 L 770,306 L 768,308 L 589,292 L 568,288 L 566,284 L 561,246 L 560,228 Z " +
-        "M 925,237 L 938,220 L 993,165 L 1002,161 L 1006,164 L 1012,169 L 1087,260 L 1090,264 L 1049,312 L 1045,314 L 1035,318 L 1032,316 L 965,288 L 932,266 Z",
+        // 尾側は手描きで x≈1087 まで伸ばしていたため魚体・地色にはみ出しやすい。reveal 上の flood（930,298 付近）に合わせた閉曲線
+        "M 909,280 L 928,304 L 950,308 L 927,312 L 934,341 L 990,356 L 975,304 Z",
     },
     label: { x: 668, y: 82, text: "中トロ（背）" },
     labelWidth: 200,
@@ -222,12 +224,14 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
             const eaten = regionEaten(r, collected);
             if (!eaten) return null;
             const primary = regionPrimaryPart(r, partsById, collected);
+            const tint = primary ? mapDisplayColorForPart(primary) : null;
+            const tintOpacity = primary && (primary.id === "otoro" || primary.id === "chutoro") ? "0.58" : "0.45";
             return (
               <g key={`reveal-${r.key}`} clipPath={`url(#${clipId(r.key)})`}>
                 <image href={tunaMapReveal.src} width="1365" height="768" preserveAspectRatio="xMidYMid meet" />
-                {primary && (
-                  <rect width="1365" height="768" fill={primary.color} opacity="0.45" />
-                )}
+                {tint != null ? (
+                  <rect width="1365" height="768" fill={tint} opacity={tintOpacity} />
+                ) : null}
               </g>
             );
           })}
@@ -243,6 +247,7 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
             const isSelected = selectedRegionKey === r.key;
             const lw = (r.labelWidth ?? 152) / 2;
             const { x: lx, y: ly } = r.lineTo;
+            const displayColor = mapDisplayColorForPart(primary);
 
             return (
               <g
@@ -266,7 +271,7 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
                   opacity="0.9"
                   fill="none"
                 />
-                {isSelected ? selectionOutlineEl(r.shape, primary.color) : null}
+                {isSelected ? selectionOutlineEl(r.shape, displayColor) : null}
                 <rect
                   x={r.label.x - lw}
                   y={r.label.y - 26}
@@ -274,8 +279,8 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
                   ry="22"
                   width={lw * 2}
                   height="52"
-                  fill={eaten ? primary.color : "rgba(55,38,32,0.92)"}
-                  stroke={eaten ? primary.color : "rgba(196,168,120,0.45)"}
+                  fill={eaten ? displayColor : "rgba(55,38,32,0.92)"}
+                  stroke={eaten ? displayColor : "rgba(196,168,120,0.45)"}
                   strokeWidth="2"
                 />
                 <text
@@ -307,7 +312,7 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
           return (
             <div className="map-detail-card">
               <div className="map-detail-header">
-                <span className="map-detail-name" style={{ color: isCollected ? part.color : "var(--cream)" }}>
+                <span className="map-detail-name" style={{ color: isCollected ? mapDisplayColorForPart(part) : "var(--cream)" }}>
                   {part.name}
                 </span>
                 <span className="map-detail-area">{part.area}</span>
@@ -336,7 +341,7 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
               return (
                 <li className="map-detail-multi-item" key={pid}>
                   <div className="map-detail-header">
-                    <span className="map-detail-name" style={{ color: isCollected ? part.color : "var(--cream)" }}>
+                    <span className="map-detail-name" style={{ color: isCollected ? mapDisplayColorForPart(part) : "var(--cream)" }}>
                       {part.name}
                     </span>
                     <span className="map-detail-area">{part.area}</span>
