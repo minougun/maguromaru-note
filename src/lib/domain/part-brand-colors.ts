@@ -6,10 +6,10 @@ import type { Part } from "@/lib/domain/types";
  * 赤身・大トロはスクリーンショット中央部の RGB 各チャンネル中央値:
  * - 赤身: `C:\Users\minou\Downloads\スクリーンショット 2026-03-31 153206.png`
  * - 大トロ: `C:\Users\minou\Downloads\スクリーンショット 2026-03-31 153237.png`
- * 中トロは上記2色を線形 sRGB で補間した中間（赤の濃さのバランス用）。
+ * 中トロ: `C:\Users\minou\Downloads\スクリーンショット 2026-03-31 155338.png`（画像全体ピクセル平均 `#ea7e7b`）
  */
 export const PART_DISPLAY_COLOR_OTORO = "#e6708a";
-export const PART_DISPLAY_COLOR_CHUTORO = "#ce5970";
+export const PART_DISPLAY_COLOR_CHUTORO = "#ea7e7b";
 
 export const PART_DISPLAY_SWATCHES = {
   otoro: PART_DISPLAY_COLOR_OTORO,
