@@ -136,7 +136,7 @@ const MAP_REGIONS: MapRegionDef[] = [
   },
 ];
 
-interface TunaMapProps {
+export interface TunaMapProps {
   parts: Part[];
   collectedPartIds: PartId[];
 }
@@ -180,7 +180,7 @@ const FORCE_COLORS: Record<string, string> = {
   chutoro: "#eb7e7c",
 };
 
-export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
+function TunaMapInner({ parts, collectedPartIds }: TunaMapProps) {
   const partsById = new Map(parts.map((part) => {
     const forced = FORCE_COLORS[part.id];
     return [part.id, forced ? { ...part, color: forced } : part];
@@ -365,4 +365,4 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
   );
 }
 
-export const TunaMap = memo(TunaMap);
+export const TunaMap = memo(TunaMapInner);

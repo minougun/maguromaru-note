@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-ntype Props = {
+type Props = {
   onClose: () => void;
 };
-nexport default function TutorialScreen({ onClose }: Props) {
+export default function TutorialScreen({ onClose }: Props) {
   const slides = [
     {
       title: "ようこそ、まぐろ丸へ！",
@@ -31,15 +31,15 @@ import { useState } from "react";
       body: "準備OKなら始めましょう。いつでもこのチュートリアルは設定から再表示できます。",
     },
   ];
-n  const [index, setIndex] = useState(0);
-n  function next() {
+  const [index, setIndex] = useState(0);
+  function next() {
     if (index < slides.length - 1) setIndex(index + 1);
     else finish();
   }
-n  function prev() {
+  function prev() {
     if (index > 0) setIndex(index - 1);
   }
-n  function finish() {
+  function finish() {
     try {
       localStorage.setItem("maguromaru_tutorial_shown", "1");
     } catch (e) {
@@ -47,7 +47,7 @@ import { useState } from "react";
     }
     onClose();
   }
-n  return (
+  return (
     <div style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.45)" }}>
       <div style={{ width: "min(92%, 420px)" }}>
         <div className="card">
@@ -69,3 +69,6 @@ import { useState } from "react";
     </div>
   );
 }
+
+
+
