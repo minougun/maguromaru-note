@@ -54,7 +54,9 @@ export function ZukanScreen() {
       </Card>
       {snapshot.zukan.isComplete ? (
         <Card>
-          <p className="complete-banner">全{snapshot.zukan.totalCount}部位コンプリートです。次は履歴をシェアして自慢しましょう。</p>
+          <p className="complete-banner">
+            全{snapshot.zukan.totalCount}部位コンプリートおめでとうございます🎉シェアして自慢❗️
+          </p>
         </Card>
       ) : null}
 
