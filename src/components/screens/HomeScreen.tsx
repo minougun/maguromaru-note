@@ -14,6 +14,7 @@ import type { VisitRecord } from "@/lib/domain/types";
 import { useAppSnapshot } from "@/lib/hooks/use-app-snapshot";
 import { buildPastLogShare, type SharePayload } from "@/lib/share/share";
 import { fetchOsakaHonmachiWeatherSafe } from "@/lib/weather";
+import TutorialScreen from "@/components/screens/TutorialScreen";
 
 function storeStatusMeta(status: "open" | "busy" | "closing_soon" | "closed") {
   switch (status) {
@@ -120,6 +121,43 @@ export function HomeScreen() {
     snapshot.home.showStaffUpdateTimestamps && storeStatus !== "unset";
   const yen = new Intl.NumberFormat("ja-JP");
 
+  const MAGURO_BOT_FACTS = [
+    "大トロと中トロの脂の乗りは季節によって変わります",
+    "まぐろの目利きは色と艶でチェック",
+    "冷凍まぐろは-60℃以下で保管されています",
+    "近海物のまぐろは鮮度が良いことが多い",
+    "まぐろの赤身は鉄分が豊富です",
+    "まぐろは回遊魚で脂の乗りが出る場所が季節で変わります",
+  ];
+
+  const [aiFact, setAiFact] = useState<string | null>(null);
+  useEffect(() => {
+    setAiFact(MAGURO_BOT_FACTS[Math.floor(Math.random() * MAGURO_BOT_FACTS.length)]);
+    const id = setInterval(() => {
+      setAiFact(MAGURO_BOT_FACTS[Math.floor(Math.random() * MAGURO_BOT_FACTS.length)]);
+    }, 45000); // 45 seconds
+    return () => clearInterval(id);
+  }, []);
+
+  const [showTutorial, setShowTutorial] = useState(false);
+  useEffect(() => {
+    try {
+      const shown = localStorage.getItem("maguromaru_tutorial_shown");
+      if (!shown) setShowTutorial(true);
+    } catch (e) {
+      /* ignore */
+    }
+  }, []);
+
+  function handleCloseTutorial() {
+    try {
+      localStorage.setItem("maguromaru_tutorial_shown", "1");
+    } catch (e) {
+      /* ignore */
+    }
+    setShowTutorial(false);
+  }
+
   function openShare(log: VisitRecord) {
     setSharePayload(buildPastLogShare(log));
   }
@@ -182,10 +220,19 @@ export function HomeScreen() {
           </>
         ) : (
           <>
-            <p className="ai-store-blurb-placeholder-lead">
-              入荷や営業の更新があると、Bot がここに短いコメントを表示します。
-            </p>
-            <p className="ai-store-blurb-placeholder-sub">次の更新をお楽しみに。まだ表示はありません。</p>
+            {aiFact ? (
+              <>
+                <p className="ai-store-blurb-body">{aiFact}</p>
+                <p className="ai-store-blurb-meta">自動つぶやき · 現在</p>
+              </>
+            ) : (
+              <>
+                <p className="ai-store-blurb-placeholder-lead">
+                  入荷や営業の更新があると、Bot がここに短いコメントを表示します。
+                </p>
+                <p className="ai-store-blurb-placeholder-sub">次の更新をお楽しみに。まだ表示はありません。</p>
+              </>
+            )}
           </>
         )}
       </Card>
@@ -229,6 +276,7 @@ export function HomeScreen() {
         </Card>
       )}
 
+      {showTutorial ? <TutorialScreen onClose={handleCloseTutorial} /> : null}
       <ShareModalDynamic onClose={() => setSharePayload(null)} open={Boolean(sharePayload)} payload={sharePayload} />
     </>
   );
