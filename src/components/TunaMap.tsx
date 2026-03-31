@@ -137,8 +137,8 @@ const MAP_REGIONS: MapRegionDef[] = [
   },
 ];
 
-/** 部位マップのティント／ラベル色: 表示スウォッチの HSL 明度 L をこの倍率にする（1.5 = 150%） */
-const MAP_OVERLAY_LIGHTNESS_MULTIPLIER = 1.5;
+/** 部位マップのティント／ラベル色: 表示スウォッチの HSL 明度 L をこの倍率にする */
+const MAP_OVERLAY_LIGHTNESS_MULTIPLIER = 1.3;
 
 function parseHexRgb(hex: string): { r: number; g: number; b: number } | null {
   const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex.trim());
