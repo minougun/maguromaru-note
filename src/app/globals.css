@@ -79,13 +79,25 @@ body {
 
 .app-header {
   flex-shrink: 0;
-  position: sticky;
+  position: fixed; /* fixed for global header */
+  left: 0;
+  right: 0;
   top: 0;
   z-index: 40;
   background: var(--navy);
   padding: 12px 16px 10px;
   border-bottom: none;
   color: #fff;
+}
+
+/* When header is fixed, content needs top padding to avoid overlap */
+.app-shell > .screen-main {
+  padding-top: calc(12px + 22px + 10px + 8px); /* approximate header height (padding + title) */
+}
+
+/* Keep login shell without header */
+.app-shell--login .app-header {
+  display: none;
 }
 
 .header-row {

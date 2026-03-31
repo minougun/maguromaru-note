@@ -62,6 +62,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="app-shell">
+      <AppHeader />
       <main className="screen-main" ref={setScrollMainEl}>
         {children}
       </main>
