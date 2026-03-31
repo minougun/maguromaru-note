@@ -106,18 +106,7 @@ const MAP_REGIONS: MapRegionDef[] = [
     label: { x: 1040, y: 336 },
     lineTo: { x: 738, y: 382 },
   },
-  {
-    key: "belly-otoro-rear",
-    partIds: ["otoro"],
-    shape: {
-      type: "path",
-      // 尾側・頭側の境界は同じ座標で接続。上縁は直線の継ぎ目を C で滑らかに（選択時の黒線のV字解消）
-      d: "M 560,557 L 562,472 L 568,474 C 648,458 724,448 794,456 L 800,456 L 801,457 L 801,459 L 800,470 L 796,482 L 788,496 L 775,510 L 755,524 L 732,536 L 704,546 L 672,552 L 640,555 L 608,557 L 572,557 Z",
-    },
-    label: { x: 808, y: 628, text: "大トロ" },
-    labelWidth: 132,
-    lineTo: { x: 696, y: 486 },
-  },
+  // 腹の中トロ polygon が大トロと重なるため、先に中トロを描いてから大トロを上に載せる（さもなくば reveal が大トロを潰す）
   {
     key: "belly-chutoro",
     partIds: ["chutoro"],
@@ -129,6 +118,18 @@ const MAP_REGIONS: MapRegionDef[] = [
     label: { x: 1008, y: 608, text: "中トロ（腹）" },
     labelWidth: 210,
     lineTo: { x: 886, y: 478 },
+  },
+  {
+    key: "belly-otoro-rear",
+    partIds: ["otoro"],
+    shape: {
+      type: "path",
+      // 尾側・頭側の境界は同じ座標で接続。上縁は直線の継ぎ目を C で滑らかに（選択時の黒線のV字解消）
+      d: "M 560,557 L 562,472 L 568,474 C 648,458 724,448 794,456 L 800,456 L 801,457 L 801,459 L 800,470 L 796,482 L 788,496 L 775,510 L 755,524 L 732,536 L 704,546 L 672,552 L 640,555 L 608,557 L 572,557 Z",
+    },
+    label: { x: 808, y: 628, text: "大トロ" },
+    labelWidth: 132,
+    lineTo: { x: 696, y: 486 },
   },
   {
     key: "belly-otoro-front",
@@ -218,7 +219,7 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
           xmlns="http://www.w3.org/2000/svg"
           role="img"
           aria-label="まぐろ部位マップ"
-          data-zukan-map-renderer="otoro-base-v2"
+          data-zukan-map-renderer="otoro-base-v3-zorder"
         >
           <defs>
             {MAP_REGIONS.map((r) => (
@@ -336,7 +337,7 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
       <p className="map-hint">タップで部位の詳細を表示 ・ 記録済みの部位だけ色付きイラストが重なります</p>
       {process.env.NODE_ENV === "development" ? (
         <p className="map-hint map-hint--dev">
-          開発ビルド: 大トロの魚体は reveal ではなくベース画＋薄ピンクです。表示にこの行が無い場合は古い JS がキャッシュされています。
+          開発ビルド: 大トロはベース画＋薄ピンク。腹は中トロを先に描いてから大トロを上に重ねています（v3）。
         </p>
       ) : null}
 
