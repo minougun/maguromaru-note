@@ -6,8 +6,10 @@ import tunaMapBase from "@/assets/zukan-tuna-map.webp";
 import tunaMapReveal from "@/assets/zukan-tuna-map-reveal.webp";
 
 import {
-  MAP_OTORO_REVEAL_WASH,
-  MAP_OTORO_REVEAL_WASH_OPACITY,
+  MAP_OTORO_MAP_MILK,
+  MAP_OTORO_MAP_MILK_OPACITY,
+  MAP_OTORO_MAP_SAKURA_OPACITY,
+  MAP_OTORO_MAP_SAKURA_TINT,
   mapDisplayColorForPart,
 } from "@/lib/domain/part-brand-colors";
 import type { Part, PartId } from "@/lib/domain/types";
@@ -233,20 +235,30 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
               primary?.id === "otoro" ? "0.64" : primary?.id === "chutoro" ? "0.56" : "0.48";
             return (
               <g key={`reveal-${r.key}`} clipPath={`url(#${clipId(r.key)})`}>
-                <image href={tunaMapReveal.src} width="1365" height="768" preserveAspectRatio="xMidYMid meet" />
-                {primary?.id === "otoro" && tint != null ? (
+                {primary?.id === "otoro" ? (
                   <>
+                    <image href={tunaMapBase.src} width="1365" height="768" preserveAspectRatio="xMidYMid meet" />
                     <rect
                       width="1365"
                       height="768"
-                      fill={MAP_OTORO_REVEAL_WASH}
-                      opacity={MAP_OTORO_REVEAL_WASH_OPACITY}
+                      fill={MAP_OTORO_MAP_SAKURA_TINT}
+                      opacity={MAP_OTORO_MAP_SAKURA_OPACITY}
                     />
-                    <rect width="1365" height="768" fill={tint} opacity={tintOpacity} />
+                    <rect
+                      width="1365"
+                      height="768"
+                      fill={MAP_OTORO_MAP_MILK}
+                      opacity={MAP_OTORO_MAP_MILK_OPACITY}
+                    />
                   </>
-                ) : tint != null ? (
-                  <rect width="1365" height="768" fill={tint} opacity={tintOpacity} />
-                ) : null}
+                ) : (
+                  <>
+                    <image href={tunaMapReveal.src} width="1365" height="768" preserveAspectRatio="xMidYMid meet" />
+                    {tint != null ? (
+                      <rect width="1365" height="768" fill={tint} opacity={tintOpacity} />
+                    ) : null}
+                  </>
+                )}
               </g>
             );
           })}
