@@ -145,6 +145,17 @@ const MAP_REGIONS: MapRegionDef[] = [
   },
 ];
 
+/** クリップ内はベース画＋薄ピンク（reveal は使わない）。`part.id` 判定は避け、key で固定する。 */
+function isOtoroBellyMapRegion(r: MapRegionDef): boolean {
+  return r.key === "belly-otoro-rear" || r.key === "belly-otoro-front";
+}
+
+/** SVG は後描きが上になる。腹の大トロを必ず最後に描いて他部位の reveal に潰されないようにする */
+const MAP_REGIONS_REVEAL_PAINT_ORDER: MapRegionDef[] = [
+  ...MAP_REGIONS.filter((r) => !isOtoroBellyMapRegion(r)),
+  ...MAP_REGIONS.filter((r) => isOtoroBellyMapRegion(r)),
+];
+
 interface TunaMapProps {
   parts: Part[];
   collectedPartIds: PartId[];
@@ -219,7 +230,7 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
           xmlns="http://www.w3.org/2000/svg"
           role="img"
           aria-label="まぐろ部位マップ"
-          data-zukan-map-renderer="otoro-base-v3-zorder"
+          data-zukan-map-renderer="otoro-base-v4-key-paint"
         >
           <defs>
             {MAP_REGIONS.map((r) => (
@@ -231,7 +242,7 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
 
           <image href={tunaMapBase.src} width="1365" height="768" preserveAspectRatio="xMidYMid meet" />
 
-          {MAP_REGIONS.map((r) => {
+          {MAP_REGIONS_REVEAL_PAINT_ORDER.map((r) => {
             const hasAllParts = r.partIds.every((id) => partsById.has(id));
             if (!hasAllParts) return null;
             const eaten = regionEaten(r, collected);
@@ -241,7 +252,7 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
             const tintOpacity = primary?.id === "chutoro" ? "0.56" : "0.48";
             return (
               <g key={`reveal-${r.key}`} clipPath={`url(#${clipId(r.key)})`}>
-                {primary?.id === "otoro" ? (
+                {isOtoroBellyMapRegion(r) ? (
                   <>
                     <image href={tunaMapBase.src} width="1365" height="768" preserveAspectRatio="xMidYMid meet" />
                     <rect
@@ -337,7 +348,7 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
       <p className="map-hint">タップで部位の詳細を表示 ・ 記録済みの部位だけ色付きイラストが重なります</p>
       {process.env.NODE_ENV === "development" ? (
         <p className="map-hint map-hint--dev">
-          開発ビルド: 大トロはベース画＋薄ピンク。腹は中トロを先に描いてから大トロを上に重ねています（v3）。
+          開発ビルド: 大トロ腹は region key 固定でベース画＋薄ピンク、描画は必ず最後（v4）。
         </p>
       ) : null}
 
