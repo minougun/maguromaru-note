@@ -8,10 +8,8 @@ TunaMap.tsx の MAP_REGIONS に貼れる `d:` 文字列を標準出力する。
 - **穴埋め**: ほほなど塗りに穴があると外周グラフが分岐するため、バウンディングボックス内の
   囲まれた背景を前景で埋めてから外周を取る。
 
-**注意**:
-- **赤身**は広い flood の輪郭が階段状に見えるため、`TunaMap.tsx` では手調整の `d` を維持。
-- **中トロ（背）**は本番は左・中央のみ `path_contour_from_pixels`（左 ε2.5・中央 ε5）。尾ブロックは reveal を掛けず、すき間の半透明塗りとも併用しない。
-  尾の輪郭は `chutoro-back R` 行を参考にできる。
+**注意**: `TunaMap.tsx` の **赤身**・**中トロ（背）** は広い flood に対する輪郭＋RDP が階段状に見えるため、
+本番では手調整の `d` を使う。ここでの chutoro / akami 出力は参考用。
 
 Pillow が必要: pip install pillow
 
@@ -306,10 +304,10 @@ def main() -> None:
     meura = ppath(meura_pts, 2.5)
     hoho = ppath(hoho_pts, 4.0)
 
-    chu_l_d = ppath(chu_l, 2.5)
-    chu_m_d = ppath(chu_m, 5.0)
-    chu_r_d = ppath(chu_r, 7.0)
-    chutoro_back_prod = f"{chu_l_d} {chu_m_d}".strip()
+    chu_l_d = ppath(chu_l, 4.0)
+    chu_m_d = ppath(chu_m, 6.0)
+    chu_r_d = ppath(chu_r, 6.0)
+    chutoro_combined = f"{chu_l_d} {chu_m_d} {chu_r_d}".strip()
 
     ak_main_d = ppath(ak_main, 4.5)
     tail_d = ppath(tail, 2.5)
@@ -323,7 +321,7 @@ def main() -> None:
         ("noten", noten, path_centroid(noten) if noten else None),
         ("meura", meura, path_centroid(meura) if meura else None),
         ("hoho", hoho, weighted_centroid([hoho_pts]) if hoho else None),
-        ("chutoro-back (本番 L+M)", chutoro_back_prod, weighted_centroid([chu_l, chu_m])),
+        ("chutoro-back (3 subpaths)", chutoro_combined, weighted_centroid([chu_l, chu_m, chu_r])),
         ("chutoro-back L", chu_l_d, path_centroid(chu_l_d)),
         ("chutoro-back M", chu_m_d, path_centroid(chu_m_d)),
         ("chutoro-back R", chu_r_d, path_centroid(chu_r_d)),

@@ -2,7 +2,6 @@
 
 import { useId, useState } from "react";
 
-import chutoroBackMask from "@/assets/zukan-chutoro-back-mask.png";
 import tunaMapBase from "@/assets/zukan-tuna-map.webp";
 import tunaMapReveal from "@/assets/zukan-tuna-map-reveal.webp";
 
@@ -30,15 +29,9 @@ interface MapRegionDef {
  * viewBox 1365×768。ベース画＋記録済みクリップ用の色付き画（同一クロップ）。
  * 各部位は `zukan-tuna-map-reveal.webp` 上の色塗りに沿うよう、
  * 脳天・目裏は楕円。ほほ・腹周りなどは flood＋外周輪郭＋RDP。
- * 赤身は手調整 path。中トロ（背）の着色は `zukan-chutoro-back-mask.png`（自動生成）で reveal をマスク。
- * タップ当たりは従来どおり path（左・中央の2ブロック）。マスク再生成: `python3 scripts/generate-chutoro-back-mask.py`
- * 他部位の path 参考: scripts/build-map-regions-from-reveal.py
+ * 赤身・中トロ（背）は広い塗りで輪郭自動生成が階段状に崩れやすいため手調整の path を維持。
+ * WebP を差し替えた場合は scripts/build-map-regions-from-reveal.py で参考 path を再生成できる。
  */
-
-const AKAMI_MAP_PATH_D =
-  "M 499,327 L 523,303 L 557,299 L 561,299 L 607,300 L 662,302 L 686,304 L 732,309 L 816,321 L 834,325 L 843,328 L 894,394 L 891,403 L 558,452 L 529,422 Z " +
-  "M 1116,386 L 1117,379 L 1118,377 L 1128,377 L 1219,378 L 1218,380 L 1206,387 L 1117,393 L 1116,392 Z";
-
 const MAP_REGIONS: MapRegionDef[] = [
   {
     key: "noten",
@@ -84,19 +77,22 @@ const MAP_REGIONS: MapRegionDef[] = [
     shape: {
       type: "path",
       d:
-        "M 373,252 L 458,238 L 553,232 L 562,290 L 560,293 L 459,299 L 405,310 L 398,303 Z " +
-        "M 558,232 L 659,234 L 747,246 L 740,236 L 766,239 L 757,226 L 762,225 L 794,233 L 799,247 L 772,240 L 772,251 L 748,246 L 769,289 L 767,308 L 567,292 Z",
+        "M 373,252 L 388,249 L 434,241 L 462,238 L 491,235 L 536,232 L 550,232 L 553,238 L 556,249 L 559,266 L 560,283 L 560,286 L 558,290 L 405,308 L 403,308 L 395,295 L 374,255 Z " +
+        "M 560,232 L 761,227 L 766,227 L 792,233 L 797,241 L 797,243 L 770,304 L 768,306 L 589,292 L 568,290 L 566,286 L 561,251 L 560,237 Z " +
+        "M 925,257 L 938,240 L 993,185 L 1002,181 L 1006,184 L 1012,189 L 1087,264 L 1090,269 L 1049,310 L 1045,312 L 1035,315 L 1032,314 L 965,288 L 932,266 Z",
     },
     label: { x: 668, y: 82, text: "中トロ（背）" },
     labelWidth: 200,
-    lineTo: { x: 617, y: 272 },
+    lineTo: { x: 658, y: 268 },
   },
   {
     key: "akami",
     partIds: ["akami"],
     shape: {
       type: "path",
-      d: AKAMI_MAP_PATH_D,
+      d:
+        "M 499,327 L 523,303 L 557,299 L 561,299 L 607,300 L 662,302 L 686,304 L 732,309 L 816,321 L 834,325 L 843,328 L 894,394 L 891,403 L 558,452 L 529,422 Z " +
+        "M 1116,386 L 1117,379 L 1118,377 L 1128,377 L 1219,378 L 1218,380 L 1206,387 L 1117,393 L 1116,392 Z",
     },
     label: { x: 1040, y: 336 },
     lineTo: { x: 698, y: 375 },
@@ -204,20 +200,6 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
     return `${base}${eaten ? "（いずれか記録済み）" : ""}`;
   }
 
-  const chutoroBackRevealMaskId = `${clipUid}-chutoro-back-reveal-mask`;
-  const chutoroBackIdx = MAP_REGIONS.findIndex((r) => r.key === "chutoro-back");
-
-  function revealClipFor(r: MapRegionDef) {
-    const hasAllParts = r.partIds.every((id) => partsById.has(id));
-    if (!hasAllParts) return null;
-    if (!regionEaten(r, collected)) return null;
-    return (
-      <g key={`reveal-${r.key}`} clipPath={`url(#${clipId(r.key)})`}>
-        <image href={tunaMapReveal.src} width="1365" height="768" preserveAspectRatio="xMidYMid meet" />
-      </g>
-    );
-  }
-
   return (
     <div>
       <div className="map-wrap">
@@ -228,31 +210,21 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
                 {clipShapeEl(r.shape)}
               </clipPath>
             ))}
-            <mask id={chutoroBackRevealMaskId} maskUnits="userSpaceOnUse" x="0" y="0" width="1365" height="768">
-              <image href={chutoroBackMask.src} width="1365" height="768" preserveAspectRatio="xMidYMid meet" />
-            </mask>
           </defs>
 
           <image href={tunaMapBase.src} width="1365" height="768" preserveAspectRatio="xMidYMid meet" />
 
-          {chutoroBackIdx >= 0 ? (
-            <>
-              {MAP_REGIONS.slice(0, chutoroBackIdx).map((r) => revealClipFor(r))}
-              {partsById.has("chutoro") && collected.has("chutoro") ? (
-                <image
-                  key="reveal-chutoro-back-mask"
-                  href={tunaMapReveal.src}
-                  width="1365"
-                  height="768"
-                  preserveAspectRatio="xMidYMid meet"
-                  mask={`url(#${chutoroBackRevealMaskId})`}
-                />
-              ) : null}
-              {MAP_REGIONS.slice(chutoroBackIdx + 1).map((r) => revealClipFor(r))}
-            </>
-          ) : (
-            MAP_REGIONS.map((r) => revealClipFor(r))
-          )}
+          {MAP_REGIONS.map((r) => {
+            const hasAllParts = r.partIds.every((id) => partsById.has(id));
+            if (!hasAllParts) return null;
+            const eaten = regionEaten(r, collected);
+            if (!eaten) return null;
+            return (
+              <g key={`reveal-${r.key}`} clipPath={`url(#${clipId(r.key)})`}>
+                <image href={tunaMapReveal.src} width="1365" height="768" preserveAspectRatio="xMidYMid meet" />
+              </g>
+            );
+          })}
 
           {MAP_REGIONS.map((r) => {
             const hasAllParts = r.partIds.every((id) => partsById.has(id));
