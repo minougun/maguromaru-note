@@ -53,7 +53,8 @@ export function resetHttpRateLimitCachesForTests() {
 
 /**
  * 分散レート制限（Upstash 設定時）またはメモリ Map（フォールバック）。
- * 識別子: JWT の sub が取れれば `u:<sub>`、なければ `ip:<client ip>`。
+ * 識別子: JWT の sub が取れれば `u:<sub>:ip:<client ip>`（サブ偽造による無制限回避を防ぐため、IP を組み合わせる）。
+ * 取得できなければ `ip:<client ip>`。
  */
 export async function checkHttpRateLimit(
   request: Request,
@@ -62,7 +63,7 @@ export async function checkHttpRateLimit(
 ): Promise<{ ok: boolean; retryAfterSeconds: number }> {
   const sub = tryJwtSubFromAuthHeader(request.headers.get("authorization"));
   const ip = readClientIp(request);
-  const identifier = sub ? `u:${sub}` : `ip:${ip}`;
+  const identifier = sub ? `u:${sub}:ip:${ip}` : `ip:${ip}`;
 
   const limiter = getRatelimit(routeKey, policy.maxRequests, policy.windowMs);
   if (!limiter) {

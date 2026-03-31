@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import React, { useId, useState, useMemo, useCallback, memo } from "react";
 
 import tunaMapBase from "@/assets/zukan-tuna-map.webp";
 import tunaMapReveal from "@/assets/zukan-tuna-map-reveal.webp";
@@ -364,3 +364,5 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
     </div>
   );
 }
+
+export const TunaMap = memo(TunaMap);

@@ -1,7 +1,8 @@
+import React from "react";
 import clsx from "clsx";
 import type { ComponentPropsWithoutRef } from "react";
 
-export function Card({
+function CardInner({
   children,
   glow = false,
   className,
@@ -13,3 +14,6 @@ export function Card({
     </section>
   );
 }
+
+export const Card = React.memo(CardInner);
+Card.displayName = "Card";
