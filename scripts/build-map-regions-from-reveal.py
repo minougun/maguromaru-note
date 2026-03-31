@@ -18,6 +18,9 @@ Pillow が必要: pip install pillow
 使い方:
   python3 scripts/build-map-regions-from-reveal.py \\
     --reveal src/assets/zukan-tuna-map-reveal.webp
+
+  # 中トロ（背）のすき間ピンク演出 path だけ出す:
+  python3 scripts/build-map-regions-from-reveal.py --chutoro-gap-fill
 """
 
 from __future__ import annotations
@@ -261,6 +264,102 @@ def weighted_centroid(sets: list[set[tuple[int, int]]]) -> tuple[int, int]:
     return round(cx), round(cy)
 
 
+# TunaMap.tsx の AKAMI_MAP_PATH_D と同期すること
+_AKAMI_MAP_PATH_D = (
+    "M 499,327 L 523,303 L 557,299 L 561,299 L 607,300 L 662,302 L 686,304 L 732,309 L 816,321 L 834,325 L 843,328 L 894,394 L 891,403 L 558,452 L 529,422 Z "
+    "M 1116,386 L 1117,379 L 1118,377 L 1128,377 L 1219,378 L 1218,380 L 1206,387 L 1117,393 L 1116,392 Z"
+)
+
+
+def _parse_path_polys(d: str) -> list[list[tuple[int, int]]]:
+    polys: list[list[tuple[int, int]]] = []
+    for part in d.split("Z"):
+        part = part.strip()
+        if not part:
+            continue
+        if not part.startswith("M"):
+            part = "M " + part
+        nums = [int(x) for x in re.findall(r"-?\d+", part)]
+        pts = list(zip(nums[0::2], nums[1::2]))
+        if pts and pts[0] == pts[-1]:
+            pts = pts[:-1]
+        if len(pts) >= 3:
+            polys.append(list(pts))
+    return polys
+
+
+def _point_in_poly(x: int, y: int, poly: list[tuple[int, int]]) -> bool:
+    n = len(poly)
+    inside = False
+    j = n - 1
+    for i in range(n):
+        xi, yi = poly[i]
+        xj, yj = poly[j]
+        if ((yi > y) != (yj > y)) and (x < (xj - xi) * (y - yi) / (yj - yi + 1e-9) + xi):
+            inside = not inside
+        j = i
+    return inside
+
+
+def _in_any_poly(x: int, y: int, polys: list[list[tuple[int, int]]]) -> bool:
+    return any(_point_in_poly(x, y, p) for p in polys)
+
+
+def _connected_components(pts: set[tuple[int, int]]) -> list[set[tuple[int, int]]]:
+    rem = set(pts)
+    out: list[set[tuple[int, int]]] = []
+    while rem:
+        start = next(iter(rem))
+        stack = [start]
+        comp: set[tuple[int, int]] = set()
+        while stack:
+            x, y = stack.pop()
+            if (x, y) not in rem:
+                continue
+            rem.remove((x, y))
+            comp.add((x, y))
+            for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+                if (nx, ny) in rem:
+                    stack.append((nx, ny))
+        out.append(comp)
+    return out
+
+
+def chutoro_back_gap_fill_d(
+    px,
+    w: int,
+    h: int,
+    *,
+    akami_path_d: str = _AKAMI_MAP_PATH_D,
+    min_component: int = 80,
+    rdp_eps: float = 3.0,
+) -> str:
+    """TunaMap の CHUTORO_BACK_GAP_FILL_D 再生成用。"""
+    ak_polys = _parse_path_polys(akami_path_d.replace(" Z ", "Z"))
+
+    def pf(sx: int, sy: int, th: int, mx: int) -> set[tuple[int, int]]:
+        return flood_rgba(px, w, h, sx, sy, thresh=th, maxn=mx)
+
+    chu_l = pf(500, 240, 60, 12000)
+    chu_m = pf(620, 255, 56, 28000)
+    chu_r = pf(930, 298, 38, 40000)
+    core = chu_l | chu_m | chu_r
+    wide = pf(565, 275, 85, 50000) | pf(850, 275, 85, 50000)
+    fill_pixels: set[tuple[int, int]] = set()
+    for p in wide:
+        if p in core:
+            continue
+        x, y = p
+        if _in_any_poly(x, y, ak_polys):
+            continue
+        fill_pixels.add(p)
+
+    comps = [c for c in _connected_components(fill_pixels) if len(c) >= min_component]
+    comps.sort(key=len, reverse=True)
+    parts = [path_contour_from_pixels(c, epsilon=rdp_eps, fill_holes=True) for c in comps]
+    return " ".join(p for p in parts if p).strip()
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--reveal", type=Path, default=Path("src/assets/zukan-tuna-map-reveal.webp"))
@@ -270,12 +369,22 @@ def main() -> None:
         action="store_true",
         help="輪郭の代わりに凸包＋ランダム標本（旧挙動）で出力する",
     )
+    ap.add_argument(
+        "--chutoro-gap-fill",
+        action="store_true",
+        help="中トロ（背）すき間演出用 path のみ出力（TunaMap CHUTORO_BACK_GAP_FILL_D 用）",
+    )
     args = ap.parse_args()
 
     rng = random.Random(args.seed)
     im = Image.open(args.reveal).convert("RGBA")
     w, h = im.size
     px = im.load()
+
+    if args.chutoro_gap_fill:
+        print("### CHUTORO_BACK_GAP_FILL_D（TunaMap.tsx に貼付）")
+        print(chutoro_back_gap_fill_d(px, w, h))
+        return
 
     def pflood(sx: int, sy: int, thresh: int, maxn: int) -> set[tuple[int, int]]:
         return flood_rgba(px, w, h, sx, sy, thresh=thresh, maxn=maxn)
