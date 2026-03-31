@@ -5,7 +5,7 @@
  * キャッシュキーに倍率を含め、定数変更後も古い結果を返さない。
  */
 
-const MAP_OVERLAY_LIGHTNESS_MULTIPLIER = 1.2;
+const MAP_OVERLAY_LIGHTNESS_MULTIPLIER = 1;
 const MAP_OVERLAY_SATURATION_MULTIPLIER = 1.5;
 
 const overlayTintCache = new Map<string, string>();
