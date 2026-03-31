@@ -662,6 +662,37 @@ body {
   color: var(--navy);
 }
 
+.ai-store-blurb-card {
+  border-radius: 18px;
+  padding: 14px 16px 12px;
+  border-color: rgba(27, 45, 79, 0.2);
+  background: linear-gradient(145deg, rgba(92, 219, 239, 0.12), rgba(27, 45, 79, 0.04));
+  box-shadow: 0 3px 12px rgba(27, 45, 79, 0.08);
+}
+
+.ai-store-blurb-label {
+  margin: 0 0 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--navy);
+  text-transform: uppercase;
+}
+
+.ai-store-blurb-body {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.55;
+  color: var(--cream);
+}
+
+.ai-store-blurb-meta {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: var(--cream-dark);
+}
+
 .stock-card {
   border-radius: 22px;
   padding: 18px 16px 14px;

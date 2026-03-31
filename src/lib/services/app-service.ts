@@ -16,6 +16,7 @@ import {
 } from "@/lib/domain/schemas";
 import type {
   AppSnapshot,
+  HomeAiStoreBlurb,
   MenuItem,
   MenuItemId,
   MenuItemStatusRow,
@@ -60,6 +61,7 @@ import { createMockPhotoUrl, createMockViewerContext, mockMasterData, readMockSt
 import { QUIZ_SESSION_SIZE, createQuizSession, getStageNumberFromQuestionId, scoreQuizAnswers, toPublicQuizSession } from "@/lib/quiz";
 import { createEmptyQuizStageProgress, isQuizStageUnlocked } from "@/lib/quiz-stages";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { fetchStoreAiBlurbForHome } from "@/lib/services/store-ai-blurb";
 import { getCurrentTitle } from "@/lib/titles";
 
 export class AppServiceError extends Error {
@@ -779,7 +781,8 @@ function buildSnapshotFromRecords(
   shareBonusEvents: ShareBonusEventRow[],
   visitLogs: Database["public"]["Tables"]["visit_logs"]["Row"][],
   visitLogParts: Database["public"]["Tables"]["visit_log_parts"]["Row"][],
-  buildCtx?: SnapshotBuildContext,
+  buildCtx: SnapshotBuildContext | undefined,
+  aiStoreBlurb: HomeAiStoreBlurb | null,
 ): AppSnapshot {
   let homeMenuItemStatuses = menuItemStatuses;
   let homeMenuStockUpdatedAt = menuStockUpdatedAt;
@@ -840,6 +843,7 @@ function buildSnapshotFromRecords(
       menuStockUpdatedAt: homeMenuStockUpdatedAt,
       storeStatus: homeStoreStatus,
       showStaffUpdateTimestamps: homeShowStaffUpdateTimestamps,
+      aiStoreBlurb,
       recentLogs: visitRecords.slice(0, 3),
     },
     history: {
@@ -1024,6 +1028,7 @@ export async function getAppSnapshot(
       visitLogs,
       visitLogParts,
       buildCtx,
+      null,
     );
   }
 
@@ -1088,6 +1093,11 @@ export async function getAppSnapshot(
     }
   }
 
+  let aiStoreBlurb: HomeAiStoreBlurb | null = null;
+  if (plan.store) {
+    aiStoreBlurb = await fetchStoreAiBlurbForHome(client, new Date());
+  }
+
   return buildSnapshotFromRecords(
     viewer,
     parts,
@@ -1101,6 +1111,7 @@ export async function getAppSnapshot(
     visitLogs,
     visitLogParts,
     buildCtx,
+    aiStoreBlurb,
   );
 }
 

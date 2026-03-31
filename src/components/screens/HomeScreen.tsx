@@ -139,6 +139,17 @@ export function HomeScreen() {
       ) : null}
 
       <NorenBanner label="本日の入荷状況" />
+      {snapshot.home.aiStoreBlurb ? (
+        <Card className="ai-store-blurb-card">
+          <p className="ai-store-blurb-label">まぐろ丸Bot（自動生成・AI）</p>
+          <p className="ai-store-blurb-body">{snapshot.home.aiStoreBlurb.body}</p>
+          <p className="ai-store-blurb-meta">
+            {snapshot.home.aiStoreBlurb.kind === "closing_summary" ? "本日のまとめ" : "入荷の様子"}
+            {" · "}
+            {formatHm(snapshot.home.aiStoreBlurb.createdAt)}
+          </p>
+        </Card>
+      ) : null}
       <Card className="stock-card">
         <div className="stock-card-head">
           <div className="stock-store-mark" aria-hidden="true">

@@ -181,6 +181,26 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["share_bonus_events"]["Insert"]>;
         Relationships: [];
       };
+      store_ai_blurbs: {
+        Row: {
+          id: string;
+          body: string;
+          kind: "intraday" | "closing_summary";
+          jst_date: string;
+          source_fingerprint: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          body: string;
+          kind: "intraday" | "closing_summary";
+          jst_date: string;
+          source_fingerprint: string;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["store_ai_blurbs"]["Insert"]>;
+        Relationships: [];
+      };
       anonymous_link_nonces: {
         Row: {
           id: string;

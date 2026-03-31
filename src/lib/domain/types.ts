@@ -62,6 +62,13 @@ export interface QuizStageProgressSummary {
   correctByStage: Record<number, number>;
 }
 
+/** ホームの AI 一言（営業中は当日実況、時間外は締めまとめ） */
+export interface HomeAiStoreBlurb {
+  body: string;
+  createdAt: string;
+  kind: "intraday" | "closing_summary";
+}
+
 export interface HomeData {
   menuItemStatuses: Record<MenuItemId, MenuStockStatus>;
   /** `menu_item_statuses` に行があるとき、そのうち最新の `updated_at`。未登録は null */
@@ -69,6 +76,8 @@ export interface HomeData {
   storeStatus: StoreStatus;
   /** 案内営業時間外のマスク時など、スタッフの最終更新時刻を UI に出さない */
   showStaffUpdateTimestamps: boolean;
+  /** OpenAI 生成。未設定・テーブル未適用時は null */
+  aiStoreBlurb: HomeAiStoreBlurb | null;
   recentLogs: VisitRecord[];
 }
 
