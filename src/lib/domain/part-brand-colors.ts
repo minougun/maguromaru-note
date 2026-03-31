@@ -2,29 +2,32 @@ import type { Part } from "@/lib/domain/types";
 
 /**
  * 図鑑・記録・マップなど UI 表示用の部位スウォッチ。
- * 赤身（akami）は意図的に含めず、DB / シードの `color` をそのまま使う。
  *
- * 本番の身色・脂の乗りのイメージ（大トロは淡く、中トロは締まった紅色、カマはオレンジ寄り、ほほは最深のルビー等）に
- * 寄せた調色。輝度順は otoro → haramo → meura → noten → senaka → kama → chutoro → hoho。
+ * 参照: `C:\Users\minou\Downloads\Gemini_Generated_Image_gkdhirgkdhirgkdh.png`
+ * （リポジトリ外。抽出時のローカル例: `/mnt/c/Users/minou/Downloads/Gemini_Generated_Image_gkdhirgkdhirgkdh.png`）
+ * 魚体シルエット内の部位ごと矩形 ROI から、背景・輪郭・えら先の青灰を除いた「肉色」ピクセルについて
+ * R/G/B 各チャンネルの中央値をスウォッチにした。
  */
-export const PART_DISPLAY_COLOR_OTORO = "#fff6f4";
-export const PART_DISPLAY_COLOR_CHUTORO = "#d4324d";
+export const PART_DISPLAY_COLOR_OTORO = "#b43854";
+export const PART_DISPLAY_COLOR_CHUTORO = "#c0454c";
 
 export const PART_DISPLAY_SWATCHES = {
   otoro: PART_DISPLAY_COLOR_OTORO,
   chutoro: PART_DISPLAY_COLOR_CHUTORO,
-  /** 脳天：脂が乗ったローズ（大トロより肉色がはっきり） */
-  noten: "#f0a0ad",
-  /** 目裏：明るい珊瑚ピンク */
-  meura: "#ffc0cb",
-  /** ほほ肉：希少部位の深いルビー */
-  hoho: "#b4102a",
-  /** カマ：焼き霜・脂の気配があるサーモンオレンジ */
-  kama: "#e8643a",
-  /** ハラモ：甘みのあるピーチピンク */
-  haramo: "#ffd8d2",
-  /** 背側の脂：中トロと赤身のあいだのローズ */
-  senaka: "#e07082",
+  /** 脳天 */
+  noten: "#ea807f",
+  /** 目裏 */
+  meura: "#de7c7c",
+  /** ほほ肉 */
+  hoho: "#e9817e",
+  /** カマ */
+  kama: "#ea7f7d",
+  /** ハラモ */
+  haramo: "#b1354b",
+  /** 背側の脂（図中の背部トロ帯） */
+  senaka: "#d77a7b",
+  /** 赤身（参照図の体軸中央帯） */
+  akami: "#bd4850",
 } as const;
 
 export type PartDisplaySwatchId = keyof typeof PART_DISPLAY_SWATCHES;
@@ -33,31 +36,18 @@ export type PartDisplaySwatchId = keyof typeof PART_DISPLAY_SWATCHES;
 export const DISPLAY_COLOR_OTORO = PART_DISPLAY_COLOR_OTORO;
 export const DISPLAY_COLOR_CHUTORO = PART_DISPLAY_COLOR_CHUTORO;
 
-function toroSwatchColor(partId: string): string | undefined {
-  if (partId === "otoro") return PART_DISPLAY_COLOR_OTORO;
-  if (partId === "chutoro") return PART_DISPLAY_COLOR_CHUTORO;
-  return undefined;
-}
-
 /**
  * Supabase の `parts.color` が未更新でも、スナップショット経由の UI を表示スウォッチに揃える。
- * 赤身のみ DB 値を維持する。
  */
 export function applyPartDisplayColors(parts: Part[]): Part[] {
   return parts.map((p) => {
-    if (p.id === "akami") return p;
-    const toro = toroSwatchColor(p.id);
-    if (toro) return { ...p, color: toro };
     const swatch = PART_DISPLAY_SWATCHES[p.id as PartDisplaySwatchId];
     return swatch ? { ...p, color: swatch } : p;
   });
 }
 
-/** 図鑑マップ等：DB が旧色でもスウォッチを優先（赤身は常に `part.color`） */
+/** 図鑑マップ等：DB が旧色でもスウォッチを優先 */
 export function mapDisplayColorForPart(part: Part): string {
-  if (part.id === "akami") return part.color;
-  const toro = toroSwatchColor(part.id);
-  if (toro) return toro;
   const swatch = PART_DISPLAY_SWATCHES[part.id as PartDisplaySwatchId];
   return swatch ?? part.color;
 }

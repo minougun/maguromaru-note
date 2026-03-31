@@ -17,7 +17,7 @@ export const MOCK_ADMIN_EMAIL = "admin@example.com";
 export const seededParts: Part[] = [
   { id: "otoro", name: "大とろ", area: "腹部", rarity: 3, description: "最高級の脂のり", color: PART_DISPLAY_SWATCHES.otoro, sort_order: 1 },
   { id: "chutoro", name: "中とろ", area: "背部・腹部", rarity: 2, description: "脂と赤身のバランス", color: PART_DISPLAY_SWATCHES.chutoro, sort_order: 2 },
-  { id: "akami", name: "赤身", area: "背部", rarity: 1, description: "旨味の王道", color: "#cc3333", sort_order: 3 },
+  { id: "akami", name: "赤身", area: "背部", rarity: 1, description: "旨味の王道", color: PART_DISPLAY_SWATCHES.akami, sort_order: 3 },
   { id: "noten", name: "脳天", area: "頭部", rarity: 3, description: "大とろ級のとろける食感", color: PART_DISPLAY_SWATCHES.noten, sort_order: 4 },
   { id: "hoho", name: "ほほ肉", area: "頭部", rarity: 3, description: "肉のような弾力と濃厚な旨味", color: PART_DISPLAY_SWATCHES.hoho, sort_order: 5 },
   { id: "meura", name: "目裏", area: "頭部", rarity: 3, description: "目の裏側にある濃厚でとろける希少部位", color: PART_DISPLAY_SWATCHES.meura, sort_order: 6 },
