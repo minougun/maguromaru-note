@@ -1,13 +1,15 @@
 import clsx from "clsx";
+import type { ComponentPropsWithoutRef } from "react";
 
 export function Card({
   children,
   glow = false,
   className,
-}: {
-  children: React.ReactNode;
-  glow?: boolean;
-  className?: string;
-}) {
-  return <section className={clsx("card", glow && "glow", className)}>{children}</section>;
+  ...props
+}: ComponentPropsWithoutRef<"section"> & { glow?: boolean }) {
+  return (
+    <section className={clsx("card", glow && "glow", className)} {...props}>
+      {children}
+    </section>
+  );
 }
