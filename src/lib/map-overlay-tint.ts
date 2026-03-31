@@ -1,12 +1,13 @@
 /**
- * 図鑑マップのティント／ラベル用。表示スウォッチを HSL で調整する。
- * - 明度 L: MAP_OVERLAY_LIGHTNESS_MULTIPLIER
- * - 彩度 S（赤の濃さ）: MAP_OVERLAY_SATURATION_MULTIPLIER
- * キャッシュキーに倍率を含め、定数変更後も古い結果を返さない。
+ * 図鑑マップのティント／ラベル用。表示スウォッチを HSL で調整できる。
+ *
+ * 部位マップは参考画像（160835）と同色に見えるよう、`part-brand-colors` の hex を
+ * そのまま使う（明度・彩度の追加ブーストなし）。倍率を 1 に戻したときは HSL 往復を
+ * せず hex をそのまま返し、丸め誤差も出さない。
  */
 
 const MAP_OVERLAY_LIGHTNESS_MULTIPLIER = 1;
-const MAP_OVERLAY_SATURATION_MULTIPLIER = 1.5;
+const MAP_OVERLAY_SATURATION_MULTIPLIER = 1;
 
 const overlayTintCache = new Map<string, string>();
 
@@ -76,6 +77,10 @@ function hslToRgb(h: number, s: number, l: number): { r: number; g: number; b: n
 }
 
 export function mapOverlayTintHex(hex: string): string {
+  if (MAP_OVERLAY_LIGHTNESS_MULTIPLIER === 1 && MAP_OVERLAY_SATURATION_MULTIPLIER === 1) {
+    return parseHexRgb(hex) ? hex.trim() : hex;
+  }
+
   const cacheKey = `${hex}|${MAP_OVERLAY_LIGHTNESS_MULTIPLIER}|${MAP_OVERLAY_SATURATION_MULTIPLIER}`;
   const hit = overlayTintCache.get(cacheKey);
   if (hit) return hit;
