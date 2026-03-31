@@ -137,8 +137,8 @@ const MAP_REGIONS: MapRegionDef[] = [
   },
 ];
 
-/** 記録済みクリップの色ティント明度（HSL の L）をこの倍率まで上げる。1.5 = 輝度ベースで約150% */
-const MAP_OVERLAY_LIGHTNESS_MULTIPLIER = 1.5;
+/** 部位マップのティント／ラベル色: 表示スウォッチの HSL 明度 L をこの倍率にする（0.7 = 70%） */
+const MAP_OVERLAY_LIGHTNESS_MULTIPLIER = 0.7;
 
 function parseHexRgb(hex: string): { r: number; g: number; b: number } | null {
   const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex.trim());
@@ -205,12 +205,12 @@ function hslToRgb(h: number, s: number, l: number): { r: number; g: number; b: n
   };
 }
 
-/** 部位マップの塗り・ラベル用に表示色の明度だけ上げる */
+/** 部位マップの塗り・ラベル用に表示色の明度（HSL L）だけ調整する */
 function mapOverlayTintHex(hex: string): string {
   const rgb = parseHexRgb(hex);
   if (!rgb) return hex;
   const { h, s, l } = rgbToHsl(rgb.r, rgb.g, rgb.b);
-  const l2 = Math.min(1, l * MAP_OVERLAY_LIGHTNESS_MULTIPLIER);
+  const l2 = Math.max(0, Math.min(1, l * MAP_OVERLAY_LIGHTNESS_MULTIPLIER));
   const out = hslToRgb(h, s, l2);
   return rgbToHex(out.r, out.g, out.b);
 }
