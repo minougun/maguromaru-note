@@ -68,6 +68,16 @@ test("verifyCsrfOrigin: 許可オリジンのみ true", () => {
     ),
     false,
   );
+  assert.equal(
+    verifyCsrfOrigin(
+      new Request(api("/x"), { headers: { origin: "http://localhost:3000/" } }),
+    ),
+    false,
+  );
+  assert.equal(
+    verifyCsrfOrigin(new Request(api("/x"), { headers: { origin: "null" } })),
+    false,
+  );
 });
 
 const mutationPosts: { name: string; post: (req: Request) => Promise<Response> }[] = [
@@ -155,4 +165,34 @@ test("GET /api/app-snapshot?scope=invalid: 400", async () => {
 test("GET /api/app-snapshot?scope=home: ハンドラが応答する（401 またはモック時 200）", async () => {
   const res = await appSnapshotGet(new Request(api("/api/app-snapshot?scope=home")));
   assert.ok(res.status === 401 || res.status === 200, `unexpected status ${res.status}`);
+});
+
+test("GET /api/app-snapshot: history のページ指定は scope=history のときのみ", async () => {
+  const res = await appSnapshotGet(
+    new Request(api("/api/app-snapshot?scope=home&history_visit_page=2")),
+  );
+  assert.equal(res.status, 400);
+  const body = (await res.json()) as { error?: string };
+  assert.match(body.error ?? "", /history_visit_page|scope=history/);
+});
+
+test("GET /api/app-snapshot: 不正な history_visit_page_size は 400", async () => {
+  const res = await appSnapshotGet(
+    new Request(api("/api/app-snapshot?scope=history&history_visit_page_size=99999")),
+  );
+  assert.equal(res.status, 400);
+  const body = (await res.json()) as { error?: string };
+  assert.match(body.error ?? "", /ページ指定|history_visit/);
+});
+
+test("GET /api/app-snapshot: 不正な Bearer は 401（モック時はセッション次第で 200 の可能性あり）", async () => {
+  const res = await appSnapshotGet(
+    new Request(api("/api/app-snapshot?scope=home"), {
+      headers: { Authorization: "Bearer eyJhbGciOiJub25lIn0.e30." },
+    }),
+  );
+  assert.ok(
+    res.status === 401 || res.status === 200,
+    `expected 401 invalid token or 200 mock; got ${res.status}`,
+  );
 });
