@@ -4,10 +4,10 @@ import type { Part } from "@/lib/domain/types";
  * 図鑑・記録・マップなど UI 表示用の部位スウォッチ。
  * 赤身（akami）は意図的に含めず、DB / シードの `color` をそのまま使う。
  *
- * 大トロ＝淡いピンク、中トロ＝濃いローズ（この関係を変えるときだけ下の2定数を調整する）。
+ * 大トロ・中トロの色はユーザー指定スクリーンショットからサンプリング（143955→中トロ、144003→大トロ）。
  */
-export const PART_DISPLAY_COLOR_OTORO = "#ffcee0";
-export const PART_DISPLAY_COLOR_CHUTORO = "#e87384";
+export const PART_DISPLAY_COLOR_OTORO = "#ea7e7b";
+export const PART_DISPLAY_COLOR_CHUTORO = "#ca5067";
 
 export const PART_DISPLAY_SWATCHES = {
   otoro: PART_DISPLAY_COLOR_OTORO,
