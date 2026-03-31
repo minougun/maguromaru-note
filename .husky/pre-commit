@@ -1,0 +1,18 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# simple secret grepping before commit
+if git rev-parse --verify --quiet HEAD >/dev/null; then
+  against=HEAD
+else
+  against=""
+fi
+
+git diff --cached --name-only | grep -E "\.(js|ts|tsx|env|json|yaml|yml)$" | while read file; do
+  if git show :"$file" | grep -E "(SUPABASE_SERVICE_ROLE_KEY|OPENAI_API_KEY|sb_secret_)" >/dev/null; then
+    echo "Potential secret found in $file. Aborting commit."
+    exit 1
+  fi
+done
+
+exit 0
