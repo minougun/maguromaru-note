@@ -3,19 +3,19 @@ import type { Part } from "@/lib/domain/types";
 /**
  * 図鑑・記録・マップなど UI 表示用の部位スウォッチ。
  *
- * 赤身・大トロはスクリーンショット中央部の RGB 各チャンネル中央値:
+ * 赤身はスクリーンショット中央部の RGB 各チャンネル中央値:
  * - 赤身: `C:\Users\minou\Downloads\スクリーンショット 2026-03-31 153206.png`
- * - 大トロ: `C:\Users\minou\Downloads\スクリーンショット 2026-03-31 153237.png`
- * 中トロ: `C:\Users\minou\Downloads\スクリーンショット 2026-03-31 155338.png`（画像全体ピクセル平均 `#ea7e7b`）
+ *
+ * 大トロ・脳天・中トロは表示色を循環（大トロ←旧中トロ、中トロ←旧脳天、脳天←旧大トロ）。
  */
-export const PART_DISPLAY_COLOR_OTORO = "#e6708a";
-export const PART_DISPLAY_COLOR_CHUTORO = "#ea7e7b";
+export const PART_DISPLAY_COLOR_OTORO = "#ea7e7b";
+export const PART_DISPLAY_COLOR_CHUTORO = "#b43854";
 
 export const PART_DISPLAY_SWATCHES = {
   otoro: PART_DISPLAY_COLOR_OTORO,
   chutoro: PART_DISPLAY_COLOR_CHUTORO,
-  /** 脳天（大トロと表示色を入れ替え） */
-  noten: "#b43854",
+  /** 脳天（大トロ・中トロと循環配置） */
+  noten: "#e6708a",
   /** 目裏 */
   meura: "#de7c7c",
   /** ほほ肉 */
