@@ -221,9 +221,13 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
             if (!hasAllParts) return null;
             const eaten = regionEaten(r, collected);
             if (!eaten) return null;
+            const primary = regionPrimaryPart(r, partsById, collected);
             return (
               <g key={`reveal-${r.key}`} clipPath={`url(#${clipId(r.key)})`}>
                 <image href={tunaMapReveal.src} width="1365" height="768" preserveAspectRatio="xMidYMid meet" />
+                {primary && (
+                  <rect width="1365" height="768" fill={primary.color} opacity="0.45" />
+                )}
               </g>
             );
           })}
