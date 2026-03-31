@@ -29,15 +29,9 @@ interface MapRegionDef {
  * viewBox 1365×768。ベース画＋記録済みクリップ用の色付き画（同一クロップ）。
  * 各部位は `zukan-tuna-map-reveal.webp` 上の色塗りに沿うよう、
  * 脳天・目裏は楕円。ほほ・腹周りなどは flood＋外周輪郭＋RDP。
- * 赤身は手調整 path。中トロ（背）は reveal flood＋外周輪郭（穴埋め・RDP）で3ブロックいずれも塗りに沿わせる（左ε2.5・中央ε5・尾ε7）。
+ * 赤身は手調整 path。中トロ（背）は左・中央を reveal flood＋外周輪郭（左ε2.5・中央ε5）。尾寄りは半透明のすき間塗りと相性が悪いためクリップなし。
  * WebP を差し替えた場合は scripts/build-map-regions-from-reveal.py で参考 path を再生成できる。
  */
-
-/** 中トロ（背）3ブロックのクリップ外で、広め flood とコアの差分＆赤身内を除いたすき間（reveal 由来） */
-const CHUTORO_BACK_GAP_FILL_D =
-  "M 548,203 L 557,232 L 659,234 L 747,246 L 740,238 L 744,234 L 737,233 L 720,216 L 632,205 Z " +
-  "M 768,240 L 788,275 L 798,312 L 811,314 L 800,247 Z " +
-  "M 826,243 L 838,260 L 848,292 L 841,296 L 843,322 L 865,326 L 856,298 L 862,292 L 859,284 L 853,272 L 843,269 L 849,265 L 839,246 Z";
 
 const AKAMI_MAP_PATH_D =
   "M 499,327 L 523,303 L 557,299 L 561,299 L 607,300 L 662,302 L 686,304 L 732,309 L 816,321 L 834,325 L 843,328 L 894,394 L 891,403 L 558,452 L 529,422 Z " +
@@ -89,12 +83,11 @@ const MAP_REGIONS: MapRegionDef[] = [
       type: "path",
       d:
         "M 373,252 L 458,238 L 553,232 L 562,290 L 560,293 L 459,299 L 405,310 L 398,303 Z " +
-        "M 558,232 L 659,234 L 747,246 L 740,236 L 766,239 L 757,226 L 762,225 L 794,233 L 799,247 L 772,240 L 772,251 L 748,246 L 769,289 L 767,308 L 567,292 Z " +
-        "M 909,280 L 928,304 L 950,308 L 927,312 L 934,341 L 990,356 L 975,304 Z",
+        "M 558,232 L 659,234 L 747,246 L 740,236 L 766,239 L 757,226 L 762,225 L 794,233 L 799,247 L 772,240 L 772,251 L 748,246 L 769,289 L 767,308 L 567,292 Z",
     },
     label: { x: 668, y: 82, text: "中トロ（背）" },
     labelWidth: 200,
-    lineTo: { x: 617, y: 272 },
+    lineTo: { x: 580, y: 266 },
   },
   {
     key: "akami",
@@ -193,8 +186,6 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
     return `${clipUid}-clip-${key}`;
   }
 
-  const akamiMaskId = `${clipUid}-mask-akami-cutout`;
-
   function handleTapRegion(region: MapRegionDef) {
     setSelectedRegionKey((current) => (current === region.key ? null : region.key));
   }
@@ -221,28 +212,9 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
                 {clipShapeEl(r.shape)}
               </clipPath>
             ))}
-            {/* 中トロ（背）すき間の演出塗りから赤身クリップ領域を抜く（マスクは黒＝透明） */}
-            <mask id={akamiMaskId} maskUnits="userSpaceOnUse" x="0" y="0" width="1365" height="768">
-              <rect x="0" y="0" width="1365" height="768" fill="white" />
-              <path fill="black" fillRule="evenodd" d={AKAMI_MAP_PATH_D} />
-            </mask>
           </defs>
 
           <image href={tunaMapBase.src} width="1365" height="768" preserveAspectRatio="xMidYMid meet" />
-
-          {(() => {
-            const chu = partsById.get("chutoro");
-            if (!chu || !collected.has("chutoro")) return null;
-            return (
-              <path
-                d={CHUTORO_BACK_GAP_FILL_D}
-                fill={chu.color}
-                fillOpacity={0.36}
-                mask={`url(#${akamiMaskId})`}
-                pointerEvents="none"
-              />
-            );
-          })()}
 
           {MAP_REGIONS.map((r) => {
             const hasAllParts = r.partIds.every((id) => partsById.has(id));
