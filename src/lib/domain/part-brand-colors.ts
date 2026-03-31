@@ -4,8 +4,8 @@ import type { Part } from "@/lib/domain/types";
  * 表示用の大とろ・中とろの色（スクショサンプリング値）。
  * Supabase の `parts.color` が未更新でもスナップショット経由の UI に反映する。
  */
-export const DISPLAY_COLOR_OTORO = "#eb7e7c";
-export const DISPLAY_COLOR_CHUTORO = "#d66078";
+export const DISPLAY_COLOR_OTORO = "#d66078";
+export const DISPLAY_COLOR_CHUTORO = "#eb7e7c";
 
 export function applyOtoroChutoroDisplayColors(parts: Part[]): Part[] {
   return parts.map((p) => {
