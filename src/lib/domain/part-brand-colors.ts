@@ -3,13 +3,14 @@ import type { Part } from "@/lib/domain/types";
 /**
  * 図鑑・記録・マップなど UI 表示用の部位スウォッチ。
  *
- * 参照: `C:\Users\minou\Downloads\Gemini_Generated_Image_gkdhirgkdhirgkdh.png`
- * （リポジトリ外。抽出時のローカル例: `/mnt/c/Users/minou/Downloads/Gemini_Generated_Image_gkdhirgkdhirgkdh.png`）
- * 魚体シルエット内の部位ごと矩形 ROI から、背景・輪郭・えら先の青灰を除いた「肉色」ピクセルについて
- * R/G/B 各チャンネルの中央値をスウォッチにした。
+ * 赤身・大トロ・中トロは次のスクリーンショット中央部の RGB 各チャンネル中央値:
+ * - 赤身: `C:\Users\minou\Downloads\スクリーンショット 2026-03-31 153206.png`
+ * - 大トロ: `C:\Users\minou\Downloads\スクリーンショット 2026-03-31 153237.png`
+ * - 中トロ: `C:\Users\minou\Downloads\スクリーンショット 2026-03-31 153335.png`
+ * （WSL 例: `/mnt/c/Users/minou/Downloads/` 配下の同名ファイル）
  */
-export const PART_DISPLAY_COLOR_OTORO = "#ea807f";
-export const PART_DISPLAY_COLOR_CHUTORO = "#c0454c";
+export const PART_DISPLAY_COLOR_OTORO = "#e6708a";
+export const PART_DISPLAY_COLOR_CHUTORO = "#d56078";
 
 export const PART_DISPLAY_SWATCHES = {
   otoro: PART_DISPLAY_COLOR_OTORO,
@@ -26,8 +27,8 @@ export const PART_DISPLAY_SWATCHES = {
   haramo: "#b1354b",
   /** 背側の脂（図中の背部トロ帯） */
   senaka: "#d77a7b",
-  /** 赤身（参照図の体軸中央帯） */
-  akami: "#bd4850",
+  /** 赤身 */
+  akami: "#b2354b",
 } as const;
 
 export type PartDisplaySwatchId = keyof typeof PART_DISPLAY_SWATCHES;
