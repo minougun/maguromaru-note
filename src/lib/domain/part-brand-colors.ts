@@ -3,14 +3,13 @@ import type { Part } from "@/lib/domain/types";
 /**
  * 図鑑・記録・マップなど UI 表示用の部位スウォッチ。
  *
- * 赤身・大トロ・中トロは次のスクリーンショット中央部の RGB 各チャンネル中央値:
+ * 赤身・大トロはスクリーンショット中央部の RGB 各チャンネル中央値:
  * - 赤身: `C:\Users\minou\Downloads\スクリーンショット 2026-03-31 153206.png`
  * - 大トロ: `C:\Users\minou\Downloads\スクリーンショット 2026-03-31 153237.png`
- * - 中トロ: `C:\Users\minou\Downloads\スクリーンショット 2026-03-31 153335.png`
- * （WSL 例: `/mnt/c/Users/minou/Downloads/` 配下の同名ファイル）
+ * 中トロは上記2色を線形 sRGB で補間した中間（赤の濃さのバランス用）。
  */
 export const PART_DISPLAY_COLOR_OTORO = "#e6708a";
-export const PART_DISPLAY_COLOR_CHUTORO = "#d56078";
+export const PART_DISPLAY_COLOR_CHUTORO = "#ce5970";
 
 export const PART_DISPLAY_SWATCHES = {
   otoro: PART_DISPLAY_COLOR_OTORO,
