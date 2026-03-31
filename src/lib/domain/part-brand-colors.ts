@@ -4,16 +4,16 @@ import type { Part } from "@/lib/domain/types";
  * 図鑑・記録・マップなど UI 表示用の部位スウォッチ。
  * 赤身（akami）は意図的に含めず、DB / シードの `color` をそのまま使う。
  *
- * 大トロ・中トロの色はユーザー指定スクリーンショットからサンプリング（143955→中トロ、144003→大トロ）。
+ * 大トロ・中トロはスクショサンプル。大トロと脳天の表示色は入れ替え済み。
  */
-export const PART_DISPLAY_COLOR_OTORO = "#ea7e7b";
+export const PART_DISPLAY_COLOR_OTORO = "#fde8e6";
 export const PART_DISPLAY_COLOR_CHUTORO = "#ca5067";
 
 export const PART_DISPLAY_SWATCHES = {
   otoro: PART_DISPLAY_COLOR_OTORO,
   chutoro: PART_DISPLAY_COLOR_CHUTORO,
-  /** 脳天：とろけ感の淡い桃白 */
-  noten: "#fde8e6",
+  /** 脳天（大トロと色を入れ替え） */
+  noten: "#ea7e7b",
   /** 目裏：明るい珊瑚ピンク */
   meura: "#ff9fab",
   /** ほほ肉：くすませない鮮やかなルビー */
