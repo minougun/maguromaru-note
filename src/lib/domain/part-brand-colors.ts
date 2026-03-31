@@ -5,26 +5,26 @@ import type { Part } from "@/lib/domain/types";
  * 赤身（akami）は意図的に含めず、DB / シードの `color` をそのまま使う。
  *
  * 大トロ・中トロはスクショサンプル。大トロと脳天の表示色は入れ替え済み。
- * 部位間の明暗順を保ったまま、全体を赤寄りに寄せたスウォッチ。
+ * 部位間の輝度の並びを保ちつつ、彩度・明度ともに高いスウォッチ（薄さを抑える）。
  */
-export const PART_DISPLAY_COLOR_OTORO = "#ffe1df";
-export const PART_DISPLAY_COLOR_CHUTORO = "#e14459";
+export const PART_DISPLAY_COLOR_OTORO = "#fdf3f4";
+export const PART_DISPLAY_COLOR_CHUTORO = "#fd4253";
 
 export const PART_DISPLAY_SWATCHES = {
   otoro: PART_DISPLAY_COLOR_OTORO,
   chutoro: PART_DISPLAY_COLOR_CHUTORO,
   /** 脳天（大トロと色を入れ替え） */
-  noten: "#ff726f",
+  noten: "#fa7a86",
   /** 目裏：明るい珊瑚ピンク */
-  meura: "#ff99a5",
+  meura: "#f9a2a9",
   /** ほほ肉：くすませない鮮やかなルビー */
-  hoho: "#fa3a53",
+  hoho: "#fd2b3e",
   /** カマ：焼き霜・脂の気配があるサーモンオレンジ */
-  kama: "#ff6141",
+  kama: "#fd5a27",
   /** ハラモ：軽い脂の甘みを感じるピーチ */
-  haramo: "#ffaaa7",
+  haramo: "#f9c7cc",
   /** 背側の脂：中トロと赤身のあいだのローズ */
-  senaka: "#f66574",
+  senaka: "#fc5564",
 } as const;
 
 export type PartDisplaySwatchId = keyof typeof PART_DISPLAY_SWATCHES;
