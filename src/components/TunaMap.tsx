@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useId, useState } from "react";
+import { useId, useState } from "react";
 
 import chutoroBackMask from "@/assets/zukan-chutoro-back-mask.png";
 import tunaMapBase from "@/assets/zukan-tuna-map.webp";
