@@ -114,11 +114,12 @@ const MAP_REGIONS: MapRegionDef[] = [
     partIds: ["chutoro"],
     shape: {
       type: "path",
-      d: "M 768,492 L 774,448 L 916,434 L 1005,407 L 998,428 L 832,476 L 772,494 Z",
+      // 下端は reveal の薄ピンクが続く範囲まで延ばし（尾側大トロブロックの上縁付近まで）。銀帯手前ギリギリまで拡大
+      d: "M 746,552 L 772,448 L 916,434 L 1005,407 L 992,460 L 875,536 L 752,554 Z",
     },
     label: { x: 1008, y: 608, text: "中トロ（腹）" },
     labelWidth: 210,
-    lineTo: { x: 872, y: 448 },
+    lineTo: { x: 886, y: 478 },
   },
   {
     key: "belly-otoro-front",
