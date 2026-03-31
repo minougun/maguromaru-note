@@ -151,6 +151,12 @@ function regionPrimaryPart(region: MapRegionDef, partsById: Map<PartId, Part>, c
   return partsById.get(id!) ?? null;
 }
 
+/** reveal WebP の焼き付き色ではなく、マスター `parts.color` をマップ上に反映する */
+function regionMasterColor(region: MapRegionDef, partsById: Map<PartId, Part>): string | undefined {
+  const id = region.partIds[0];
+  return id ? partsById.get(id)?.color : undefined;
+}
+
 function clipShapeEl(r: MapRegionDef["shape"]) {
   if (r.type === "ellipse") {
     return <ellipse cx={r.cx} cy={r.cy} rx={r.rx} ry={r.ry} />;
@@ -221,9 +227,19 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
             if (!hasAllParts) return null;
             const eaten = regionEaten(r, collected);
             if (!eaten) return null;
+            const masterTint = regionMasterColor(r, partsById);
             return (
-              <g key={`reveal-${r.key}`} clipPath={`url(#${clipId(r.key)})`}>
+              <g key={`reveal-${r.key}`} clipPath={`url(#${clipId(r.key)})`} style={{ isolation: "isolate" }}>
                 <image href={tunaMapReveal.src} width="1365" height="768" preserveAspectRatio="xMidYMid meet" />
+                {masterTint ? (
+                  <rect
+                    fill={masterTint}
+                    height="768"
+                    opacity={0.92}
+                    style={{ mixBlendMode: "color" }}
+                    width="1365"
+                  />
+                ) : null}
               </g>
             );
           })}
