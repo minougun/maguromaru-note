@@ -3,22 +3,26 @@ import type { Part } from "@/lib/domain/types";
 /**
  * 図鑑・記録・マップなど UI 表示用の部位スウォッチ。
  * 赤身（akami）は意図的に含めず、DB / シードの `color` をそのまま使う。
+ *
+ * 大トロ＝白っぽい薄ピンク、中トロ＝赤身より白く・大トロより赤い（段階は akami > senaka ≳ chutoro > otoro）。
  */
 export const PART_DISPLAY_SWATCHES = {
-  otoro: "#d66078",
-  chutoro: "#eb7e7c",
-  /** 脳天：上品なローズ（大トロ級のとろけ感） */
-  noten: "#c9a4b8",
-  /** 目裏：ピーチ寄りサモートーン（希少・繊細） */
-  meura: "#df9578",
-  /** ほほ肉：ワイン系の深紅（赤身より紫味・弾力のイメージ） */
-  hoho: "#9a3d4c",
-  /** カマ：テラコッタ寄り（脂と骨周りの濃さ） */
-  kama: "#b9563f",
-  /** ハラモ：腹側の柔らかいサーモンピンク */
-  haramo: "#e07d75",
-  /** 背側の脂（senaka）：赤身と中とろのあいだの落ち着いたローズ */
-  senaka: "#a85760",
+  /** 大トロ：雪見脂のようなミルキーピンク */
+  otoro: "#f3e8eb",
+  /** 中トロ：大トロより赤みのあるローズサーモン（赤身 #cc3333 より明るい） */
+  chutoro: "#e87384",
+  /** 脳天：とろけ感の淡い桃白 */
+  noten: "#fde8e6",
+  /** 目裏：明るい珊瑚ピンク */
+  meura: "#ff9fab",
+  /** ほほ肉：くすませない鮮やかなルビー */
+  hoho: "#e54560",
+  /** カマ：焼き霜・脂の気配があるサーモンオレンジ */
+  kama: "#f06b4a",
+  /** ハラモ：軽い脂の甘みを感じるピーチ */
+  haramo: "#ffb0ad",
+  /** 背側の脂：中トロと赤身のあいだのローズ */
+  senaka: "#dc7282",
 } as const;
 
 export type PartDisplaySwatchId = keyof typeof PART_DISPLAY_SWATCHES;

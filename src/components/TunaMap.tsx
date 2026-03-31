@@ -225,7 +225,8 @@ export function TunaMap({ parts, collectedPartIds }: TunaMapProps) {
             if (!eaten) return null;
             const primary = regionPrimaryPart(r, partsById, collected);
             const tint = primary ? mapDisplayColorForPart(primary) : null;
-            const tintOpacity = primary && (primary.id === "otoro" || primary.id === "chutoro") ? "0.58" : "0.45";
+            const tintOpacity =
+              primary?.id === "otoro" ? "0.66" : primary?.id === "chutoro" ? "0.56" : "0.48";
             return (
               <g key={`reveal-${r.key}`} clipPath={`url(#${clipId(r.key)})`}>
                 <image href={tunaMapReveal.src} width="1365" height="768" preserveAspectRatio="xMidYMid meet" />
