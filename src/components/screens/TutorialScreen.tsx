@@ -7,28 +7,34 @@ import { useState } from "react";
 export default function TutorialScreen({ onClose }: Props) {
   const slides = [
     {
-      title: "ようこそ、まぐろ丸へ！",
-      body: "このアプリは来店記録やクイズで遊びながら、まぐろに詳しくなるアプリです。",
+      title: "ようこそ、まぐろ丸へ",
+      body: "気軽に使える記録＆クイズアプリです。",
+      image: "/onboarding/step1.webp"
     },
     {
-      title: "記録をシェア",
-      body: "記録をシェアすると来店回数が1.2倍になります（※効果は大げさに表現しています）。",
+      title: "記録をつけよう",
+      body: "来店したらワンタップで記録。履歴もすぐ見返せます。",
+      image: "/onboarding/step2.webp"
     },
     {
-      title: "クイズをシェア",
-      body: "クイズ結果をシェアすると正解数が1.2倍になります（※無いかもしれません）。",
+      title: "クイズで遊ぼう",
+      body: "まぐろに関するクイズで楽しく知識アップ。",
+      image: "/onboarding/step3.webp"
     },
     {
-      title: "称号を獲得",
-      body: "特定の条件で称号を獲得できます。称号はあなたの実力を示します。",
+      title: "称号を集めよう",
+      body: "条件を満たすと特別な称号がもらえます。",
+      image: "/onboarding/step4.webp"
     },
     {
-      title: "まぐろマスターへの道",
-      body: "最終的にまぐろマスターを目指しましょう！何か良いことがある……かもしれません（※無いかもしれません）。",
+      title: "いつでも再表示",
+      body: "このチュートリアルは設定から何度でも見直せます。",
+      image: "/onboarding/step5.webp"
     },
     {
       title: "さあ始めよう",
-      body: "準備OKなら始めましょう。いつでもこのチュートリアルは設定から再表示できます。",
+      body: "準備ができたらスタート！",
+      image: "/onboarding/step6.webp"
     },
   ];
   const [index, setIndex] = useState(0);
@@ -52,6 +58,14 @@ import { useState } from "react";
       <div style={{ width: "min(92%, 420px)" }}>
         <div className="card">
           <h3 style={{ margin: 0, fontSize: 18, fontWeight: 900 }}>{slides[index].title}</h3>
+          {slides[index].image && (
+            <img
+              src={slides[index].image}
+              alt=""
+              className="tutorial-image"
+              loading="lazy"
+            />
+          )}
           <p style={{ marginTop: 8, color: "var(--cream-faint)" }}>{slides[index].body}</p>
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16 }}>
             <button className="button-outline" onClick={prev} disabled={index === 0} type="button">
