@@ -14,15 +14,15 @@ export const MOCK_USER_ID = "00000000-0000-4000-8000-000000000001";
 export const MOCK_ADMIN_EMAIL = "admin@example.com";
 
 export const seededParts: Part[] = [
-  { id: "otoro", name: "大とろ", area: "腹部", rarity: 3, description: "最高級の脂のり", color: "#fff5f6", sort_order: 1 },
-  { id: "chutoro", name: "中とろ", area: "背部・腹部", rarity: 2, description: "脂と赤身のバランス", color: "#b94848", sort_order: 2 },
+  { id: "otoro", name: "大とろ", area: "腹部", rarity: 3, description: "最高級の脂のり", color: "#ff6b6b", sort_order: 1 },
+  { id: "chutoro", name: "中とろ", area: "背部・腹部", rarity: 2, description: "脂と赤身のバランス", color: "#e85555", sort_order: 2 },
   { id: "akami", name: "赤身", area: "背部", rarity: 1, description: "旨味の王道", color: "#cc3333", sort_order: 3 },
   { id: "noten", name: "脳天", area: "頭部", rarity: 3, description: "大とろ級のとろける食感", color: "#ff8585", sort_order: 4 },
   { id: "hoho", name: "ほほ肉", area: "頭部", rarity: 3, description: "肉のような弾力と濃厚な旨味", color: "#d94444", sort_order: 5 },
   { id: "meura", name: "目裏", area: "頭部", rarity: 3, description: "目の裏側にある濃厚でとろける希少部位", color: "#f08d7d", sort_order: 6 },
   { id: "kama", name: "カマ", area: "胸部", rarity: 2, description: "脂がのった希少部位", color: "#f07070", sort_order: 7 },
   { id: "haramo", name: "ハラモ", area: "腹部", rarity: 2, description: "腹の大とろに近い部分", color: "#e06060", sort_order: 8 },
-  { id: "senaka", name: "中とろ", area: "背部", rarity: 2, description: "赤身に近い上品な脂", color: "#b94848", sort_order: 9 },
+  { id: "senaka", name: "中とろ", area: "背部", rarity: 2, description: "赤身に近い上品な脂", color: "#d35050", sort_order: 9 },
 ];
 
 export const seededMenuItems: MenuItem[] = [
