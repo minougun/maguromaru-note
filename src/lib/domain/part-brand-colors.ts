@@ -4,27 +4,27 @@ import type { Part } from "@/lib/domain/types";
  * 図鑑・記録・マップなど UI 表示用の部位スウォッチ。
  * 赤身（akami）は意図的に含めず、DB / シードの `color` をそのまま使う。
  *
- * 大トロ・中トロはスクショサンプル。大トロと脳天の表示色は入れ替え済み。
- * 部位間の輝度の並びを保ちつつ、彩度・明度ともに高いスウォッチ（薄さを抑える）。
+ * 本番の身色・脂の乗りのイメージ（大トロは淡く、中トロは締まった紅色、カマはオレンジ寄り、ほほは最深のルビー等）に
+ * 寄せた調色。輝度順は otoro → haramo → meura → noten → senaka → kama → chutoro → hoho。
  */
-export const PART_DISPLAY_COLOR_OTORO = "#fdf3f4";
-export const PART_DISPLAY_COLOR_CHUTORO = "#fd4253";
+export const PART_DISPLAY_COLOR_OTORO = "#fff6f4";
+export const PART_DISPLAY_COLOR_CHUTORO = "#d4324d";
 
 export const PART_DISPLAY_SWATCHES = {
   otoro: PART_DISPLAY_COLOR_OTORO,
   chutoro: PART_DISPLAY_COLOR_CHUTORO,
-  /** 脳天（大トロと色を入れ替え） */
-  noten: "#fa7a86",
+  /** 脳天：脂が乗ったローズ（大トロより肉色がはっきり） */
+  noten: "#f0a0ad",
   /** 目裏：明るい珊瑚ピンク */
-  meura: "#f9a2a9",
-  /** ほほ肉：くすませない鮮やかなルビー */
-  hoho: "#fd2b3e",
+  meura: "#ffc0cb",
+  /** ほほ肉：希少部位の深いルビー */
+  hoho: "#b4102a",
   /** カマ：焼き霜・脂の気配があるサーモンオレンジ */
-  kama: "#fd5a27",
-  /** ハラモ：軽い脂の甘みを感じるピーチ */
-  haramo: "#f9c7cc",
+  kama: "#e8643a",
+  /** ハラモ：甘みのあるピーチピンク */
+  haramo: "#ffd8d2",
   /** 背側の脂：中トロと赤身のあいだのローズ */
-  senaka: "#fc5564",
+  senaka: "#e07082",
 } as const;
 
 export type PartDisplaySwatchId = keyof typeof PART_DISPLAY_SWATCHES;
