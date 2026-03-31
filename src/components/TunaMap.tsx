@@ -27,6 +27,11 @@ interface MapRegionDef {
   lineTo: { x: number; y: number };
 }
 
+/** 参考: `スクリーンショット 2026-03-31 160835.png` のラベル帯 */
+const MAP_LABEL_BG = "#701d1d";
+const MAP_LABEL_TEXT = "#ffffff";
+const MAP_LEADER_STROKE = "#701d1d";
+
 /**
  * viewBox 1365×768。ベース画＋記録済みクリップ用の色付き画（同一クロップ）。
  * 各部位は `zukan-tuna-map-reveal.webp` 上の色塗りに沿うよう、
@@ -193,13 +198,14 @@ function hitShapeEl(r: MapRegionDef["shape"]) {
   return <path d={r.d} fill="transparent" />;
 }
 
-function selectionOutlineEl(r: MapRegionDef["shape"], color: string) {
+function selectionOutlineEl(r: MapRegionDef["shape"]) {
+  const stroke = "#ffffff";
   if (r.type === "ellipse") {
     return (
-      <ellipse cx={r.cx} cy={r.cy} rx={r.rx} ry={r.ry} fill="none" stroke={color} strokeWidth="3" opacity="0.95" />
+      <ellipse cx={r.cx} cy={r.cy} rx={r.rx} ry={r.ry} fill="none" stroke={stroke} strokeWidth="3" opacity="0.95" />
     );
   }
-  return <path d={r.d} fill="none" stroke={color} strokeWidth="3" opacity="0.95" />;
+  return <path d={r.d} fill="none" stroke={stroke} strokeWidth="3" opacity="0.95" />;
 }
 
 function TunaMapInner({ parts, collectedPartIds }: TunaMapProps) {
@@ -275,14 +281,12 @@ function TunaMapInner({ parts, collectedPartIds }: TunaMapProps) {
             const hasAllParts = r.partIds.every((id) => partsById.has(id));
             if (!hasAllParts) return null;
 
-            const eaten = regionEaten(r, collected);
             const primary = regionPrimaryPart(r, partsById, collected);
             if (!primary) return null;
 
             const isSelected = selectedRegionKey === r.key;
             const lw = (r.labelWidth ?? 152) / 2;
             const { x: lx, y: ly } = r.lineTo;
-            const displayColor = mapOverlayTintHex(mapDisplayColorForPart(primary));
 
             return (
               <g
@@ -301,12 +305,12 @@ function TunaMapInner({ parts, collectedPartIds }: TunaMapProps) {
                   y1={r.label.y + 18}
                   x2={lx}
                   y2={ly}
-                  stroke="rgba(92,63,45,0.72)"
-                  strokeWidth="4"
-                  opacity="0.9"
+                  stroke={MAP_LEADER_STROKE}
+                  strokeWidth="3"
+                  opacity="0.92"
                   fill="none"
                 />
-                {isSelected ? selectionOutlineEl(r.shape, displayColor) : null}
+                {isSelected ? selectionOutlineEl(r.shape) : null}
                 <rect
                   x={r.label.x - lw}
                   y={r.label.y - 26}
@@ -314,9 +318,9 @@ function TunaMapInner({ parts, collectedPartIds }: TunaMapProps) {
                   ry="22"
                   width={lw * 2}
                   height="52"
-                  fill={eaten ? displayColor : "rgba(55,38,32,0.92)"}
-                  stroke={eaten ? displayColor : "rgba(196,168,120,0.45)"}
-                  strokeWidth="2"
+                  fill={MAP_LABEL_BG}
+                  stroke="rgba(255,255,255,0.14)"
+                  strokeWidth="1"
                 />
                 <text
                   x={r.label.x}
@@ -324,7 +328,7 @@ function TunaMapInner({ parts, collectedPartIds }: TunaMapProps) {
                   textAnchor="middle"
                   fontSize={r.label.text && r.label.text.length > 5 ? 22 : 28}
                   fontWeight="700"
-                  fill={eaten ? "#0d0805" : "#f2e4c7"}
+                  fill={MAP_LABEL_TEXT}
                   fontFamily="Noto Sans JP, sans-serif"
                 >
                   {labelForRegion(r)}
@@ -347,9 +351,7 @@ function TunaMapInner({ parts, collectedPartIds }: TunaMapProps) {
           return (
             <div className="map-detail-card">
               <div className="map-detail-header">
-                <span className="map-detail-name" style={{ color: isCollected ? mapDisplayColorForPart(part) : "var(--cream)" }}>
-                  {part.name}
-                </span>
+                <span className="map-detail-name">{part.name}</span>
                 <span className="map-detail-area">{part.area}</span>
                 <span className="map-detail-rarity">
                   レア度: {"★".repeat(part.rarity) + "☆".repeat(3 - part.rarity)}
@@ -376,9 +378,7 @@ function TunaMapInner({ parts, collectedPartIds }: TunaMapProps) {
               return (
                 <li className="map-detail-multi-item" key={pid}>
                   <div className="map-detail-header">
-                    <span className="map-detail-name" style={{ color: isCollected ? mapDisplayColorForPart(part) : "var(--cream)" }}>
-                      {part.name}
-                    </span>
+                    <span className="map-detail-name">{part.name}</span>
                     <span className="map-detail-area">{part.area}</span>
                     <span className="map-detail-rarity">
                       レア度: {"★".repeat(part.rarity) + "☆".repeat(3 - part.rarity)}
