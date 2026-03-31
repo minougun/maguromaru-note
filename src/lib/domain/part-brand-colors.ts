@@ -10,8 +10,8 @@ import type { Part } from "@/lib/domain/types";
  * - 目裏: イラスト地色に近い青みグレー（#96a2ae は同画像内のベース色サンプル）
  * カマ・ハラモ・背側脂帯は図中ラベルなしのため大トロ／中トロ系で統一。
  */
-export const PART_DISPLAY_COLOR_OTORO = "#bf4460";
-export const PART_DISPLAY_COLOR_CHUTORO = "#d35b6b";
+export const PART_DISPLAY_COLOR_OTORO = "#d35b6b";
+export const PART_DISPLAY_COLOR_CHUTORO = "#bf4460";
 
 export const PART_DISPLAY_SWATCHES = {
   otoro: PART_DISPLAY_COLOR_OTORO,
