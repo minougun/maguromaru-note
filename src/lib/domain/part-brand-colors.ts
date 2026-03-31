@@ -10,15 +10,14 @@ import type { Part } from "@/lib/domain/types";
  * - 目裏: イラスト地色に近い青みグレー（#96a2ae は同画像内のベース色サンプル）
  * カマ・ハラモ・背側脂帯は図中ラベルなしのため大トロ／中トロ系で統一。
  */
-export const PART_DISPLAY_COLOR_OTORO = "#d35b6b";
-export const PART_DISPLAY_COLOR_CHUTORO = "#bf4460";
+export const PART_DISPLAY_COLOR_OTORO = "#ff918e";
+export const PART_DISPLAY_COLOR_CHUTORO = "#cf0c2e";
 
 export const PART_DISPLAY_SWATCHES = {
   otoro: PART_DISPLAY_COLOR_OTORO,
   chutoro: PART_DISPLAY_COLOR_CHUTORO,
-  noten: "#ff82a5",
-  /** 地色寄り（マップ上はベーストーンに近づける） */
-  meura: "#96a2ae",
+  noten: "#ff918e",
+  meura: "#d97070",  // グレーから赤系に変更
   hoho: "#f48c8c",
   kama: "#cc4c64",
   haramo: "#cc4c64",
