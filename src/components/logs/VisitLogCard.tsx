@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 
+import { mapDisplayColorForPart } from "@/lib/domain/part-brand-colors";
 import type { VisitRecord } from "@/lib/domain/types";
 import { formatDisplayDate } from "@/lib/utils/date";
 
@@ -37,11 +38,14 @@ export function VisitLogCard({
       ) : null}
       <div className="tags">
         {log.parts.length > 0 ? (
-          log.parts.map((part) => (
-            <span className="tag" key={part.id} style={{ backgroundColor: `${part.color}22`, borderColor: `${part.color}66` }}>
-              {part.name}
-            </span>
-          ))
+          log.parts.map((part) => {
+            const c = mapDisplayColorForPart(part);
+            return (
+              <span className="tag" key={part.id} style={{ backgroundColor: `${c}22`, borderColor: `${c}66` }}>
+                {part.name}
+              </span>
+            );
+          })
         ) : (
           <span className="tag">部位メモなし</span>
         )}

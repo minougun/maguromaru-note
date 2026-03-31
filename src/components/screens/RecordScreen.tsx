@@ -13,6 +13,7 @@ import { SectionTitle } from "@/components/ui/SectionTitle";
 import { getDefaultPartIdsForMenuItem } from "@/lib/domain/menu-part-defaults";
 import type { MenuItemId, PartId, VisitRecord } from "@/lib/domain/types";
 import { useAppSnapshot } from "@/lib/hooks/use-app-snapshot";
+import { mapDisplayColorForPart } from "@/lib/domain/part-brand-colors";
 import { FetchJsonError, fetchJsonWithAuth } from "@/lib/http/fetch-json";
 import { withAppBasePath } from "@/lib/public-path";
 import { buildRecordShare, type SharePayload } from "@/lib/share/share";
@@ -213,7 +214,7 @@ export function RecordScreen() {
               className={`part-cell ${selected ? "selected" : ""}`}
               key={part.id}
               onClick={() => togglePart(part.id)}
-              style={{ borderColor: selected ? part.color : undefined }}
+              style={{ borderColor: selected ? mapDisplayColorForPart(part) : undefined }}
               type="button"
             >
               <span className="part-check">✓</span>
