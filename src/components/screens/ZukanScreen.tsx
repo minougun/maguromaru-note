@@ -1,36 +1,15 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { useState } from "react";
 
 import { ShareModalDynamic } from "@/components/share/ShareModalDynamic";
+import { TunaMapDynamic } from "@/components/TunaMapDynamic";
 import { Card } from "@/components/ui/Card";
 import { NorenBanner } from "@/components/ui/NorenBanner";
 import { ScreenState } from "@/components/ui/ScreenState";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import { useAppSnapshot } from "@/lib/hooks/use-app-snapshot";
 import { buildZukanShare, type SharePayload } from "@/lib/share/share";
-
-const TunaMap = dynamic(
-  () => import("@/components/TunaMap").then((m) => ({ default: m.TunaMap })),
-  {
-    loading: () => (
-      <div
-        aria-busy="true"
-        className="card zukan-map-tuna-loading"
-        style={{
-          aspectRatio: "1365 / 768",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          maxWidth: "100%",
-        }}
-      >
-        <p className="helper-text">部位マップを読み込んでいます…</p>
-      </div>
-    ),
-  },
-);
 
 export function ZukanScreen() {
   const { snapshot, loading, error, refresh } = useAppSnapshot();
@@ -75,16 +54,12 @@ export function ZukanScreen() {
       </Card>
       {snapshot.zukan.isComplete ? (
         <Card>
-          <p className="complete-banner">
-            全{snapshot.zukan.totalCount}部位コンプリートおめでとうございます🎉シェアして自慢❗️
-          </p>
+          <p className="complete-banner">全{snapshot.zukan.totalCount}部位コンプリートです。次は履歴をシェアして自慢しましょう。</p>
         </Card>
       ) : null}
 
-      <div className="zukan-map-reference-block">
-        <SectionTitle subtitle="Tuna map" title="部位マップ" />
-        <TunaMap collectedPartIds={snapshot.zukan.collectedPartIds} parts={snapshot.parts} />
-      </div>
+      <SectionTitle subtitle="Tuna map" title="部位マップ" />
+      <TunaMapDynamic collectedPartIds={snapshot.zukan.collectedPartIds} parts={snapshot.parts} />
 
       <SectionTitle subtitle="All parts" title="部位一覧" />
       <div className="parts-grid">

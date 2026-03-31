@@ -62,7 +62,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="app-shell">
-      <AppHeader />
       <main className="screen-main" ref={setScrollMainEl}>
         {children}
       </main>
@@ -86,9 +85,6 @@ function LoginShell() {
 
   return (
     <div className="app-shell app-shell--login">
-      <div className={`login-reveal ${revealed ? "login-reveal--visible" : ""}`}>
-        <AppHeader />
-      </div>
       <main className="screen-main screen-main--login">
         <LoginScreen onAnimationEnd={onAnimationEnd} revealed={revealed} />
       </main>
