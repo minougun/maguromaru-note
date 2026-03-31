@@ -111,6 +111,45 @@ export function sanitizeAiBlurbBody(raw: string, maxLen: number): string | null 
   return oneLine;
 }
 
+// Helpers: masking, retry, timeout
+function maskSecrets(input?: string | null): string {
+  if (!input) return "";
+  return input
+    .replace(/(sb_secret_[A-Za-z0-9_\-]+)/g, "[REDACTED]")
+    .replace(/(OPENAI_API_KEY\s*=\s*)[^\s]+/g, "$1[REDACTED]")
+    .replace(/(SUPABASE_SERVICE_ROLE_KEY\s*=\s*)[^\s]+/g, "$1[REDACTED]");
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3, baseMs = 1000): Promise<T> {
+  let lastErr: unknown;
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      lastErr = e;
+      // exponential backoff with jitter
+      const wait = Math.pow(2, i) * baseMs + Math.floor(Math.random() * 300);
+      await sleep(wait);
+    }
+  }
+  throw lastErr;
+}
+
+async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = 15_000): Promise<Response> {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(id);
+    return res;
+  } catch (e) {
+    clearTimeout(id);
+    throw e;
+  }
+}
+
 export async function completeOpenAiChat(system: string, user: string): Promise<string | null> {
   const key = process.env.OPENAI_API_KEY?.trim();
   const model = process.env.OPENAI_MODEL?.trim() || "gpt-4o-mini";
@@ -118,33 +157,40 @@ export async function completeOpenAiChat(system: string, user: string): Promise<
     return null;
   }
 
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${key}`,
-    },
-    body: JSON.stringify({
-      model,
-      temperature: 0.65,
-      max_tokens: 120,
-      messages: [
-        { role: "system", content: system },
-        { role: "user", content: user },
-      ],
-    }),
-  });
+  try {
+    const res = await withRetry(() =>
+      fetchWithTimeout("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${key}`,
+        },
+        body: JSON.stringify({
+          model,
+          temperature: 0.65,
+          max_tokens: 120,
+          messages: [
+            { role: "system", content: system },
+            { role: "user", content: user },
+          ],
+        }),
+      }, 15_000),
+    );
 
-  if (!res.ok) {
-    const errText = await res.text().catch(() => "");
-    throw new Error(`OpenAI HTTP ${res.status}: ${errText.slice(0, 200)}`);
+    if (!res.ok) {
+      const errText = await res.text().catch(() => "");
+      throw new Error(`OpenAI HTTP ${res.status}: ${maskSecrets(errText).slice(0, 200)}`);
+    }
+n    const json = (await res.json()) as {
+      choices?: { message?: { content?: string | null } }[];
+    };
+    const text = json.choices?.[0]?.message?.content;
+    return typeof text === "string" ? text : null;
+  } catch (e: any) {
+    // Ensure we don't leak secrets in thrown errors
+    const msg = e?.message ? maskSecrets(String(e.message)) : "OpenAI request failed";
+    throw new Error(msg);
   }
-
-  const json = (await res.json()) as {
-    choices?: { message?: { content?: string | null } }[];
-  };
-  const text = json.choices?.[0]?.message?.content;
-  return typeof text === "string" ? text : null;
 }
 
 /* Supabase の .from 推論がテーブル追加直後に never になるため、実行時テーブル名は正しく store_ai_blurbs のまま */
@@ -198,8 +244,10 @@ export async function insertStoreAiBlurb(
 
 export function createServiceRoleSupabase(): SupabaseClient<Database> {
   const { supabaseUrl, supabaseServiceRoleKey } = getSupabaseServiceEnv();
+  // Wrap client calls with a retry helper in callers where appropriate.
   return createClient<Database>(supabaseUrl, supabaseServiceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false },
+    global: { headers: { "x-client-retry": "enabled" } as Record<string, string> },
   });
 }
 
