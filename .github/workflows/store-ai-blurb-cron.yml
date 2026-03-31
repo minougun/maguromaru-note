@@ -1,0 +1,23 @@
+# Vercel Hobby は「1 日 1 回まで」の Cron 制限があり、vercel.json の */30 はデプロイ失敗の原因になる。
+# 本ワークフローで 30 分おきに本番 API を叩く（Repository secrets の CRON_SECRET は Vercel と同じ Bearer）。
+name: store-ai-blurb cron
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: POST store-ai-blurb
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          ENDPOINT: https://maguromaru-note.vercel.app/api/cron/store-ai-blurb
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::GitHub に secrets.CRON_SECRET が未設定です（Vercel の CRON_SECRET と同じ値を登録）。"
+            exit 1
+          fi
+          curl -sS -f -H "Authorization: Bearer ${CRON_SECRET}" "$ENDPOINT"

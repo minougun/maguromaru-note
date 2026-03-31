@@ -1,11 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "crons": [
-    {
-      "path": "/api/cron/store-ai-blurb",
-      "schedule": "*/30 * * * *"
-    }
-  ],
   "functions": {
     "src/app/api/app-snapshot/route.ts": {
       "maxDuration": 30
