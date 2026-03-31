@@ -32,6 +32,7 @@ import type {
   VisitRecord,
 } from "@/lib/domain/types";
 import { defaultMenuStockById, quizQuestionsPerStage, quizStageCount, type MenuStockStatus } from "@/lib/domain/constants";
+import { applyOtoroChutoroDisplayColors } from "@/lib/domain/part-brand-colors";
 import { seededQuizStats, seededShareBonusEvents, seededStoreStatus } from "@/lib/domain/seed";
 import { applyCustomerFacingStoreAndStock } from "@/lib/domain/store-business-hours";
 import {
@@ -315,7 +316,7 @@ async function listMasterDataPartial(
 
   if (!client) {
     return {
-      parts: needParts ? mockMasterData.parts : [],
+      parts: needParts ? applyOtoroChutoroDisplayColors(mockMasterData.parts) : [],
       menuItems: needMenuItems ? mockMasterData.menuItems : [],
     };
   }
@@ -339,7 +340,7 @@ async function listMasterDataPartial(
   }
 
   return {
-    parts: parts ?? [],
+    parts: applyOtoroChutoroDisplayColors(parts ?? []),
     menuItems: menuItems ?? [],
   };
 }
