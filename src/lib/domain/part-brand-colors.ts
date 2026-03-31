@@ -8,14 +8,14 @@ import type { Part } from "@/lib/domain/types";
  * 魚体シルエット内の部位ごと矩形 ROI から、背景・輪郭・えら先の青灰を除いた「肉色」ピクセルについて
  * R/G/B 各チャンネルの中央値をスウォッチにした。
  */
-export const PART_DISPLAY_COLOR_OTORO = "#b43854";
+export const PART_DISPLAY_COLOR_OTORO = "#ea807f";
 export const PART_DISPLAY_COLOR_CHUTORO = "#c0454c";
 
 export const PART_DISPLAY_SWATCHES = {
   otoro: PART_DISPLAY_COLOR_OTORO,
   chutoro: PART_DISPLAY_COLOR_CHUTORO,
-  /** 脳天 */
-  noten: "#ea807f",
+  /** 脳天（大トロと表示色を入れ替え） */
+  noten: "#b43854",
   /** 目裏 */
   meura: "#de7c7c",
   /** ほほ肉 */
