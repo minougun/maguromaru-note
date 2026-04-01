@@ -115,14 +115,14 @@ export function LoginScreen({
             className={`login-reveal ${revealed ? "login-reveal--visible" : ""}`}
             style={{
               width: "100%",
-              marginBottom: "clamp(24px, 5vh, 44px)",
+              marginBottom: "clamp(40px, 8vh, 72px)",
               textAlign: "center",
             }}
           >
             <h1
               style={{
                 margin: 0,
-                fontSize: "clamp(1.5rem, 5.2vw, 1.95rem)",
+                fontSize: "clamp(2rem, 7.4vw, 2.7rem)",
                 fontWeight: 900,
                 letterSpacing: "0.12em",
                 color: "#f5f5f5",
