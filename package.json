@@ -13,7 +13,9 @@
     "test": "NEXT_PUBLIC_SITE_URL=http://localhost:3000 tsx --test tests/**/*.test.ts",
     "capture:onboarding": "tsx scripts/capture-onboarding-screens.ts",
     "capture:tutorial-mock": "CAPTURE_MOCK_TUTORIAL=1 tsx scripts/capture-onboarding-screens.ts",
-    "analyze": "ANALYZE=true next build --webpack"
+    "analyze": "ANALYZE=true next build --webpack",
+    "test:security:blackbox": "node --import tsx ./scripts/run-security-blackbox.ts",
+    "test:security:ci": "npm run build && npm run test:security:blackbox"
   },
   "dependencies": {
     "@supabase/ssr": "0.9.0",
