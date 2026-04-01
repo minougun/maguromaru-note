@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { type OnboardingMockId, OnboardingDeviceMock } from "@/components/onboarding/OnboardingDeviceMock";
 import { publicPath } from "@/lib/public-path";
@@ -60,15 +60,81 @@ type OnboardingTutorialProps = {
 
 export function OnboardingTutorial({ onComplete }: OnboardingTutorialProps) {
   const [index, setIndex] = useState(0);
+  const rootRef = useRef<HTMLDivElement | null>(null);
   const step = STEPS[index]!;
   const isLast = index === STEPS.length - 1;
+
+  const goToStep = useCallback((nextIndex: number) => {
+    setIndex(Math.max(0, Math.min(nextIndex, STEPS.length - 1)));
+  }, []);
+
+  const goNext = useCallback(() => {
+    if (isLast) {
+      onComplete();
+      return;
+    }
+    setIndex((value) => Math.min(value + 1, STEPS.length - 1));
+  }, [isLast, onComplete]);
+
+  const goPrev = useCallback(() => {
+    setIndex((value) => Math.max(value - 1, 0));
+  }, []);
 
   const finish = useCallback(() => {
     onComplete();
   }, [onComplete]);
 
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) {
+      return;
+    }
+    const previousActive = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    root.focus();
+    return () => {
+      previousActive?.focus();
+    };
+  }, []);
+
   return (
-    <div className="onboarding-root" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
+    <div
+      aria-describedby="onboarding-body"
+      aria-labelledby="onboarding-title"
+      aria-modal="true"
+      className="onboarding-root"
+      onKeyDown={(event) => {
+        if (event.altKey || event.ctrlKey || event.metaKey) {
+          return;
+        }
+        if (event.key === "ArrowLeft") {
+          event.preventDefault();
+          goPrev();
+          return;
+        }
+        if (event.key === "ArrowRight") {
+          event.preventDefault();
+          goNext();
+          return;
+        }
+        if (event.key === "Home") {
+          event.preventDefault();
+          goToStep(0);
+          return;
+        }
+        if (event.key === "End") {
+          event.preventDefault();
+          goToStep(STEPS.length - 1);
+          return;
+        }
+        if (event.key === "Escape") {
+          event.preventDefault();
+          finish();
+        }
+      }}
+      ref={rootRef}
+      role="dialog"
+      tabIndex={-1}
+    >
       <button className="onboarding-skip" onClick={() => finish()} type="button">
         スキップ
       </button>
@@ -93,17 +159,28 @@ export function OnboardingTutorial({ onComplete }: OnboardingTutorialProps) {
         <h2 className="onboarding-title" id="onboarding-title">
           {step.title}
         </h2>
-        <p className="onboarding-body">{step.body}</p>
+        <p className="onboarding-body" id="onboarding-body">
+          {step.body}
+        </p>
 
-        <div className="onboarding-dots" aria-hidden="true">
+        <div aria-label="オンボーディングの進捗" className="onboarding-dots">
           {STEPS.map((_, i) => (
-            <span className="onboarding-dot" data-active={i === index} key={i} />
+            <button
+              aria-current={i === index ? "step" : undefined}
+              aria-label={`${i + 1}枚目へ移動`}
+              className="onboarding-dot"
+              data-active={i === index}
+              key={i}
+              onClick={() => goToStep(i)}
+              style={{ padding: 0, border: "none", cursor: "pointer" }}
+              type="button"
+            />
           ))}
         </div>
 
         <div className="onboarding-actions">
           {index > 0 ? (
-            <button className="onboarding-btn onboarding-btn--ghost" onClick={() => setIndex((v) => v - 1)} type="button">
+            <button className="onboarding-btn onboarding-btn--ghost" onClick={() => goPrev()} type="button">
               戻る
             </button>
           ) : (
@@ -114,7 +191,7 @@ export function OnboardingTutorial({ onComplete }: OnboardingTutorialProps) {
               はじめる
             </button>
           ) : (
-            <button className="onboarding-btn onboarding-btn--primary" onClick={() => setIndex((v) => v + 1)} type="button">
+            <button className="onboarding-btn onboarding-btn--primary" onClick={() => goNext()} type="button">
               次へ
             </button>
           )}
