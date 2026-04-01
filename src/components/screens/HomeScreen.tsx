@@ -15,6 +15,12 @@ import { useAppSnapshot } from "@/lib/hooks/use-app-snapshot";
 import { buildPastLogShare, type SharePayload } from "@/lib/share/share";
 import { fetchOsakaHonmachiWeatherSafe } from "@/lib/weather";
 
+interface DailyTrivia {
+  success: boolean;
+  trivia: string;
+  date: string;
+}
+
 function storeStatusMeta(status: "open" | "busy" | "closing_soon" | "closed") {
   switch (status) {
     case "open":
@@ -44,6 +50,7 @@ export function HomeScreen() {
   const { snapshot, loading, error, refresh } = useAppSnapshot();
   const [sharePayload, setSharePayload] = useState<SharePayload | null>(null);
   const [weatherText, setWeatherText] = useState("天気を取得中...");
+  const [dailyTrivia, setDailyTrivia] = useState<DailyTrivia | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
