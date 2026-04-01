@@ -1,7 +1,7 @@
 import { Buffer } from "node:buffer";
 import { timingSafeEqual } from "node:crypto";
 
-import { NextResponse } from "next/server";
+import { jsonWithSecurityHeaders } from "@/lib/response";
 
 import type { MenuItemStatusRow } from "@/lib/domain/types";
 import { calendarDateJst, isWithinStoreBusinessHoursJst } from "@/lib/domain/store-business-hours";
@@ -56,11 +56,11 @@ function buildMenuStatuses(rows: MenuItemStatusRow[]): Record<(typeof menuItemId
 
 export async function GET(request: Request) {
   if (!verifyCronAuth(request)) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    return jsonWithSecurityHeaders({ error: "unauthorized" }, { status: 401 });
   }
 
   if (!cronCanRunAiBlurb()) {
-    return NextResponse.json({ ok: true, skipped: "missing_openai_or_supabase_service" });
+    return jsonWithSecurityHeaders({ ok: true, skipped: "missing_openai_or_supabase_service" });
   }
 
   const admin = createServiceRoleSupabase();
@@ -74,10 +74,10 @@ export async function GET(request: Request) {
     ]);
 
   if (storeError || !storeRow) {
-    return NextResponse.json({ error: storeError?.message ?? "store_status missing" }, { status: 500 });
+    return jsonWithSecurityHeaders({ error: storeError?.message ?? "store_status missing" }, { status: 500 });
   }
   if (menuError || itemsError || !items?.length) {
-    return NextResponse.json({ error: menuError?.message ?? itemsError?.message ?? "menu load failed" }, { status: 500 });
+    return jsonWithSecurityHeaders({ error: menuError?.message ?? itemsError?.message ?? "menu load failed" }, { status: 500 });
   }
 
   const statuses = buildMenuStatuses((menuRows as MenuItemStatusRow[] | null) ?? []);
@@ -90,12 +90,12 @@ export async function GET(request: Request) {
       const today = calendarDateJst(now);
       const latest = await fetchLatestIntradayBlurb(admin, today);
       if (latest?.source_fingerprint === fp) {
-        return NextResponse.json({ ok: true, skipped: "no_diff_intraday", jstDate: today });
+        return jsonWithSecurityHeaders({ ok: true, skipped: "no_diff_intraday", jstDate: today });
       }
 
       const body = await generateIntradayCopy(snapshotText);
       if (!body) {
-        return NextResponse.json({ ok: true, skipped: "openai_empty" });
+        return jsonWithSecurityHeaders({ ok: true, skipped: "openai_empty" });
       }
 
       await insertStoreAiBlurb(admin, {
@@ -105,17 +105,17 @@ export async function GET(request: Request) {
         source_fingerprint: fp,
       });
 
-      return NextResponse.json({ ok: true, posted: "intraday", jstDate: today });
+      return jsonWithSecurityHeaders({ ok: true, posted: "intraday", jstDate: today });
     }
 
     const closingDate = closingBlurbJstDate(now);
     if (await hasClosingSummary(admin, closingDate)) {
-      return NextResponse.json({ ok: true, skipped: "closing_exists", jstDate: closingDate });
+      return jsonWithSecurityHeaders({ ok: true, skipped: "closing_exists", jstDate: closingDate });
     }
 
     const body = await generateClosingCopy(snapshotText);
     if (!body) {
-      return NextResponse.json({ ok: true, skipped: "openai_empty_closing" });
+      return jsonWithSecurityHeaders({ ok: true, skipped: "openai_empty_closing" });
     }
 
     try {
@@ -128,14 +128,14 @@ export async function GET(request: Request) {
     } catch (insertErr) {
       const msg = insertErr instanceof Error ? insertErr.message : "";
       if (msg.includes("23505") || msg.toLowerCase().includes("duplicate")) {
-        return NextResponse.json({ ok: true, skipped: "closing_race", jstDate: closingDate });
+        return jsonWithSecurityHeaders({ ok: true, skipped: "closing_race", jstDate: closingDate });
       }
       throw insertErr;
     }
 
-    return NextResponse.json({ ok: true, posted: "closing_summary", jstDate: closingDate });
+    return jsonWithSecurityHeaders({ ok: true, posted: "closing_summary", jstDate: closingDate });
   } catch (e) {
     const message = e instanceof Error ? e.message : "unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return jsonWithSecurityHeaders({ error: message }, { status: 500 });
   }
 }

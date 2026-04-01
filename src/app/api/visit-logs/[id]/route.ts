@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { jsonWithSecurityHeaders } from "@/lib/response";
 
 import { verifyCsrfOrigin } from "@/lib/env";
 import { checkHttpRateLimit } from "@/lib/http-rate-limit";
@@ -12,7 +12,7 @@ import {
 
 export async function DELETE(request: Request, context: { params: Promise<{ id: string }> }) {
   if (!verifyCsrfOrigin(request)) {
-    return NextResponse.json({ error: "不正なリクエスト元です。" }, { status: 403 });
+    return jsonWithSecurityHeaders({ error: "不正なリクエスト元です。" }, { status: 403 });
   }
 
   const accessToken = getAccessTokenFromRequest(request);
@@ -20,7 +20,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
     verifiedUserId: await getVerifiedUserIdForRateLimit(accessToken),
   });
   if (!rateLimit.ok) {
-    return NextResponse.json(
+    return jsonWithSecurityHeaders(
       { error: "リクエストが多すぎます。時間をおいて再度お試しください。" },
       {
         status: 429,
@@ -34,9 +34,9 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
   try {
     const { id } = await context.params;
     const result = await deleteVisit(id, accessToken);
-    return NextResponse.json(result);
+    return jsonWithSecurityHeaders(result);
   } catch (error) {
     const routeError = toRouteError(error);
-    return NextResponse.json({ error: routeError.message }, { status: routeError.status });
+    return jsonWithSecurityHeaders({ error: routeError.message }, { status: routeError.status });
   }
 }

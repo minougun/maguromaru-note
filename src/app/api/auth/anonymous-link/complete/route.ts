@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { jsonWithSecurityHeaders } from "@/lib/response";
 
 import { hasSupabaseServiceEnv, verifyCsrfOrigin } from "@/lib/env";
 import { checkHttpRateLimit } from "@/lib/http-rate-limit";
@@ -13,7 +13,7 @@ import {
 export async function POST(request: Request) {
   try {
     if (!verifyCsrfOrigin(request)) {
-      return NextResponse.json({ error: "不正なリクエスト元です。" }, { status: 403 });
+      return jsonWithSecurityHeaders({ error: "不正なリクエスト元です。" }, { status: 403 });
     }
 
     const token = getAccessTokenFromRequest(request);
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
       verifiedUserId: await getVerifiedUserIdForRateLimit(token),
     });
     if (!rateLimit.ok) {
-      return NextResponse.json(
+      return jsonWithSecurityHeaders(
         { error: "リクエストが多すぎます。時間をおいて再度お試しください。" },
         {
           status: 429,
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     }
 
     if (!hasSupabaseServiceEnv()) {
-      return NextResponse.json(
+      return jsonWithSecurityHeaders(
         { error: "サーバー設定が不足しています（SUPABASE_SERVICE_ROLE_KEY）。" },
         { status: 503 },
       );
@@ -41,13 +41,13 @@ export async function POST(request: Request) {
 
     const raw = await request.json();
     const result = await completeAnonymousLinkMigration(token, raw);
-    return NextResponse.json(result, {
+    return jsonWithSecurityHeaders(result, {
       headers: {
         "Cache-Control": "no-store",
       },
     });
   } catch (error) {
     const routeError = toRouteError(error);
-    return NextResponse.json({ error: routeError.message }, { status: routeError.status });
+    return jsonWithSecurityHeaders({ error: routeError.message }, { status: routeError.status });
   }
 }

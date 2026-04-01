@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { jsonWithSecurityHeaders } from "@/lib/response";
 
 import {
   HISTORY_SNAPSHOT_DEFAULT_PAGE_SIZE,
@@ -47,7 +47,7 @@ function parseHistoryPagingParams(url: URL): AppSnapshotLoadOptions | { error: s
 export async function GET(request: Request) {
   const rateLimit = await checkHttpRateLimit(request, "app-snapshot-get", snapshotReadLimits);
   if (!rateLimit.ok) {
-    return NextResponse.json(
+    return jsonWithSecurityHeaders(
       { error: "リクエストが多すぎます。時間をおいて再度お試しください。" },
       {
         status: 429,
@@ -62,13 +62,13 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const scopeParsed = tryParseSnapshotScope(url.searchParams.get("scope"));
     if (scopeParsed === null) {
-      return NextResponse.json({ error: "無効な scope です。" }, { status: 400 });
+      return jsonWithSecurityHeaders({ error: "無効な scope です。" }, { status: 400 });
     }
 
     const hasHistoryPaging =
       url.searchParams.has("history_visit_page") || url.searchParams.has("history_visit_page_size");
     if (hasHistoryPaging && scopeParsed !== "history") {
-      return NextResponse.json(
+      return jsonWithSecurityHeaders(
         { error: "history_visit_page / history_visit_page_size は scope=history のときのみ指定できます。" },
         { status: 400 },
       );
@@ -78,19 +78,19 @@ export async function GET(request: Request) {
     if (scopeParsed === "history") {
       const parsed = parseHistoryPagingParams(url);
       if ("error" in parsed) {
-        return NextResponse.json({ error: parsed.error }, { status: 400 });
+        return jsonWithSecurityHeaders({ error: parsed.error }, { status: 400 });
       }
       loadOptions = parsed;
     }
 
     const snapshot = await getAppSnapshot(getAccessTokenFromRequest(request), scopeParsed, loadOptions);
-    return NextResponse.json(snapshot, {
+    return jsonWithSecurityHeaders(snapshot, {
       headers: {
         "Cache-Control": "no-store",
       },
     });
   } catch (error) {
     const routeError = toRouteError(error);
-    return NextResponse.json({ error: routeError.message }, { status: routeError.status });
+    return jsonWithSecurityHeaders({ error: routeError.message }, { status: routeError.status });
   }
 }
