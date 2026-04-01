@@ -111,6 +111,27 @@ export function LoginScreen({
     return (
       <div className="login-launch">
         <div className="login-launch-body">
+          <div
+            className={`login-reveal ${revealed ? "login-reveal--visible" : ""}`}
+            style={{
+              width: "100%",
+              marginBottom: "clamp(24px, 5vh, 44px)",
+              textAlign: "center",
+            }}
+          >
+            <h1
+              style={{
+                margin: 0,
+                fontSize: "clamp(1.5rem, 5.2vw, 1.95rem)",
+                fontWeight: 900,
+                letterSpacing: "0.12em",
+                color: "#f5f5f5",
+                lineHeight: 1.25,
+              }}
+            >
+              まぐろ丸ノート
+            </h1>
+          </div>
           <div className="login-launch-icon-stage">
             <div className="login-launch-mark-frame">
               {/* GIF アニメーション（ループなし）。Next.js Image は GIF アニメ非対応のため img を使用 */}
@@ -124,31 +145,6 @@ export function LoginScreen({
             </div>
           </div>
           <div className={`login-launch-inner login-reveal ${revealed ? "login-reveal--visible" : ""}`}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, textAlign: "center" }}>
-              <h1
-                style={{
-                  margin: 0,
-                  fontSize: "clamp(1.5rem, 5.2vw, 1.95rem)",
-                  fontWeight: 900,
-                  letterSpacing: "0.12em",
-                  color: "#f5f5f5",
-                  lineHeight: 1.25,
-                }}
-              >
-                まぐろ丸ノート
-              </h1>
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: 12,
-                  lineHeight: 1.45,
-                  letterSpacing: "0.12em",
-                  color: "rgba(245, 245, 245, 0.64)",
-                }}
-              >
-                海鮮丼まぐろ丸 ── 本町
-              </p>
-            </div>
             {(formError || notice) && (
               <p
                 className={
