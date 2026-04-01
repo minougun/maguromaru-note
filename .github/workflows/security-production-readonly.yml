@@ -1,0 +1,21 @@
+name: Security production readonly
+
+on:
+  schedule:
+    - cron: "15 18 * * *"
+  workflow_dispatch:
+
+jobs:
+  production-readonly:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - name: Read-only production security checks
+        env:
+          SECURITY_TEST_BASE_URL: https://maguromaru-note.vercel.app
+        run: npm run test:security:blackbox

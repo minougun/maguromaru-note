@@ -15,7 +15,9 @@
     "capture:tutorial-mock": "CAPTURE_MOCK_TUTORIAL=1 tsx scripts/capture-onboarding-screens.ts",
     "analyze": "ANALYZE=true next build --webpack",
     "test:security:blackbox": "node --import tsx ./scripts/run-security-blackbox.ts",
-    "test:security:ci": "npm run build && npm run test:security:blackbox"
+    "test:security:ci": "npm run build && npm run test:security:blackbox",
+    "audit": "npm audit --audit-level=moderate",
+    "test:supabase:security": "node --import tsx ./scripts/verify-supabase-security.ts"
   },
   "dependencies": {
     "@supabase/ssr": "0.9.0",
@@ -23,20 +25,20 @@
     "@upstash/ratelimit": "2.0.8",
     "@upstash/redis": "1.37.0",
     "clsx": "2.1.1",
-    "next": "16.1.6",
+    "next": "16.2.2",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "zod": "4.3.6"
   },
   "devDependencies": {
-    "@next/bundle-analyzer": "16.1.6",
+    "@next/bundle-analyzer": "16.2.2",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.1.6",
-    "playwright": "1.51.0",
+    "eslint-config-next": "16.2.2",
+    "playwright": "1.55.1",
     "tailwindcss": "^4",
     "tsx": "4.21.0",
     "typescript": "5.9.3"

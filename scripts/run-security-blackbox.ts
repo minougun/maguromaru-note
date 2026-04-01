@@ -12,6 +12,7 @@ const require = createRequire(import.meta.url);
 const DEFAULT_HOST = "127.0.0.1";
 const DEFAULT_PORT = Number.parseInt(process.env.SECURITY_TEST_PORT ?? "3210", 10);
 const REMOTE_BASE_URL = process.env.SECURITY_TEST_BASE_URL?.trim() || null;
+const IS_REMOTE_MODE = REMOTE_BASE_URL !== null;
 const BASE_URL = REMOTE_BASE_URL ?? `http://${DEFAULT_HOST}:${DEFAULT_PORT}`;
 const ALLOWED_ORIGIN = new URL(BASE_URL).origin;
 
@@ -50,7 +51,7 @@ async function waitForServer() {
 }
 
 async function startLocalServer(): Promise<ChildProcess | null> {
-  if (REMOTE_BASE_URL) {
+  if (IS_REMOTE_MODE) {
     return null;
   }
 
@@ -62,6 +63,7 @@ async function startLocalServer(): Promise<ChildProcess | null> {
       env: {
         ...process.env,
         NEXT_PUBLIC_SITE_URL: BASE_URL,
+        MAGUROMARU_ENABLE_PRODUCTION_MOCK: process.env.MAGUROMARU_ENABLE_PRODUCTION_MOCK ?? "true",
       },
       stdio: ["ignore", "pipe", "pipe"],
     },
@@ -92,10 +94,21 @@ async function stopLocalServer(child: ChildProcess | null) {
   }
 }
 
-async function runChecks() {
+async function runReadOnlyChecks() {
   const invalidScope = await request("/api/app-snapshot?scope=invalid");
   assert.equal(invalidScope.status, 400);
   assertSecurityHeaders(invalidScope);
+
+  const protectedSnapshot = await request("/api/app-snapshot?scope=home");
+  if (IS_REMOTE_MODE) {
+    assert.equal(protectedSnapshot.status, 401);
+  } else {
+    assert.ok(
+      [200, 401].includes(protectedSnapshot.status),
+      `unexpected protected snapshot status ${protectedSnapshot.status}`,
+    );
+  }
+  assertSecurityHeaders(protectedSnapshot);
 
   const callback = await request("/auth/callback?error=access_denied&next=/mypage");
   assert.ok([302, 303, 307, 308].includes(callback.status), `unexpected callback status ${callback.status}`);
@@ -123,6 +136,16 @@ async function runChecks() {
   assert.equal(evilOrigin.status, 403);
   assertSecurityHeaders(evilOrigin);
 
+  const cron = await request("/api/cron/store-ai-blurb", {
+    headers: {
+      authorization: "Bearer wrong-secret",
+    },
+  });
+  assert.equal(cron.status, 401);
+  assertSecurityHeaders(cron);
+}
+
+async function runLocalMutationResistanceChecks() {
   let latestStatus = 0;
   for (let i = 0; i <= mutationRateLimits.authWrites.maxRequests; i += 1) {
     const response = await request("/api/auth/anonymous-link/prepare", {
@@ -139,21 +162,22 @@ async function runChecks() {
     assertSecurityHeaders(response);
   }
   assert.equal(latestStatus, 429, `expected spoofed auth-link flood to hit rate limit, got ${latestStatus}`);
+}
 
-  const cron = await request("/api/cron/store-ai-blurb", {
-    headers: {
-      authorization: "Bearer wrong-secret",
-    },
-  });
-  assert.equal(cron.status, 401);
-  assertSecurityHeaders(cron);
+async function runChecks() {
+  await runReadOnlyChecks();
+  if (!IS_REMOTE_MODE) {
+    await runLocalMutationResistanceChecks();
+  }
 }
 
 async function main() {
   const child = await startLocalServer();
   try {
     await runChecks();
-    process.stdout.write(`security blackbox checks passed against ${BASE_URL}\n`);
+    process.stdout.write(
+      `security blackbox checks passed against ${BASE_URL}${IS_REMOTE_MODE ? " (remote read-only mode)" : ""}\n`,
+    );
   } finally {
     await stopLocalServer(child);
   }

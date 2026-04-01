@@ -17,12 +17,19 @@ export function useTabBarScrollVisibility(scrollRoot: HTMLElement | null, pathna
   const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
-    setVisible(true);
+    const frame = requestAnimationFrame(() => {
+      setVisible(true);
+    });
+
     if (scrollRoot) {
       lastScrollTopRef.current = scrollRoot.scrollTop;
     } else {
       lastScrollTopRef.current = 0;
     }
+
+    return () => {
+      cancelAnimationFrame(frame);
+    };
   }, [pathname, scrollRoot]);
 
   useEffect(() => {

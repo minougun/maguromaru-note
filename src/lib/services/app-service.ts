@@ -1535,12 +1535,20 @@ export async function createQuizSessionForViewer(input: unknown, accessToken?: s
   let insertPayload: Database["public"]["Tables"]["quiz_sessions"]["Insert"] = payload;
   let insertResult = await fromAny(client, "quiz_sessions").insert(insertPayload).select("*").single();
   if (insertResult.error && isMissingQuizSessionCorrectQuestionIdsColumnError(insertResult.error.message)) {
-    const { correct_question_ids: _cids, ...legacyPayloadNoCids } = insertPayload;
+    const legacyPayloadNoCids = { ...insertPayload };
+    Reflect.deleteProperty(
+      legacyPayloadNoCids as Partial<Database["public"]["Tables"]["quiz_sessions"]["Insert"]>,
+      "correct_question_ids",
+    );
     insertPayload = legacyPayloadNoCids;
     insertResult = await fromAny(client, "quiz_sessions").insert(insertPayload).select("*").single();
   }
   if (insertResult.error && isMissingQuizSessionScoreColumnError(insertResult.error.message)) {
-    const { score: _score, ...legacyPayload } = insertPayload;
+    const legacyPayload = { ...insertPayload };
+    Reflect.deleteProperty(
+      legacyPayload as Partial<Database["public"]["Tables"]["quiz_sessions"]["Insert"]>,
+      "score",
+    );
     insertResult = await fromAny(client, "quiz_sessions").insert(legacyPayload).select("*").single();
   }
   const { data, error } = insertResult;
