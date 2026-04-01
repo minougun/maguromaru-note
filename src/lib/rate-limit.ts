@@ -1,3 +1,5 @@
+import { isIP } from "node:net";
+
 export type RateLimitPolicy = {
   windowMs: number;
   maxRequests: number;
@@ -19,16 +21,39 @@ function nowMs() {
   return Date.now();
 }
 
+const TRUSTED_IP_HEADER_NAMES = [
+  "cf-connecting-ip",
+  "fly-client-ip",
+  "fastly-client-ip",
+  "true-client-ip",
+  "x-real-ip",
+  "x-vercel-forwarded-for",
+] as const;
+
+function normalizeTrustedIpCandidate(value: string | null): string | null {
+  const trimmed = value?.trim();
+  if (!trimmed || trimmed.includes(",")) {
+    return null;
+  }
+
+  const bracketed = trimmed.match(/^\[([^\]]+)\](?::\d+)?$/);
+  const unwrapped = bracketed?.[1] ?? trimmed;
+  const withoutPort = /^\d{1,3}(?:\.\d{1,3}){3}:\d+$/.test(unwrapped)
+    ? unwrapped.replace(/:\d+$/, "")
+    : unwrapped;
+
+  return isIP(withoutPort) ? withoutPort : null;
+}
+
 export function readClientIp(request: Request) {
-  const forwardedFor = request.headers.get("x-forwarded-for");
-  if (forwardedFor) {
-    const first = forwardedFor.split(",")[0]?.trim();
-    if (first) {
-      return first;
+  for (const headerName of TRUSTED_IP_HEADER_NAMES) {
+    const candidate = normalizeTrustedIpCandidate(request.headers.get(headerName));
+    if (candidate) {
+      return candidate;
     }
   }
 
-  return request.headers.get("x-real-ip")?.trim() || "unknown";
+  return "unknown";
 }
 
 export function consumeRateLimit(key: string, policy: RateLimitPolicy): RateLimitResult {
@@ -65,6 +90,7 @@ export const mutationRateLimits = {
   visitWrites: { windowMs: 60_000, maxRequests: 20 },
   quizWrites: { windowMs: 60_000, maxRequests: 60 },
   shareWrites: { windowMs: 60_000, maxRequests: 20 },
+  authWrites: { windowMs: 60_000, maxRequests: 10 },
   adminWrites: { windowMs: 60_000, maxRequests: 20 },
 } as const;
 

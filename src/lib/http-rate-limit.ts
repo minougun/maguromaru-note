@@ -1,7 +1,6 @@
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 
-import { tryJwtSubFromAuthHeader } from "@/lib/auth-bearer";
 import { consumeRateLimit, readClientIp, type RateLimitPolicy } from "@/lib/rate-limit";
 
 let redisSingleton: Redis | null | undefined;
@@ -53,16 +52,16 @@ export function resetHttpRateLimitCachesForTests() {
 
 /**
  * 分散レート制限（Upstash 設定時）またはメモリ Map（フォールバック）。
- * 識別子: JWT の sub が取れれば `u:<sub>`、なければ `ip:<client ip>`。
+ * 識別子は検証済みユーザー ID を優先し、未検証 JWT や x-forwarded-for は信用しない。
  */
 export async function checkHttpRateLimit(
   request: Request,
   routeKey: string,
   policy: RateLimitPolicy,
+  options?: { verifiedUserId?: string | null },
 ): Promise<{ ok: boolean; retryAfterSeconds: number }> {
-  const sub = tryJwtSubFromAuthHeader(request.headers.get("authorization"));
   const ip = readClientIp(request);
-  const identifier = sub ? `u:${sub}` : `ip:${ip}`;
+  const identifier = options?.verifiedUserId ? `u:${options.verifiedUserId}` : `ip:${ip}`;
 
   const limiter = getRatelimit(routeKey, policy.maxRequests, policy.windowMs);
   if (!limiter) {

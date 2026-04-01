@@ -350,6 +350,21 @@ test("checkQuizAnswer rejects tampered proof tokens", async () => {
   );
 });
 
+test("checkQuizAnswer requires an owned session even when answerProof is present", async () => {
+  const session = await createQuizSessionForViewer({ stageNumber: 1 });
+
+  await assert.rejects(
+    () =>
+      checkQuizAnswer({
+        sessionId: "10000000-0000-4000-8000-000000000099",
+        questionId: session.questions[0].id,
+        answerIndexes: [0],
+        answerProof: session.questions[0].answerProof,
+      }),
+    /クイズセッションが見つかりません/,
+  );
+});
+
 test("claimShareBonus boosts visit counts only once per visit record", async () => {
   const snapshotBefore = await getAppSnapshot();
   const created = await recordVisit({

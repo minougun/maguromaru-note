@@ -19,6 +19,7 @@ import { POST as quizSessionsPost } from "@/app/api/quiz-sessions/route";
 import { POST as shareBonusesPost } from "@/app/api/share-bonuses/route";
 import { DELETE as visitLogDelete } from "@/app/api/visit-logs/[id]/route";
 import { POST as visitLogsPost } from "@/app/api/visit-logs/route";
+import { mutationRateLimits } from "@/lib/rate-limit";
 
 const allowedOrigin = "http://localhost:3000";
 const api = (path: string) => `${allowedOrigin}${path}`;
@@ -195,4 +196,28 @@ test("GET /api/app-snapshot: 不正な Bearer は 401（モック時はセッシ
     res.status === 401 || res.status === 200,
     `expected 401 invalid token or 200 mock; got ${res.status}`,
   );
+});
+
+test("POST /api/auth/anonymous-link/prepare: 連打すると 429", async () => {
+  let last: Response | null = null;
+  for (let i = 0; i <= mutationRateLimits.authWrites.maxRequests; i += 1) {
+    last = await anonymousPreparePost(
+      jsonPost("/api/auth/anonymous-link/prepare", { origin: allowedOrigin, body: "{}" }),
+    );
+  }
+
+  assert.ok(last);
+  assert.equal(last.status, 429);
+});
+
+test("POST /api/auth/anonymous-link/complete: 連打すると 429", async () => {
+  let last: Response | null = null;
+  for (let i = 0; i <= mutationRateLimits.authWrites.maxRequests; i += 1) {
+    last = await anonymousCompletePost(
+      jsonPost("/api/auth/anonymous-link/complete", { origin: allowedOrigin, body: "{}" }),
+    );
+  }
+
+  assert.ok(last);
+  assert.equal(last.status, 429);
 });

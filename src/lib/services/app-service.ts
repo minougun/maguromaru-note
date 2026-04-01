@@ -286,6 +286,24 @@ async function getSupabaseContextFromAccessToken(accessToken: string) {
   return { client, viewer };
 }
 
+export async function getVerifiedUserIdForRateLimit(accessToken?: string): Promise<string | null> {
+  if (!accessToken?.trim() || !hasSupabaseEnv()) {
+    return null;
+  }
+
+  const client = createTokenSupabaseClient(accessToken);
+  const {
+    data: { user },
+    error,
+  } = await client.auth.getUser(accessToken);
+
+  if (error || !user?.id) {
+    return null;
+  }
+
+  return user.id;
+}
+
 function assertAdminViewer(viewer: ViewerContext) {
   if (viewer.isMock) {
     if (viewer.role !== "admin") {
@@ -1320,8 +1338,10 @@ function fromBase64Url(value: string) {
 
 function getQuizAnswerProofKey() {
   const configured = process.env.QUIZ_ANSWER_PROOF_SECRET?.trim();
-  const fallback = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-  const secret = configured || fallback || "mock-quiz-answer-proof-secret";
+  const secret = configured || (shouldUseMockBackend() ? "mock-quiz-answer-proof-secret" : null);
+  if (!secret) {
+    throw new AppServiceError(503, "サーバー設定が不足しています（QUIZ_ANSWER_PROOF_SECRET）。");
+  }
   return createHash("sha256").update(secret).digest();
 }
 
@@ -1823,22 +1843,6 @@ export async function claimShareBonus(input: unknown, accessToken?: string) {
 export async function checkQuizAnswer(input: unknown, accessToken?: string) {
   const parsed = checkQuizAnswerInputSchema.parse(input);
 
-  if (parsed.answerProof) {
-    const proof = parseQuizAnswerProof(parsed.answerProof);
-    if (proof.sessionId !== parsed.sessionId || proof.questionId !== parsed.questionId) {
-      throw new AppServiceError(400, "問題の照合に失敗しました。");
-    }
-    if (new Date(proof.expiresAt).getTime() < Date.now()) {
-      throw new AppServiceError(410, "クイズセッションの有効期限が切れました。");
-    }
-
-    const [result] = scoreQuizAnswers([parsed.questionId], [parsed.answerIndexes]);
-    return {
-      ok: true,
-      result,
-    };
-  }
-
   if (shouldUseMockBackend()) {
     const viewer = createMockViewerContext();
     const state = await readMockState();
@@ -1849,6 +1853,15 @@ export async function checkQuizAnswer(input: unknown, accessToken?: string) {
     assertQuizSessionAvailable(session);
 
     const questionIds = parseQuestionIds(session.question_ids);
+    if (parsed.answerProof) {
+      const proof = parseQuizAnswerProof(parsed.answerProof);
+      if (proof.sessionId !== parsed.sessionId || proof.questionId !== parsed.questionId) {
+        throw new AppServiceError(400, "問題の照合に失敗しました。");
+      }
+      if (new Date(proof.expiresAt).getTime() < Date.now()) {
+        throw new AppServiceError(410, "クイズセッションの有効期限が切れました。");
+      }
+    }
     if (!questionIds.includes(parsed.questionId)) {
       throw new AppServiceError(400, "この問題はクイズセッションに含まれていません。");
     }
@@ -1881,6 +1894,15 @@ export async function checkQuizAnswer(input: unknown, accessToken?: string) {
   assertQuizSessionAvailable(session);
 
   const questionIds = parseQuestionIds(session.question_ids);
+  if (parsed.answerProof) {
+    const proof = parseQuizAnswerProof(parsed.answerProof);
+    if (proof.sessionId !== parsed.sessionId || proof.questionId !== parsed.questionId) {
+      throw new AppServiceError(400, "問題の照合に失敗しました。");
+    }
+    if (new Date(proof.expiresAt).getTime() < Date.now()) {
+      throw new AppServiceError(410, "クイズセッションの有効期限が切れました。");
+    }
+  }
   if (!questionIds.includes(parsed.questionId)) {
     throw new AppServiceError(400, "この問題はクイズセッションに含まれていません。");
   }

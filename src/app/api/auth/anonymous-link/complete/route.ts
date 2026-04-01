@@ -1,13 +1,35 @@
 import { NextResponse } from "next/server";
 
 import { hasSupabaseServiceEnv, verifyCsrfOrigin } from "@/lib/env";
+import { checkHttpRateLimit } from "@/lib/http-rate-limit";
+import { mutationRateLimits } from "@/lib/rate-limit";
 import { completeAnonymousLinkMigration } from "@/lib/services/anonymous-link-service";
-import { getAccessTokenFromRequest, toRouteError } from "@/lib/services/app-service";
+import {
+  getAccessTokenFromRequest,
+  getVerifiedUserIdForRateLimit,
+  toRouteError,
+} from "@/lib/services/app-service";
 
 export async function POST(request: Request) {
   try {
     if (!verifyCsrfOrigin(request)) {
       return NextResponse.json({ error: "不正なリクエスト元です。" }, { status: 403 });
+    }
+
+    const token = getAccessTokenFromRequest(request);
+    const rateLimit = await checkHttpRateLimit(request, "auth-anonymous-link-complete-post", mutationRateLimits.authWrites, {
+      verifiedUserId: await getVerifiedUserIdForRateLimit(token),
+    });
+    if (!rateLimit.ok) {
+      return NextResponse.json(
+        { error: "リクエストが多すぎます。時間をおいて再度お試しください。" },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(rateLimit.retryAfterSeconds),
+          },
+        },
+      );
     }
 
     if (!hasSupabaseServiceEnv()) {
@@ -18,7 +40,6 @@ export async function POST(request: Request) {
     }
 
     const raw = await request.json();
-    const token = getAccessTokenFromRequest(request);
     const result = await completeAnonymousLinkMigration(token, raw);
     return NextResponse.json(result, {
       headers: {
