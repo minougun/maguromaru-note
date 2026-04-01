@@ -10,19 +10,19 @@ import type { Part } from "@/lib/domain/types";
  * - 目裏: イラスト地色に近い青みグレー（#96a2ae は同画像内のベース色サンプル）
  * カマ・ハラモ・背側脂帯は図中ラベルなしのため大トロ／中トロ系で統一。
  */
-export const PART_DISPLAY_COLOR_OTORO = "#ff918e";
-export const PART_DISPLAY_COLOR_CHUTORO = "#cf0c2e";
+export const PART_DISPLAY_COLOR_OTORO = "#f4a8a0";
+export const PART_DISPLAY_COLOR_CHUTORO = "#d94545";
 
 export const PART_DISPLAY_SWATCHES = {
   otoro: PART_DISPLAY_COLOR_OTORO,
   chutoro: PART_DISPLAY_COLOR_CHUTORO,
-  noten: "#ff918e",
-  meura: "#d97070",  // グレーから赤系に変更
-  hoho: "#f48c8c",
-  kama: "#cc4c64",
-  haramo: "#cc4c64",
-  senaka: "#f48c8c",
-  akami: "#b61c28",
+  noten: "#ffb3a8",
+  meura: "#e67a7a",
+  hoho: "#f4b5b0",
+  kama: "#d94545",
+  haramo: "#d94545",
+  senaka: "#d94545",
+  akami: "#c41e26",
 } as const;
 
 export type PartDisplaySwatchId = keyof typeof PART_DISPLAY_SWATCHES;
