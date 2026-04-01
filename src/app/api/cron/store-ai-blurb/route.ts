@@ -1,3 +1,6 @@
+import { Buffer } from "node:buffer";
+import { timingSafeEqual } from "node:crypto";
+
 import { NextResponse } from "next/server";
 
 import type { MenuItemStatusRow } from "@/lib/domain/types";
@@ -23,11 +26,18 @@ const MENU_ITEM_STATUS_COLUMNS = "menu_item_id, status, updated_at" as const;
 
 function verifyCronAuth(request: Request): boolean {
   const secret = process.env.CRON_SECRET?.trim();
-  if (!secret) {
+  const auth = request.headers.get("authorization")?.trim();
+  if (!secret || !auth) {
     return false;
   }
-  const auth = request.headers.get("authorization");
-  return auth === `Bearer ${secret}`;
+
+  const expected = Buffer.from(`Bearer ${secret}`);
+  const actual = Buffer.from(auth);
+  if (expected.length !== actual.length) {
+    return false;
+  }
+
+  return timingSafeEqual(expected, actual);
 }
 
 function buildMenuStatuses(rows: MenuItemStatusRow[]): Record<(typeof menuItemIds)[number], MenuStockStatus> {

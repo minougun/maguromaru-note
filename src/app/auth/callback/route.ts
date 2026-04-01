@@ -5,6 +5,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/lib/database.types";
 import { ANON_LINK_NONCE_COOKIE, clearAnonLinkNonceCookie } from "@/lib/anonymous-link-cookie";
 import { authNextPathSchema, emailOtpCallbackTypeSchema } from "@/lib/domain/schemas";
+import { applySecurityHeaders } from "@/lib/security-headers";
 import { getSupabaseEnv, hasSupabaseEnv, hasSupabaseServiceEnv } from "@/lib/env";
 import { setRedirectLocation } from "@/lib/response";
 import { completeAnonymousLinkMigration } from "@/lib/services/anonymous-link-service";
@@ -28,6 +29,7 @@ export async function GET(request: NextRequest) {
   if (!hasSupabaseEnv()) {
     const res = NextResponse.redirect(redirectUrl);
     clearAnonLinkNonceCookie(res);
+    applySecurityHeaders(res.headers);
     return setRedirectLocation(res, redirectUrl);
   }
 
@@ -41,6 +43,7 @@ export async function GET(request: NextRequest) {
     redirectUrl.searchParams.set("auth_err", "provider");
     const res = NextResponse.redirect(redirectUrl);
     clearAnonLinkNonceCookie(res);
+    applySecurityHeaders(res.headers);
     return setRedirectLocation(res, redirectUrl);
   }
 
@@ -66,6 +69,7 @@ export async function GET(request: NextRequest) {
       redirectUrl.searchParams.set("auth_err", "session");
       response = NextResponse.redirect(redirectUrl);
       clearAnonLinkNonceCookie(response);
+      applySecurityHeaders(response.headers);
       return setRedirectLocation(response, redirectUrl);
     }
     let session: Session | null = data.session;
@@ -83,6 +87,7 @@ export async function GET(request: NextRequest) {
       redirectUrl.searchParams.set("auth_err", "incomplete");
       const res = NextResponse.redirect(redirectUrl);
       clearAnonLinkNonceCookie(res);
+      applySecurityHeaders(res.headers);
       return setRedirectLocation(res, redirectUrl);
     }
     const { data, error } = await supabase.auth.verifyOtp({
@@ -94,6 +99,7 @@ export async function GET(request: NextRequest) {
       redirectUrl.searchParams.set("auth_err", "email");
       response = NextResponse.redirect(redirectUrl);
       clearAnonLinkNonceCookie(response);
+      applySecurityHeaders(response.headers);
       return setRedirectLocation(response, redirectUrl);
     }
     let session: Session | null = data.session;
@@ -109,11 +115,13 @@ export async function GET(request: NextRequest) {
     redirectUrl.searchParams.set("auth_err", "incomplete");
     const res = NextResponse.redirect(redirectUrl);
     clearAnonLinkNonceCookie(res);
+    applySecurityHeaders(res.headers);
     return setRedirectLocation(res, redirectUrl);
   }
 
   redirectUrl.searchParams.set("auth", "linked");
   clearAnonLinkNonceCookie(response);
+  applySecurityHeaders(response.headers);
   return setRedirectLocation(response, redirectUrl);
 }
 

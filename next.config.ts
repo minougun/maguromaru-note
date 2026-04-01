@@ -5,6 +5,8 @@ import bundleAnalyzer from "@next/bundle-analyzer";
 import { loadEnvConfig } from "@next/env";
 import type { NextConfig } from "next";
 
+import { SECURITY_HEADER_ENTRIES } from "./src/lib/security-headers";
+
 const withBundleAnalyzer = bundleAnalyzer({
   enabled: process.env.ANALYZE === "true",
   /** GitHub Actions 等でヘッドレス環境が固まらないようにする */
@@ -78,6 +80,14 @@ const nextConfig: NextConfig = {
   ...(basePath ? { basePath } : {}),
   experimental: {
     optimizePackageImports: ["@supabase/supabase-js", "@supabase/ssr", "zod", "clsx"],
+  },
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: SECURITY_HEADER_ENTRIES.map(([key, value]) => ({ key, value })),
+      },
+    ];
   },
   images: {
     remotePatterns: [

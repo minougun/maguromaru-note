@@ -2,15 +2,18 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 import type { Database } from "@/lib/database.types";
+import { applySecurityHeaders } from "@/lib/security-headers";
 import { hasSupabaseEnv } from "@/lib/env";
 
 export async function updateSession(request: NextRequest) {
   if (!hasSupabaseEnv()) {
-    return NextResponse.next({
+    const response = NextResponse.next({
       request: {
         headers: request.headers,
       },
     });
+    applySecurityHeaders(response.headers);
+    return response;
   }
 
   let response = NextResponse.next({
@@ -45,5 +48,6 @@ export async function updateSession(request: NextRequest) {
   );
 
   await supabase.auth.getUser();
+  applySecurityHeaders(response.headers);
   return response;
 }

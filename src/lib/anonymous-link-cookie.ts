@@ -12,7 +12,7 @@ function secureInProduction(): boolean {
 const BASE_OPTS = {
   httpOnly: true as const,
   sameSite: "lax" as const,
-  path: "/",
+  path: "/auth/callback",
 };
 
 export function setAnonLinkNonceCookie(res: NextResponse, nonce: string) {
