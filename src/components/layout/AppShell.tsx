@@ -79,16 +79,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** ログイン画面：GIF アニメ完了後にヘッダー＋ボタンをフェードイン */
+/** ログイン画面：GIF アニメ完了後にタイトル＋ボタンを同時フェードイン */
 function LoginShell() {
   const [revealed, setRevealed] = useState(false);
   const onAnimationEnd = useCallback(() => setRevealed(true), []);
 
   return (
     <div className="app-shell app-shell--login">
-      <div className={`login-reveal ${revealed ? "login-reveal--visible" : ""}`}>
-        <AppHeader />
-      </div>
       <main className="screen-main screen-main--login">
         <LoginScreen onAnimationEnd={onAnimationEnd} revealed={revealed} />
       </main>

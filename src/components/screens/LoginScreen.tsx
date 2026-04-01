@@ -32,7 +32,7 @@ function authErrorMessage(error: unknown) {
 
 type ScreenMode = "choose" | "signin";
 
-const GIF_DURATION_MS = 5000;
+const GIF_DURATION_MS = 3000;
 
 export function LoginScreen({
   onAnimationEnd,
@@ -94,9 +94,11 @@ export function LoginScreen({
       setNotice(null);
       if (auth.usingSupabase) {
         await startAnonymousSession();
+        router.push("/");
         router.refresh();
       } else {
         auth.acknowledgeLocalSession();
+        router.push("/");
       }
     } catch (error) {
       setFormError(authErrorMessage(error));
@@ -122,6 +124,31 @@ export function LoginScreen({
             </div>
           </div>
           <div className={`login-launch-inner login-reveal ${revealed ? "login-reveal--visible" : ""}`}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, textAlign: "center" }}>
+              <h1
+                style={{
+                  margin: 0,
+                  fontSize: "clamp(1.5rem, 5.2vw, 1.95rem)",
+                  fontWeight: 900,
+                  letterSpacing: "0.12em",
+                  color: "#f5f5f5",
+                  lineHeight: 1.25,
+                }}
+              >
+                まぐろ丸ノート
+              </h1>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: 12,
+                  lineHeight: 1.45,
+                  letterSpacing: "0.12em",
+                  color: "rgba(245, 245, 245, 0.64)",
+                }}
+              >
+                海鮮丼まぐろ丸 ── 本町
+              </p>
+            </div>
             {(formError || notice) && (
               <p
                 className={
