@@ -181,3 +181,12 @@ export function getFallbackWeatherSnapshot(): WeatherSnapshot {
     ...fallbackWeather,
   };
 }
+
+export function isFallbackWeatherSnapshot(snapshot: WeatherSnapshot): boolean {
+  return (
+    snapshot.temperature === fallbackWeather.temperature &&
+    snapshot.code === fallbackWeather.code &&
+    snapshot.icon === fallbackWeather.icon &&
+    snapshot.label === fallbackWeather.label
+  );
+}

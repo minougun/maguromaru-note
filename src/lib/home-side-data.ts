@@ -1,6 +1,6 @@
 import { readFallbackDailyTrivia, type DailyTriviaSnapshot } from "@/lib/maguro-bot";
 import { withAppBasePath } from "@/lib/public-path";
-import { getFallbackWeatherSnapshot, type WeatherSnapshot } from "@/lib/weather";
+import { getFallbackWeatherSnapshot, isFallbackWeatherSnapshot, type WeatherSnapshot } from "@/lib/weather";
 
 export interface HomeSideDataSnapshot {
   weather: WeatherSnapshot;
@@ -113,12 +113,13 @@ export async function fetchHomeSideDataSafe(): Promise<HomeSideDataSnapshot> {
       try {
         const snapshot = await fetchHomeSideData();
         homeSideDataCache.value = cloneHomeSideData(snapshot);
-        homeSideDataCache.expiresAt = Date.now() + HOME_SIDE_DATA_CACHE_MS;
+        const ttlMs = isFallbackWeatherSnapshot(snapshot.weather) ? 30_000 : HOME_SIDE_DATA_CACHE_MS;
+        homeSideDataCache.expiresAt = Date.now() + ttlMs;
         return snapshot;
       } catch {
         const fallback = readFallbackHomeSideData();
         homeSideDataCache.value = cloneHomeSideData(fallback);
-        homeSideDataCache.expiresAt = Date.now() + HOME_SIDE_DATA_CACHE_MS;
+        homeSideDataCache.expiresAt = Date.now() + 30_000;
         return fallback;
       }
     })();

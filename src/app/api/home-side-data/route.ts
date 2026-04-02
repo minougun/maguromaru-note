@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { type DailyTriviaSnapshot } from "@/lib/maguro-bot";
 import { jsonWithSecurityHeaders } from "@/lib/response";
-import { fetchOsakaHonmachiWeatherSafe, type WeatherSnapshot } from "@/lib/weather";
+import { fetchOsakaHonmachiWeatherSafe, isFallbackWeatherSnapshot, type WeatherSnapshot } from "@/lib/weather";
 
 interface HomeSideDataResponse {
   success: boolean;
@@ -83,7 +83,8 @@ async function readCachedHomeSideData() {
         fetchedAt,
       };
       homeSideCache.value = snapshot;
-      homeSideCache.expiresAt = Date.now() + HOME_SIDE_CACHE_SECONDS * 1000;
+      const ttlSeconds = isFallbackWeatherSnapshot(weather) ? 30 : HOME_SIDE_CACHE_SECONDS;
+      homeSideCache.expiresAt = Date.now() + ttlSeconds * 1000;
       return snapshot;
     })();
   }
