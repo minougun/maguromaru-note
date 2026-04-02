@@ -1,9 +1,8 @@
 "use client";
 
-import { memo, useId, useState } from "react";
+import { memo, useState } from "react";
 
 import tunaMapBase from "@/assets/zukan-tuna-map.webp";
-import tunaMapReveal from "@/assets/zukan-tuna-map-reveal.webp";
 
 import { mapDisplayColorForPart } from "@/lib/domain/part-brand-colors";
 import { mapOverlayTintHex } from "@/lib/map-overlay-tint";
@@ -167,11 +166,11 @@ function regionPrimaryPart(region: MapRegionDef, partsById: Map<PartId, Part>, c
   return partsById.get(id!) ?? null;
 }
 
-function clipShapeEl(r: MapRegionDef["shape"]) {
+function filledShapeEl(r: MapRegionDef["shape"], fill: string, opacity: string) {
   if (r.type === "ellipse") {
-    return <ellipse cx={r.cx} cy={r.cy} rx={r.rx} ry={r.ry} />;
+    return <ellipse cx={r.cx} cy={r.cy} rx={r.rx} ry={r.ry} fill={fill} opacity={opacity} />;
   }
-  return <path d={r.d} />;
+  return <path d={r.d} fill={fill} opacity={opacity} />;
 }
 
 function hitShapeEl(r: MapRegionDef["shape"]) {
@@ -195,14 +194,8 @@ function TunaMapInner({ parts, collectedPartIds }: TunaMapProps) {
   const partsById = new Map(parts.map((part) => [part.id, part]));
   const collected = new Set(collectedPartIds);
   const [selectedRegionKey, setSelectedRegionKey] = useState<string | null>(null);
-  const clipUid = useId().replace(/:/g, "");
-  const revealImageId = `${clipUid}-reveal`;
 
   const selectedRegion = selectedRegionKey ? MAP_REGIONS.find((r) => r.key === selectedRegionKey) : null;
-
-  function clipId(key: string) {
-    return `${clipUid}-clip-${key}`;
-  }
 
   function handleTapRegion(region: MapRegionDef) {
     setSelectedRegionKey((current) => (current === region.key ? null : region.key));
@@ -224,21 +217,6 @@ function TunaMapInner({ parts, collectedPartIds }: TunaMapProps) {
     <div>
       <div className="map-wrap">
         <svg viewBox="0 0 1365 768" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="まぐろ部位マップ">
-          <defs>
-            <image
-              id={revealImageId}
-              href={tunaMapReveal.src}
-              width="1365"
-              height="768"
-              preserveAspectRatio="xMidYMid meet"
-            />
-            {MAP_REGIONS.map((r) => (
-              <clipPath id={clipId(r.key)} key={`clip-${r.key}`} clipPathUnits="userSpaceOnUse">
-                {clipShapeEl(r.shape)}
-              </clipPath>
-            ))}
-          </defs>
-
           <image href={tunaMapBase.src} width="1365" height="768" preserveAspectRatio="xMidYMid meet" />
 
           {MAP_REGIONS.map((r) => {
@@ -249,15 +227,9 @@ function TunaMapInner({ parts, collectedPartIds }: TunaMapProps) {
             const primary = regionPrimaryPart(r, partsById, collected);
             const tint = primary ? mapOverlayTintHex(mapDisplayColorForPart(primary)) : null;
             const tintOpacity =
-              primary?.id === "otoro" || primary?.id === "chutoro" ? "0.56" : "0.48";
-            return (
-              <g key={`reveal-${r.key}`} clipPath={`url(#${clipId(r.key)})`}>
-                <use href={`#${revealImageId}`} width="1365" height="768" />
-                {tint != null ? (
-                  <rect width="1365" height="768" fill={tint} opacity={tintOpacity} />
-                ) : null}
-              </g>
-            );
+              primary?.id === "otoro" || primary?.id === "chutoro" ? "0.72" : "0.64";
+            if (tint == null) return null;
+            return <g key={`fill-${r.key}`}>{filledShapeEl(r.shape, tint, tintOpacity)}</g>;
           })}
 
           {MAP_REGIONS.map((r) => {
