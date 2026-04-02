@@ -137,11 +137,11 @@ export function HomeScreen() {
       <SectionTitle subtitle="Store status" title="営業状況" />
       <Card>
         <div className="weather-bar weather-bar-merged">
-          <span>{weatherText}</span>
+          <span className="weather-bar-primary">{weatherText}</span>
           {snapshot.home.storeStatus.weather_comment ? (
-            <span>{snapshot.home.storeStatus.weather_comment}</span>
+            <span className="weather-bar-secondary">{snapshot.home.storeStatus.weather_comment}</span>
           ) : (
-            <span className="status-summary">
+            <span className="weather-bar-secondary status-summary">
               {statusBadge ? <span className={statusBadge.className}>{statusBadge.label}</span> : null}
               {showStoreLastUpdated ? (
                 <span className="status-updated-text">最終更新時間 {formatHm(snapshot.home.storeStatus.updated_at)}</span>

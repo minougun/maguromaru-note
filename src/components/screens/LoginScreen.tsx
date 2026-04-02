@@ -111,29 +111,8 @@ export function LoginScreen({
     return (
       <div className="login-launch">
         <div className="login-launch-body">
-          <div
-            className={`login-reveal ${revealed ? "login-reveal--visible" : ""}`}
-            style={{
-              width: "100%",
-              marginBottom: "clamp(40px, 8vh, 72px)",
-              textAlign: "center",
-            }}
-          >
-            <h1
-              style={{
-                margin: 0,
-                fontFamily:
-                  '"Yu Mincho", "Hiragino Mincho ProN", "BIZ UDPMincho", "MS PMincho", serif',
-                fontSize: "clamp(2.15rem, 7.8vw, 2.95rem)",
-                fontWeight: 700,
-                letterSpacing: "0.08em",
-                color: "#f5f5f5",
-                lineHeight: 1.22,
-                textShadow: "0 1px 0 rgba(255, 255, 255, 0.08)",
-              }}
-            >
-              まぐろ丸ノート
-            </h1>
+          <div className={`login-launch-title-wrap login-reveal ${revealed ? "login-reveal--visible" : ""}`}>
+            <h1 className="header-title login-launch-title">まぐろ丸ノート</h1>
           </div>
           <div className="login-launch-icon-stage">
             <div className="login-launch-mark-frame">
