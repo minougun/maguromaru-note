@@ -122,11 +122,14 @@ export function LoginScreen({
             <h1
               style={{
                 margin: 0,
-                fontSize: "clamp(2rem, 7.4vw, 2.7rem)",
-                fontWeight: 900,
-                letterSpacing: "0.12em",
+                fontFamily:
+                  '"Yu Mincho", "Hiragino Mincho ProN", "BIZ UDPMincho", "MS PMincho", serif',
+                fontSize: "clamp(2.15rem, 7.8vw, 2.95rem)",
+                fontWeight: 700,
+                letterSpacing: "0.08em",
                 color: "#f5f5f5",
-                lineHeight: 1.25,
+                lineHeight: 1.22,
+                textShadow: "0 1px 0 rgba(255, 255, 255, 0.08)",
               }}
             >
               まぐろ丸ノート
