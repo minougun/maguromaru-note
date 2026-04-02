@@ -165,12 +165,12 @@ export function HomeScreen() {
         </>
       ) : null}
 
-      <NorenBanner label="本日の入荷状況" />
       <Card aria-label="まぐろ丸Botの日替わり豆知識" className="ai-store-blurb-card">
         <p className="ai-store-blurb-label">まぐろ丸Bot 今日の豆知識</p>
         <p className="ai-store-blurb-body">{dailyTrivia.trivia}</p>
         <p className="ai-store-blurb-meta">日替わり豆知識 · {dailyTrivia.date}</p>
       </Card>
+      <NorenBanner label="本日の入荷状況" />
       <Card className="stock-card">
         <div className="stock-card-head">
           <div className="stock-store-mark" aria-hidden="true">
