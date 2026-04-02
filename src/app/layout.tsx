@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import "@/app/globals.css";
+import "@/app/light-only.css";
 import { AppShellRouter } from "@/components/layout/AppShellRouter";
 import { AppSnapshotProvider } from "@/components/providers/AppSnapshotProvider";
 import { AuthProvider } from "@/components/providers/AuthProvider";
@@ -22,8 +23,8 @@ const mgnRevision =
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ja" suppressHydrationWarning>
-      <body data-mgn-revision={mgnRevision} suppressHydrationWarning>
+    <html lang="ja" suppressHydrationWarning data-theme="light" style={{ colorScheme: "light" }}>
+      <body data-mgn-revision={mgnRevision} data-theme="light" suppressHydrationWarning>
         <AuthProvider>
           <AppSnapshotProvider>
             <AppShellRouter>{children}</AppShellRouter>

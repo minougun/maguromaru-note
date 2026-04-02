@@ -1,5 +1,5 @@
-/** チュートリアル内容を差し替えたらキーを上げて再表示できる（v7: ドット移動・キーボード操作・起動導線の再調整） */
-const ONBOARDING_DONE_KEY = "maguro_note_onboarding_v7_done";
+/** チュートリアル内容を差し替えたらキーを上げて再表示できる（v8: チュートリアル再表示・ライトモード固定・起動導線の再調整） */
+const ONBOARDING_DONE_KEY = "maguro_note_onboarding_v8_done";
 
 export function readOnboardingDone(): boolean {
   if (typeof window === "undefined") {
