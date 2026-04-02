@@ -54,7 +54,8 @@ export function ZukanScreen() {
     );
   }
 
-  const collectedParts = snapshot.parts.filter((part) => snapshot.zukan.collectedPartIds.includes(part.id));
+  const collectedPartIds = new Set(snapshot.zukan.collectedPartIds);
+  const collectedParts = snapshot.parts.filter((part) => collectedPartIds.has(part.id));
   const progress = Math.round((snapshot.zukan.collectedCount / Math.max(snapshot.zukan.totalCount, 1)) * 100);
 
   return (
@@ -87,7 +88,7 @@ export function ZukanScreen() {
       <SectionTitle subtitle="All parts" title="部位一覧" />
       <div className="parts-grid">
         {snapshot.parts.map((part) => {
-          const collected = snapshot.zukan.collectedPartIds.includes(part.id);
+          const collected = collectedPartIds.has(part.id);
           return (
             <article className={`part-list-card ${collected ? "collected" : "missing"}`} key={part.id}>
               <div className="part-name">{collected ? part.name : `？ ${part.name}`}</div>
