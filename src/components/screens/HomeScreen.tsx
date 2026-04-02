@@ -13,7 +13,8 @@ import { menuStockLabels, type MenuStockStatus } from "@/lib/domain/constants";
 import type { VisitRecord } from "@/lib/domain/types";
 import { useAppSnapshot } from "@/lib/hooks/use-app-snapshot";
 import { buildPastLogShare, type SharePayload } from "@/lib/share/share";
-import { fetchOsakaHonmachiWeatherSafe } from "@/lib/weather";
+import { fetchDailyTriviaSafe } from "@/lib/maguro-bot";
+import { fetchUiWeatherSnapshotSafe } from "@/lib/weather";
 
 function storeStatusMeta(status: "open" | "busy" | "closing_soon" | "closed") {
   switch (status) {
@@ -44,6 +45,7 @@ export function HomeScreen() {
   const { snapshot, loading, error, refresh } = useAppSnapshot();
   const [sharePayload, setSharePayload] = useState<SharePayload | null>(null);
   const [weatherText, setWeatherText] = useState("天気を取得中...");
+  const [dailyTrivia, setDailyTrivia] = useState<{ trivia: string; date: string } | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -56,17 +58,23 @@ export function HomeScreen() {
   useEffect(() => {
     let cancelled = false;
 
-    async function loadWeather() {
-      const weather = await fetchOsakaHonmachiWeatherSafe();
+    async function loadHomeSideData() {
+      const [weather, trivia] = await Promise.all([
+        fetchUiWeatherSnapshotSafe(),
+        fetchDailyTriviaSafe(),
+      ]);
+
       if (cancelled) {
         return;
       }
+
       setWeatherText(`${weather.icon} ${Math.round(weather.temperature)}℃ ${weather.label}`);
+      setDailyTrivia(trivia);
     }
 
     /** スナップショット取得と帯域を奪い合わないよう、描画後のアイドル時に開始 */
     const start = () => {
-      if (!cancelled) void loadWeather();
+      if (!cancelled) void loadHomeSideData();
     };
 
     let idleCallbackId: number | undefined;
@@ -159,33 +167,21 @@ export function HomeScreen() {
 
       <NorenBanner label="本日の入荷状況" />
       <Card
-        aria-label={
-          snapshot.home.aiStoreBlurb
-            ? "まぐろ丸Botのコメント"
-            : "まぐろ丸Bot。更新があるとここにコメントが表示されます。"
-        }
-        className={
-          snapshot.home.aiStoreBlurb
-            ? "ai-store-blurb-card"
-            : "ai-store-blurb-card ai-store-blurb-card--placeholder"
-        }
+        aria-label={dailyTrivia ? "まぐろ丸Botの日替わり豆知識" : "まぐろ丸Bot。豆知識を準備しています。"}
+        className={dailyTrivia ? "ai-store-blurb-card" : "ai-store-blurb-card ai-store-blurb-card--placeholder"}
       >
-        <p className="ai-store-blurb-label">まぐろ丸Bot（自動生成・AI）</p>
-        {snapshot.home.aiStoreBlurb ? (
+        <p className="ai-store-blurb-label">まぐろ丸Bot 今日の豆知識</p>
+        {dailyTrivia ? (
           <>
-            <p className="ai-store-blurb-body">{snapshot.home.aiStoreBlurb.body}</p>
-            <p className="ai-store-blurb-meta">
-              {snapshot.home.aiStoreBlurb.kind === "closing_summary" ? "本日のまとめ" : "入荷の様子"}
-              {" · "}
-              {formatHm(snapshot.home.aiStoreBlurb.createdAt)}
-            </p>
+            <p className="ai-store-blurb-body">{dailyTrivia.trivia}</p>
+            <p className="ai-store-blurb-meta">日替わり豆知識 · {dailyTrivia.date}</p>
           </>
         ) : (
           <>
             <p className="ai-store-blurb-placeholder-lead">
-              入荷や営業の更新があると、Bot がここに短いコメントを表示します。
+              まぐろにまつわる豆知識を読み込んでいます。
             </p>
-            <p className="ai-store-blurb-placeholder-sub">次の更新をお楽しみに。まだ表示はありません。</p>
+            <p className="ai-store-blurb-placeholder-sub">今日の小ネタをまもなく表示します。</p>
           </>
         )}
       </Card>

@@ -62,7 +62,6 @@ import { createMockPhotoUrl, createMockViewerContext, mockMasterData, readMockSt
 import { QUIZ_SESSION_SIZE, createQuizSession, getStageNumberFromQuestionId, scoreQuizAnswers, toPublicQuizSession } from "@/lib/quiz";
 import { createEmptyQuizStageProgress, isQuizStageUnlocked } from "@/lib/quiz-stages";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { fetchStoreAiBlurbForHome } from "@/lib/services/store-ai-blurb";
 import { getCurrentTitle } from "@/lib/titles";
 
 export class AppServiceError extends Error {
@@ -1112,11 +1111,6 @@ export async function getAppSnapshot(
     }
   }
 
-  let aiStoreBlurb: HomeAiStoreBlurb | null = null;
-  if (plan.store) {
-    aiStoreBlurb = await fetchStoreAiBlurbForHome(client, new Date());
-  }
-
   return buildSnapshotFromRecords(
     viewer,
     parts,
@@ -1130,7 +1124,7 @@ export async function getAppSnapshot(
     visitLogs,
     visitLogParts,
     buildCtx,
-    aiStoreBlurb,
+    null,
   );
 }
 

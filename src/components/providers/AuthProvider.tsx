@@ -34,6 +34,18 @@ const AuthContext = createContext<AuthContextValue>({
   clearLocalSession: () => {},
 });
 
+function hasUsableSession(session: { access_token?: string | null; expires_at?: number | null } | null) {
+  if (!session?.access_token) {
+    return false;
+  }
+
+  if (typeof session.expires_at === "number" && session.expires_at * 1000 <= Date.now()) {
+    return false;
+  }
+
+  return true;
+}
+
 async function resolveInitialSupabaseSession(
   client: NonNullable<ReturnType<typeof getSupabaseBrowserClient>>,
 ): Promise<{ accessToken: string | null; signedIn: boolean }> {
@@ -41,20 +53,16 @@ async function resolveInitialSupabaseSession(
     data: { session },
   } = await client.auth.getSession();
 
-  if (!session?.access_token) {
+  if (!hasUsableSession(session)) {
     return { accessToken: null, signedIn: false };
   }
 
-  const {
-    data: { user },
-    error,
-  } = await client.auth.getUser();
-
-  if (error || !user) {
+  const accessToken = session?.access_token ?? null;
+  if (!accessToken) {
     return { accessToken: null, signedIn: false };
   }
 
-  return { accessToken: session.access_token, signedIn: true };
+  return { accessToken, signedIn: true };
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -159,7 +167,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        if (!session?.access_token) {
+        if (!hasUsableSession(session)) {
+          setState((current) => ({
+            ...current,
+            ready: true,
+            usingSupabase: true,
+            signedIn: false,
+            error: null,
+            accessToken: null,
+          }));
+          return;
+        }
+
+        const accessToken = session?.access_token ?? null;
+        if (!accessToken) {
           setState((current) => ({
             ...current,
             ready: true,
@@ -176,7 +197,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           ready: true,
           usingSupabase: true,
           signedIn: true,
-          accessToken: session.access_token,
+          accessToken,
           error: null,
         }));
       }) ?? { data: { subscription: { unsubscribe() {} } } };

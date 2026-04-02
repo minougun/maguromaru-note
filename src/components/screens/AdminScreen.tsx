@@ -11,7 +11,7 @@ import type { StoreStatus } from "@/lib/domain/types";
 import { useAppSnapshot } from "@/lib/hooks/use-app-snapshot";
 import { FetchJsonError, fetchJsonWithAuth } from "@/lib/http/fetch-json";
 import { withAppBasePath } from "@/lib/public-path";
-import { fetchOsakaHonmachiWeatherSafe } from "@/lib/weather";
+import { fetchUiWeatherSnapshotSafe } from "@/lib/weather";
 
 type AdminMenuStocks = {
   maguro_don: MenuStockStatus;
@@ -48,7 +48,7 @@ export function AdminScreen() {
     let cancelled = false;
 
     async function loadWeather() {
-      const weather = await fetchOsakaHonmachiWeatherSafe();
+      const weather = await fetchUiWeatherSnapshotSafe();
       if (!cancelled) {
         setWeatherPreview(`${weather.icon} ${Math.round(weather.temperature)}℃ ${weather.label}`);
       }
