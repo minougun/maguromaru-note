@@ -23,6 +23,9 @@ function todayString() {
   return new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
 }
 
+const RECORD_VISIT_REFRESH_SCOPES = ["record", "home", "history", "zukan", "mypage", "quiz"] as const;
+const RECORD_SHARE_REFRESH_SCOPES = ["history", "mypage", "quiz"] as const;
+
 export function RecordScreen() {
   const auth = useAuthState();
   const { snapshot, loading, error, refresh } = useAppSnapshot();
@@ -122,7 +125,7 @@ export function RecordScreen() {
     setPreviewUrl(null);
     setPhotoDataUrl(null);
     setSubmitting(false);
-    await refresh();
+    await refresh(RECORD_VISIT_REFRESH_SCOPES);
     if (payload?.record) {
       setSharePayload(buildRecordShare(payload.record));
     }
@@ -158,7 +161,7 @@ export function RecordScreen() {
       return;
     }
 
-    await refresh();
+    await refresh(RECORD_SHARE_REFRESH_SCOPES);
     window.alert(`来店回数ボーナス +${formatCount(result?.bonusVisitCount ?? 0)}回 を反映しました。`);
   }
 

@@ -22,6 +22,12 @@ type SnapshotCacheEntry = {
   fetchedAt: number;
 };
 
+export type SnapshotRefreshTarget = "all" | "current" | SnapshotScope | readonly SnapshotScope[];
+
+type SnapshotRefreshEventDetail = {
+  target?: SnapshotRefreshTarget;
+};
+
 function readSnapshotStaleMs(): number {
   const raw = process.env.NEXT_PUBLIC_APP_SNAPSHOT_STALE_MS?.trim();
   if (!raw) {
@@ -35,7 +41,6 @@ function readSnapshotStaleMs(): number {
 }
 
 const SNAPSHOT_STALE_MS = readSnapshotStaleMs();
-
 const SNAPSHOT_FETCH_MAX_ATTEMPTS = 3;
 const SNAPSHOT_FETCH_RETRY_BASE_MS = 400;
 
@@ -50,9 +55,7 @@ async function fetchWithNetworkRetry(url: string, init: RequestInit): Promise<Re
       }
       lastError = err;
       if (attempt < SNAPSHOT_FETCH_MAX_ATTEMPTS - 1) {
-        await new Promise((r) =>
-          setTimeout(r, SNAPSHOT_FETCH_RETRY_BASE_MS * (attempt + 1)),
-        );
+        await new Promise((r) => setTimeout(r, SNAPSHOT_FETCH_RETRY_BASE_MS * (attempt + 1)));
       }
     }
   }
@@ -69,11 +72,47 @@ function isFreshEntry(entry: SnapshotCacheEntry): boolean {
   return Date.now() - entry.fetchedAt < SNAPSHOT_STALE_MS;
 }
 
+function normalizedRefreshTarget(
+  target: SnapshotRefreshTarget | undefined,
+  currentScope: SnapshotScope,
+): "all" | SnapshotScope[] {
+  if (!target || target === "current") {
+    return [currentScope];
+  }
+  if (target === "all") {
+    return "all";
+  }
+  if (Array.isArray(target)) {
+    return [...new Set(target)] as SnapshotScope[];
+  }
+  return [target as SnapshotScope];
+}
+
+function invalidateSnapshotCache(
+  cache: Map<SnapshotScope, SnapshotCacheEntry>,
+  target: SnapshotRefreshTarget | undefined,
+  currentScope: SnapshotScope,
+) {
+  const normalized = normalizedRefreshTarget(target, currentScope);
+  if (normalized === "all") {
+    cache.clear();
+    return;
+  }
+
+  for (const scope of normalized) {
+    cache.delete(scope);
+  }
+}
+
 export const APP_SNAPSHOT_REFRESH_EVENT = "maguro-app-snapshot-refresh";
 
-export function requestAppSnapshotRefresh() {
+export function requestAppSnapshotRefresh(target: SnapshotRefreshTarget = "all") {
   if (typeof window !== "undefined") {
-    window.dispatchEvent(new CustomEvent(APP_SNAPSHOT_REFRESH_EVENT));
+    window.dispatchEvent(
+      new CustomEvent<SnapshotRefreshEventDetail>(APP_SNAPSHOT_REFRESH_EVENT, {
+        detail: { target },
+      }),
+    );
   }
 }
 
@@ -81,7 +120,7 @@ type AppSnapshotContextValue = {
   snapshot: AppSnapshot | null;
   loading: boolean;
   error: string | null;
-  refresh: () => void;
+  refresh: (target?: SnapshotRefreshTarget) => void;
 };
 
 const AppSnapshotContext = createContext<AppSnapshotContextValue | null>(null);
@@ -98,19 +137,23 @@ export function AppSnapshotProvider({ children }: { children: React.ReactNode })
   const [error, setError] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState(0);
 
-  const refresh = useCallback(() => {
-    snapshotCacheRef.current.clear();
-    setRefreshToken((current) => current + 1);
-  }, []);
+  const refresh = useCallback(
+    (target: SnapshotRefreshTarget = "current") => {
+      invalidateSnapshotCache(snapshotCacheRef.current, target, currentScope);
+      setRefreshToken((current) => current + 1);
+    },
+    [currentScope],
+  );
 
   useEffect(() => {
-    const handler = () => {
-      snapshotCacheRef.current.clear();
+    const handler = (event: Event) => {
+      const customEvent = event as CustomEvent<SnapshotRefreshEventDetail>;
+      invalidateSnapshotCache(snapshotCacheRef.current, customEvent.detail?.target, currentScope);
       setRefreshToken((current) => current + 1);
     };
     window.addEventListener(APP_SNAPSHOT_REFRESH_EVENT, handler);
     return () => window.removeEventListener(APP_SNAPSHOT_REFRESH_EVENT, handler);
-  }, []);
+  }, [currentScope]);
 
   useEffect(() => {
     if (!auth.ready) {
@@ -252,11 +295,7 @@ export function AppSnapshotProvider({ children }: { children: React.ReactNode })
   }, [auth.accessToken, auth.error, auth.ready, auth.signedIn, auth.usingSupabase, currentScope, refreshToken]);
 
   const waitingForUserSession =
-    auth.ready &&
-    auth.usingSupabase &&
-    auth.signedIn &&
-    !auth.accessToken &&
-    !auth.error;
+    auth.ready && auth.usingSupabase && auth.signedIn && !auth.accessToken && !auth.error;
 
   const value = useMemo<AppSnapshotContextValue>(
     () => ({

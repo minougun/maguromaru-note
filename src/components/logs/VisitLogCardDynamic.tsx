@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { memo } from "react";
 
 import type { VisitLogCardProps } from "@/components/logs/VisitLogCard";
 
@@ -15,6 +16,6 @@ const VisitLogCardLazy = dynamic(
   },
 );
 
-export function VisitLogCardDynamic(props: VisitLogCardProps) {
+export const VisitLogCardDynamic = memo(function VisitLogCardDynamic(props: VisitLogCardProps) {
   return <VisitLogCardLazy {...props} />;
-}
+});

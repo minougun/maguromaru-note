@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { useAuthState } from "@/components/providers/AuthProvider";
 import { ShareBonusCallout } from "@/components/share/ShareBonusCallout";
@@ -44,6 +44,8 @@ const QuizResultPanel = dynamic(
     ),
   },
 );
+
+const QUIZ_RESULT_REFRESH_SCOPES = ["quiz", "history", "mypage"] as const;
 
 export function QuizScreen() {
   const auth = useAuthState();
@@ -169,7 +171,7 @@ export function QuizScreen() {
 
       setResult(payload);
       setSubmittingResult(false);
-      await refresh();
+      await refresh(QUIZ_RESULT_REFRESH_SCOPES);
     }
 
     void submit(session);
@@ -177,6 +179,12 @@ export function QuizScreen() {
       cancelled = true;
     };
   }, [answers, auth.accessToken, auth.usingSupabase, currentIndex, refresh, result, session, sessionError]);
+
+  const restart = useCallback(function restart(nextStageNumber = stageNumber) {
+    setResult(null);
+    setStageNumber(nextStageNumber);
+    setSessionVersion((value) => value + 1);
+  }, [stageNumber]);
 
   if (loading) {
     return <ScreenState description="クイズデータを読み込んでいます。" title="読み込み中" />;
@@ -194,12 +202,6 @@ export function QuizScreen() {
         title="表示に失敗しました"
       />
     );
-  }
-
-  function restart(nextStageNumber = stageNumber) {
-    setResult(null);
-    setStageNumber(nextStageNumber);
-    setSessionVersion((value) => value + 1);
   }
 
   function toggleAnswer(index: number) {
@@ -299,7 +301,7 @@ export function QuizScreen() {
       return;
     }
 
-    await refresh();
+    await refresh(QUIZ_RESULT_REFRESH_SCOPES);
     window.alert(`正解数ボーナス +${formatCount(resultPayload?.bonusCorrectAnswers ?? 0)}問 を反映しました。`);
   }
 
@@ -331,7 +333,7 @@ export function QuizScreen() {
         </Card>
       ) : finished && session ? (
         <QuizResultPanel
-          onRestart={() => restart()}
+          onRestart={restart}
           onShare={() => {
             setSharePayload(
               buildQuizResultShare({

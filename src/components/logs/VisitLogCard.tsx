@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { memo } from "react";
 
 import { mapDisplayColorForPart } from "@/lib/domain/part-brand-colors";
 import type { VisitRecord } from "@/lib/domain/types";
@@ -13,7 +14,9 @@ export type VisitLogCardProps = {
   deleting?: boolean;
 };
 
-export function VisitLogCard({
+const priceFormatter = new Intl.NumberFormat("ja-JP");
+
+export const VisitLogCard = memo(function VisitLogCard({
   log,
   onDelete,
   onShare,
@@ -26,7 +29,7 @@ export function VisitLogCard({
           <div className="log-date">{formatDisplayDate(log.visitedAt)}</div>
           <div className="menu-name">{log.menuItem.name}</div>
         </div>
-        <div className="pill pill-muted">{new Intl.NumberFormat("ja-JP").format(log.menuItem.price)}円</div>
+        <div className="pill pill-muted">{priceFormatter.format(log.menuItem.price)}円</div>
       </div>
       {log.photoUrl ? (
         <Image
@@ -65,4 +68,4 @@ export function VisitLogCard({
       </div>
     </article>
   );
-}
+});

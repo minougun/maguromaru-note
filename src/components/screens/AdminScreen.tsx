@@ -31,6 +31,8 @@ function normalizeMenuStocks(menuStocks: Record<string, MenuStockStatus>): Admin
   };
 }
 
+const ADMIN_REFRESH_SCOPES = ["admin", "home"] as const;
+
 export function AdminScreen() {
   const auth = useAuthState();
   const { snapshot, loading, error, refresh } = useAppSnapshot();
@@ -114,7 +116,7 @@ export function AdminScreen() {
     setSaving(false);
 
     setDraft(null);
-    await refresh();
+    await refresh(ADMIN_REFRESH_SCOPES);
     window.alert("更新しました。");
   }
 

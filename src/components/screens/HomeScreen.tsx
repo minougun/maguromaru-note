@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { VisitLogCardDynamic } from "@/components/logs/VisitLogCardDynamic";
 import { ShareModalDynamic } from "@/components/share/ShareModalDynamic";
@@ -13,8 +13,15 @@ import { menuStockLabels, type MenuStockStatus } from "@/lib/domain/constants";
 import type { VisitRecord } from "@/lib/domain/types";
 import { useAppSnapshot } from "@/lib/hooks/use-app-snapshot";
 import { buildPastLogShare, type SharePayload } from "@/lib/share/share";
-import { fetchDailyTriviaSafe, readFallbackDailyTrivia } from "@/lib/maguro-bot";
-import { fetchUiWeatherSnapshotSafe } from "@/lib/weather";
+import { fetchHomeSideDataSafe, readFallbackHomeSideData } from "@/lib/home-side-data";
+
+const homeTimeFormatter = new Intl.DateTimeFormat("ja-JP", {
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+  timeZone: "Asia/Tokyo",
+});
+const yenFormatter = new Intl.NumberFormat("ja-JP");
 
 function storeStatusMeta(status: "open" | "busy" | "closing_soon" | "closed") {
   switch (status) {
@@ -44,8 +51,7 @@ function menuItemStock(
 export function HomeScreen() {
   const { snapshot, loading, error, refresh } = useAppSnapshot();
   const [sharePayload, setSharePayload] = useState<SharePayload | null>(null);
-  const [weatherText, setWeatherText] = useState("天気を取得中...");
-  const [dailyTrivia, setDailyTrivia] = useState(() => readFallbackDailyTrivia());
+  const [sideData, setSideData] = useState(() => readFallbackHomeSideData());
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -59,42 +65,20 @@ export function HomeScreen() {
     let cancelled = false;
 
     async function loadHomeSideData() {
-      const [weather, trivia] = await Promise.all([
-        fetchUiWeatherSnapshotSafe(),
-        fetchDailyTriviaSafe(),
-      ]);
-
-      if (cancelled) {
-        return;
+      const nextData = await fetchHomeSideDataSafe();
+      if (!cancelled) {
+        setSideData(nextData);
       }
-
-      setWeatherText(`${weather.icon} ${Math.round(weather.temperature)}℃ ${weather.label}`);
-      setDailyTrivia(trivia);
     }
 
-    /** スナップショット取得と帯域を奪い合わないよう、描画後のアイドル時に開始 */
-    const start = () => {
-      if (!cancelled) void loadHomeSideData();
-    };
-
-    let idleCallbackId: number | undefined;
-    let timeoutId: ReturnType<typeof setTimeout> | undefined;
-
-    if (typeof requestIdleCallback !== "undefined") {
-      idleCallbackId = requestIdleCallback(start, { timeout: 2500 });
-    } else {
-      timeoutId = setTimeout(start, 1);
-    }
-
+    void loadHomeSideData();
     return () => {
       cancelled = true;
-      if (idleCallbackId !== undefined && typeof cancelIdleCallback !== "undefined") {
-        cancelIdleCallback(idleCallbackId);
-      }
-      if (timeoutId !== undefined) {
-        clearTimeout(timeoutId);
-      }
     };
+  }, []);
+
+  const openShare = useCallback((log: VisitRecord) => {
+    setSharePayload(buildPastLogShare(log));
   }, []);
 
   if (loading) {
@@ -117,20 +101,9 @@ export function HomeScreen() {
 
   const storeStatus = snapshot.home.storeStatus.status;
   const statusBadge = storeStatus === "unset" ? null : storeStatusMeta(storeStatus);
-  const timeFormatter = new Intl.DateTimeFormat("ja-JP", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-    timeZone: "Asia/Tokyo",
-  });
-  const formatHm = (iso: string) => timeFormatter.format(new Date(iso));
-  const showStoreLastUpdated =
-    snapshot.home.showStaffUpdateTimestamps && storeStatus !== "unset";
-  const yen = new Intl.NumberFormat("ja-JP");
-
-  function openShare(log: VisitRecord) {
-    setSharePayload(buildPastLogShare(log));
-  }
+  const formatHm = (iso: string) => homeTimeFormatter.format(new Date(iso));
+  const showStoreLastUpdated = snapshot.home.showStaffUpdateTimestamps && storeStatus !== "unset";
+  const weatherText = `${sideData.weather.icon} ${Math.round(sideData.weather.temperature)}℃ ${sideData.weather.label}`;
 
   return (
     <>
@@ -167,8 +140,8 @@ export function HomeScreen() {
 
       <Card aria-label="まぐろ丸Botの日替わり豆知識" className="ai-store-blurb-card">
         <p className="ai-store-blurb-label">まぐろ丸Bot 今日の豆知識</p>
-        <p className="ai-store-blurb-body">{dailyTrivia.trivia}</p>
-        <p className="ai-store-blurb-meta">日替わり豆知識 · {dailyTrivia.date}</p>
+        <p className="ai-store-blurb-body">{sideData.trivia.trivia}</p>
+        <p className="ai-store-blurb-meta">日替わり豆知識 · {sideData.trivia.date}</p>
       </Card>
       <NorenBanner label="本日の入荷状況" />
       <Card className="stock-card">
@@ -189,7 +162,7 @@ export function HomeScreen() {
             <div className={`stock-item ${isSoldout ? "soldout-row" : ""}`} key={item.id}>
               <div>
                 <div className="stock-item-name">{item.name}</div>
-                <div className="stock-item-price">¥{yen.format(item.price)}</div>
+                <div className="stock-item-price">¥{yenFormatter.format(item.price)}</div>
               </div>
               <span className={stockMeta.className}>{stockMeta.text}</span>
             </div>

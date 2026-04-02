@@ -99,7 +99,7 @@ export function MyPageScreen() {
     clearStoredAnonymousLinkNonce();
     clearAuthCallbackQueryParams();
     void loadProfile();
-    requestAppSnapshotRefresh();
+    requestAppSnapshotRefresh("all");
   }, [loadProfile]);
 
   useEffect(() => {

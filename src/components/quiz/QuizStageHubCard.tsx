@@ -1,5 +1,7 @@
 "use client";
 
+import { memo } from "react";
+
 import { Card } from "@/components/ui/Card";
 import { quizStageCount } from "@/lib/domain/constants";
 import type { AppSnapshot } from "@/lib/domain/types";
@@ -15,7 +17,7 @@ export type QuizStageHubCardProps = {
   onRestartStage: (nextStageNumber?: number) => void;
 };
 
-export function QuizStageHubCard({
+export const QuizStageHubCard = memo(function QuizStageHubCard({
   snapshot,
   stageNumber,
   onStageNumberChange,
@@ -87,4 +89,4 @@ export function QuizStageHubCard({
       </div>
     </Card>
   );
-}
+});
