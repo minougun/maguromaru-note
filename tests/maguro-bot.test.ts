@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { fetchDailyTriviaSafe } from "@/lib/maguro-bot";
+import { dailyTriviaCount, pickDailyTrivia, readDailyTriviaRecord } from "@/lib/daily-trivia";
 
 test("fetchDailyTriviaSafe falls back safely when API payload is invalid", async () => {
   const originalFetch = globalThis.fetch;
@@ -18,4 +19,23 @@ test("fetchDailyTriviaSafe falls back safely when API payload is invalid", async
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+
+test("daily trivia stock is large enough and stable per date", () => {
+  assert.ok(dailyTriviaCount() >= 50);
+
+  const april3 = pickDailyTrivia("2026-04-03");
+  const april3Again = pickDailyTrivia("2026-04-03");
+  const april4 = pickDailyTrivia("2026-04-04");
+
+  assert.equal(april3Again, april3);
+  assert.notEqual(april4, "");
+  assert.match(april3, /マグロ|まぐろ|本マグロ|中トロ|大トロ/);
+});
+
+test("readDailyTriviaRecord returns a dated daily random trivia", () => {
+  const record = readDailyTriviaRecord("2026-04-03");
+  assert.equal(record.date, "2026-04-03");
+  assert.match(record.trivia, /マグロ|まぐろ|本マグロ|中トロ|大トロ/);
 });
