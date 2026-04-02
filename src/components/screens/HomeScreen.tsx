@@ -13,7 +13,7 @@ import { menuStockLabels, type MenuStockStatus } from "@/lib/domain/constants";
 import type { VisitRecord } from "@/lib/domain/types";
 import { useAppSnapshot } from "@/lib/hooks/use-app-snapshot";
 import { buildPastLogShare, type SharePayload } from "@/lib/share/share";
-import { fetchDailyTriviaSafe } from "@/lib/maguro-bot";
+import { fetchDailyTriviaSafe, readFallbackDailyTrivia } from "@/lib/maguro-bot";
 import { fetchUiWeatherSnapshotSafe } from "@/lib/weather";
 
 function storeStatusMeta(status: "open" | "busy" | "closing_soon" | "closed") {
@@ -45,7 +45,7 @@ export function HomeScreen() {
   const { snapshot, loading, error, refresh } = useAppSnapshot();
   const [sharePayload, setSharePayload] = useState<SharePayload | null>(null);
   const [weatherText, setWeatherText] = useState("天気を取得中...");
-  const [dailyTrivia, setDailyTrivia] = useState<{ trivia: string; date: string } | null>(null);
+  const [dailyTrivia, setDailyTrivia] = useState(() => readFallbackDailyTrivia());
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -166,24 +166,10 @@ export function HomeScreen() {
       ) : null}
 
       <NorenBanner label="本日の入荷状況" />
-      <Card
-        aria-label={dailyTrivia ? "まぐろ丸Botの日替わり豆知識" : "まぐろ丸Bot。豆知識を準備しています。"}
-        className={dailyTrivia ? "ai-store-blurb-card" : "ai-store-blurb-card ai-store-blurb-card--placeholder"}
-      >
+      <Card aria-label="まぐろ丸Botの日替わり豆知識" className="ai-store-blurb-card">
         <p className="ai-store-blurb-label">まぐろ丸Bot 今日の豆知識</p>
-        {dailyTrivia ? (
-          <>
-            <p className="ai-store-blurb-body">{dailyTrivia.trivia}</p>
-            <p className="ai-store-blurb-meta">日替わり豆知識 · {dailyTrivia.date}</p>
-          </>
-        ) : (
-          <>
-            <p className="ai-store-blurb-placeholder-lead">
-              まぐろにまつわる豆知識を読み込んでいます。
-            </p>
-            <p className="ai-store-blurb-placeholder-sub">今日の小ネタをまもなく表示します。</p>
-          </>
-        )}
+        <p className="ai-store-blurb-body">{dailyTrivia.trivia}</p>
+        <p className="ai-store-blurb-meta">日替わり豆知識 · {dailyTrivia.date}</p>
       </Card>
       <Card className="stock-card">
         <div className="stock-card-head">

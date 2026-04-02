@@ -45,6 +45,10 @@ function getFallbackDailyTrivia(): DailyTriviaSnapshot {
   };
 }
 
+export function readFallbackDailyTrivia(): DailyTriviaSnapshot {
+  return getFallbackDailyTrivia();
+}
+
 function parseDailyTriviaResponse(payload: unknown): DailyTriviaSnapshot {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     throw new Error("豆知識 API の形式が不正です。");
