@@ -134,43 +134,6 @@ export function HomeScreen() {
         </>
       ) : null}
 
-      <SectionTitle subtitle="Member perks" title="常連メリット" />
-      <Card className="loyalty-card" glow>
-        <div className="loyalty-card-head">
-          <div>
-            <p className="loyalty-card-label">今のあなた</p>
-            <p className="loyalty-card-title">{titleSummary}</p>
-          </div>
-          <div className="loyalty-card-chip">来店 {formatCount(myPageSummary.visitCount)}回</div>
-        </div>
-        <p className="loyalty-card-copy">
-          記録はメニューを選ぶだけでもOK。SNSにシェアすると、その記録の来店回数が <strong>1.2倍</strong> で集計されます。
-        </p>
-        <div className="loyalty-card-progress">
-          {nextTitleProgress ? (
-            <>
-              <p className="loyalty-card-progress-label">
-                次の称号: {nextTitleProgress.title.icon} {nextTitleProgress.title.name}
-              </p>
-              <p className="loyalty-card-progress-body">{progressBits.join(" / ")} で到達</p>
-            </>
-          ) : (
-            <>
-              <p className="loyalty-card-progress-label">称号コンプリート達成中</p>
-              <p className="loyalty-card-progress-body">あとは記録と図鑑を育てて、自分の好みを深掘りできます。</p>
-            </>
-          )}
-        </div>
-        <div className="loyalty-card-actions">
-          <Link className="button-primary loyalty-card-link" href="/record">
-            かんたん記録へ
-          </Link>
-          <Link className="button-outline loyalty-card-link" href="/titles">
-            称号を見る
-          </Link>
-        </div>
-      </Card>
-
       <Card aria-label="まぐろ丸Botの日替わり豆知識" className="ai-store-blurb-card">
         <p className="ai-store-blurb-label">まぐろ丸Bot 今日の豆知識</p>
         <p className="ai-store-blurb-body">{sideData.trivia.trivia}</p>
@@ -216,6 +179,43 @@ export function HomeScreen() {
           <p className="helper-text">まだ記録がありません。今日の丼を記録するとここに並びます。</p>
         </Card>
       )}
+
+      <SectionTitle subtitle="Member perks" title="常連メリット" />
+      <Card className="loyalty-card" glow>
+        <div className="loyalty-card-head">
+          <div>
+            <p className="loyalty-card-label">今のあなた</p>
+            <p className="loyalty-card-title">{titleSummary}</p>
+          </div>
+          <div className="loyalty-card-chip">来店 {formatCount(myPageSummary.visitCount)}回</div>
+        </div>
+        <p className="loyalty-card-copy">
+          記録はメニューを選ぶだけでもOK。SNSにシェアすると、その記録の来店回数が <strong>1.2倍</strong> で集計されます。
+        </p>
+        <div className="loyalty-card-progress">
+          {nextTitleProgress ? (
+            <>
+              <p className="loyalty-card-progress-label">
+                次の称号: {nextTitleProgress.title.icon} {nextTitleProgress.title.name}
+              </p>
+              <p className="loyalty-card-progress-body">{progressBits.join(" / ")} で到達</p>
+            </>
+          ) : (
+            <>
+              <p className="loyalty-card-progress-label">称号コンプリート達成中</p>
+              <p className="loyalty-card-progress-body">あとは記録と図鑑を育てて、自分の好みを深掘りできます。</p>
+            </>
+          )}
+        </div>
+        <div className="loyalty-card-actions">
+          <Link className="button-primary loyalty-card-link" href="/record">
+            かんたん記録へ
+          </Link>
+          <Link className="button-outline loyalty-card-link" href="/titles">
+            称号を見る
+          </Link>
+        </div>
+      </Card>
 
       <ShareModalDynamic onClose={() => setSharePayload(null)} open={Boolean(sharePayload)} payload={sharePayload} />
     </>
