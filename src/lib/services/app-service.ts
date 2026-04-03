@@ -202,6 +202,65 @@ function isMissingQuizSessionCorrectQuestionIdsColumnError(message: string | und
   return Boolean(message && message.includes("correct_question_ids"));
 }
 
+export function isMissingVisitLogPartSubjectiveColumnsError(message: string | undefined) {
+  return Boolean(
+    message &&
+      message.includes("visit_log_parts") &&
+      ["fat_level", "texture_level", "satisfaction", "want_again"].some((column) => message.includes(column)),
+  );
+}
+
+type LegacyVisitLogPartRow = Pick<Database["public"]["Tables"]["visit_log_parts"]["Row"], "id" | "visit_log_id" | "part_id"> &
+  Partial<
+    Pick<
+      Database["public"]["Tables"]["visit_log_parts"]["Row"],
+      "fat_level" | "texture_level" | "satisfaction" | "want_again"
+    >
+  >;
+
+export function normalizeVisitLogPartRows(rows: ReadonlyArray<LegacyVisitLogPartRow>) {
+  return rows.map((row) => ({
+    id: row.id,
+    visit_log_id: row.visit_log_id,
+    part_id: row.part_id,
+    fat_level: row.fat_level ?? null,
+    texture_level: row.texture_level ?? null,
+    satisfaction: row.satisfaction ?? null,
+    want_again: row.want_again ?? null,
+  })) satisfies Database["public"]["Tables"]["visit_log_parts"]["Row"][];
+}
+
+function stripVisitLogPartSubjectiveFields(
+  rows: ReadonlyArray<Database["public"]["Tables"]["visit_log_parts"]["Insert"]>,
+) {
+  return rows.map((row) => ({
+    id: row.id,
+    visit_log_id: row.visit_log_id,
+    part_id: row.part_id,
+  }));
+}
+
+async function selectVisitLogPartsWithLegacyFallback(
+  queryFactory: (
+    columns: string,
+  ) => Promise<{
+    data: LegacyVisitLogPartRow[] | null;
+    error: { message?: string } | null;
+  }>,
+  missingColumnsMessage: string,
+) {
+  let { data, error } = await queryFactory(VISIT_LOG_PART_COLUMNS);
+  if (error && isMissingVisitLogPartSubjectiveColumnsError(error.message)) {
+    ({ data, error } = await queryFactory("id, visit_log_id, part_id"));
+  }
+
+  if (error || !data) {
+    throw new AppServiceError(500, error?.message ?? missingColumnsMessage);
+  }
+
+  return normalizeVisitLogPartRows(data);
+}
+
 function shouldUseMockBackend() {
   if (hasSupabaseEnv()) {
     return false;
@@ -712,15 +771,20 @@ async function listAllVisitLogPartsForUser(
 
   for (let i = 0; i < ids.length; i += chunkSize) {
     const slice = ids.slice(i, i + chunkSize);
-    const { data, error } = await fromAny(client, "visit_log_parts")
-      .select(VISIT_LOG_PART_COLUMNS)
-      .in("visit_log_id", slice);
+    const rows = await selectVisitLogPartsWithLegacyFallback(
+      async (columns) => {
+        const result = await fromAny(client, "visit_log_parts")
+          .select(columns)
+          .in("visit_log_id", slice);
+        return {
+          data: (result.data as LegacyVisitLogPartRow[] | null) ?? null,
+          error: result.error ? { message: result.error.message } : null,
+        };
+      },
+      "部位記録の取得に失敗しました。",
+    );
 
-    if (error) {
-      throw new AppServiceError(500, error.message);
-    }
-
-    chunks.push(...((data as Database["public"]["Tables"]["visit_log_parts"]["Row"][] | null) ?? []));
+    chunks.push(...rows);
   }
 
   return chunks;
@@ -784,17 +848,22 @@ async function listVisitData(
     };
   }
 
-  const { data: visitLogParts, error: visitLogPartsError } = await fromAny(client, "visit_log_parts")
-    .select(VISIT_LOG_PART_COLUMNS)
-    .in("visit_log_id", visitLogIds);
-
-  if (visitLogPartsError || !visitLogParts) {
-    throw new AppServiceError(500, visitLogPartsError?.message ?? "部位記録の取得に失敗しました。");
-  }
+  const visitLogParts = await selectVisitLogPartsWithLegacyFallback(
+    async (columns) => {
+      const result = await fromAny(client, "visit_log_parts")
+        .select(columns)
+        .in("visit_log_id", visitLogIds);
+      return {
+        data: (result.data as LegacyVisitLogPartRow[] | null) ?? null,
+        error: result.error ? { message: result.error.message } : null,
+      };
+    },
+    "部位記録の取得に失敗しました。",
+  );
 
   return {
     visitLogs: typedVisitLogs,
-    visitLogParts: visitLogParts as Database["public"]["Tables"]["visit_log_parts"]["Row"][],
+    visitLogParts,
     totalCount: includeTotalCount ? (countResult.count ?? 0) : undefined,
   };
 }
@@ -1718,13 +1787,16 @@ export async function recordVisit(input: unknown, accessToken?: string) {
       };
     });
 
-    const { error: partsError } = await fromAny(client, "visit_log_parts").insert(partPayloads);
-    if (partsError) {
+    let partsInsertResult = await fromAny(client, "visit_log_parts").insert(partPayloads);
+    if (partsInsertResult.error && isMissingVisitLogPartSubjectiveColumnsError(partsInsertResult.error.message)) {
+      partsInsertResult = await fromAny(client, "visit_log_parts").insert(stripVisitLogPartSubjectiveFields(partPayloads));
+    }
+    if (partsInsertResult.error) {
       await fromAny(client, "visit_logs").delete().eq("id", visitId);
       if (uploadedFilePath) {
         await client.storage.from("don-photos").remove([uploadedFilePath]);
       }
-      throw new AppServiceError(500, partsError.message);
+      throw new AppServiceError(500, partsInsertResult.error.message);
     }
   }
 

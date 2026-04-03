@@ -15,12 +15,15 @@ import { createMockViewerContext, writeMockState } from "@/lib/mock/store";
 import { QUIZ_QUESTIONS } from "@/lib/quiz";
 import { getUnlockedQuizStageNumbers, isQuizStageUnlocked } from "@/lib/quiz-stages";
 import { getCurrentTitle } from "@/lib/titles";
+import { isMissingAuthAdminUserError } from "@/lib/services/anonymous-link-service";
 import {
   checkQuizAnswer,
   claimShareBonus,
   createQuizSessionForViewer,
   deleteVisit,
   getAppSnapshot,
+  isMissingVisitLogPartSubjectiveColumnsError,
+  normalizeVisitLogPartRows,
   recordVisit,
   submitQuizSession,
   updateStoreStatus,
@@ -48,6 +51,48 @@ test("recordVisit rejects payload without menu selection", async () => {
       }),
     /Invalid option/,
   );
+});
+
+test("legacy visit_log_parts rows are normalized with null subjective fields", () => {
+  assert.deepEqual(
+    normalizeVisitLogPartRows([
+      {
+        id: "20000000-0000-4000-8000-000000000201",
+        visit_log_id: "10000000-0000-4000-8000-000000000201",
+        part_id: "akami",
+      },
+    ]),
+    [
+      {
+        id: "20000000-0000-4000-8000-000000000201",
+        visit_log_id: "10000000-0000-4000-8000-000000000201",
+        part_id: "akami",
+        fat_level: null,
+        texture_level: null,
+        satisfaction: null,
+        want_again: null,
+      },
+    ],
+  );
+});
+
+test("visit_log_parts subjective column detection only matches legacy schema errors", () => {
+  assert.equal(
+    isMissingVisitLogPartSubjectiveColumnsError("Could not find the 'fat_level' column of 'visit_log_parts' in the schema cache"),
+    true,
+  );
+  assert.equal(
+    isMissingVisitLogPartSubjectiveColumnsError("column visit_log_parts.texture_level does not exist"),
+    true,
+  );
+  assert.equal(isMissingVisitLogPartSubjectiveColumnsError("permission denied for table visit_log_parts"), false);
+});
+
+test("anonymous-link missing-user detection matches auth admin not-found responses", () => {
+  assert.equal(isMissingAuthAdminUserError("User not found"), true);
+  assert.equal(isMissingAuthAdminUserError("user not found"), true);
+  assert.equal(isMissingAuthAdminUserError("permission denied"), false);
+  assert.equal(isMissingAuthAdminUserError(undefined), false);
 });
 
 test("recordVisit rejects invalid extra key payload", async () => {

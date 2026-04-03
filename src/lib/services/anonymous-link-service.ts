@@ -69,6 +69,10 @@ function pickBetterBestScore(left: QuizStatsRow, right: QuizStatsRow) {
     : { best_score: right.best_score, best_question_count: right.best_question_count };
 }
 
+export function isMissingAuthAdminUserError(message: string | undefined) {
+  return Boolean(message && /user not found/i.test(message));
+}
+
 async function migrateQuizStats(admin: SupabaseClient<Database>, fromUserId: string, toUserId: string) {
   const { data: fromRow, error: fromErr } = await fromAny(admin, "quiz_stats")
     .select("*")
@@ -299,19 +303,22 @@ export async function completeAnonymousLinkMigration(accessToken: string | undef
   const claim = await claimAnonymousLinkNonce(admin, body.nonce, toUserId);
   const fromUserId = claim.fromUserId;
 
+  if (claim.completed) {
+    return { ok: true };
+  }
+
   if (fromUserId === toUserId) {
-    if (!claim.completed) {
-      await markAnonymousLinkNonceCompleted(admin, body.nonce, toUserId);
-    }
+    await markAnonymousLinkNonceCompleted(admin, body.nonce, toUserId);
     return { ok: true };
   }
 
   const { data: fromAuth, error: authReadErr } = await admin.auth.admin.getUserById(fromUserId);
-  if (authReadErr) {
+  const sourceUserMissing = !fromAuth.user || isMissingAuthAdminUserError(authReadErr?.message);
+  if (authReadErr && !sourceUserMissing) {
     throw new AppServiceError(500, authReadErr.message);
   }
-  if (!fromAuth.user) {
-    if (claim.completed || !(await hasRemainingAnonymousSourceData(admin, fromUserId))) {
+  if (sourceUserMissing) {
+    if (!(await hasRemainingAnonymousSourceData(admin, fromUserId))) {
       await markAnonymousLinkNonceCompleted(admin, body.nonce, toUserId);
       return { ok: true };
     }
