@@ -16,6 +16,13 @@ export type VisitLogCardProps = {
 
 const priceFormatter = new Intl.NumberFormat("ja-JP");
 
+function visitLogTagColor(logPart: VisitRecord["parts"][number]) {
+  if (logPart.id === "otoro") {
+    return "#d96b85";
+  }
+  return mapDisplayColorForPart(logPart);
+}
+
 export const VisitLogCard = memo(function VisitLogCard({
   log,
   onDelete,
@@ -44,7 +51,7 @@ export const VisitLogCard = memo(function VisitLogCard({
       <div className="tags">
         {log.parts.length > 0 ? (
           log.parts.map((part) => {
-            const c = mapDisplayColorForPart(part);
+            const c = visitLogTagColor(part);
             return (
               <span
                 className="tag"
