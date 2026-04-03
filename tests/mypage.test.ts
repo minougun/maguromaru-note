@@ -62,7 +62,7 @@ test("buildMyPageSummary marks unlocked and current titles from snapshot progres
       recentLogs: [],
     },
     history: {
-      visitCount: 5,
+      visitCount: 50,
       quizStats: {
         totalCorrectAnswers: 500,
         totalAnsweredQuestions: 700,
@@ -84,7 +84,7 @@ test("buildMyPageSummary marks unlocked and current titles from snapshot progres
         id: "chutoro",
         name: "中とろ通",
         icon: "🍣",
-        requiredVisits: 5,
+        requiredVisits: 50,
         requiredCollectedParts: 5,
         requiredQuizCorrect: 500,
       },
@@ -115,10 +115,11 @@ test("buildMyPageSummary marks unlocked and current titles from snapshot progres
 
   assert.equal(summary.currentTitle?.name, "中とろ通");
   assert.equal(summary.streakWeeks, 2);
+  assert.equal(summary.titles.find((title) => title.id === "kozou")?.unlocked, true);
   assert.equal(summary.titles.find((title) => title.id === "beginner")?.unlocked, true);
   assert.equal(summary.titles.find((title) => title.id === "akami_fan")?.unlocked, true);
   assert.equal(summary.titles.find((title) => title.id === "chutoro")?.current, true);
-  assert.equal(summary.titles.find((title) => title.id === "hunter")?.requirementText, "来店10回・6部位・750問正解で解放");
+  assert.equal(summary.titles.find((title) => title.id === "hunter")?.requirementText, "来店75回・6部位・750問正解で解放");
 });
 
 test("buildNextTitleProgress returns remaining requirements for the next locked title", () => {
@@ -153,7 +154,7 @@ test("buildNextTitleProgress returns remaining requirements for the next locked 
       recentLogs: [],
     },
     history: {
-      visitCount: 1,
+      visitCount: 10,
       quizStats: {
         totalCorrectAnswers: 35,
         totalAnsweredQuestions: 70,
@@ -170,8 +171,8 @@ test("buildNextTitleProgress returns remaining requirements for the next locked 
       currentTitle: {
         id: "beginner",
         name: "まぐろ入門者",
-        icon: "🐟",
-        requiredVisits: 1,
+        icon: "🎣",
+        requiredVisits: 10,
         requiredCollectedParts: 0,
         requiredQuizCorrect: 0,
       },
@@ -198,7 +199,7 @@ test("buildNextTitleProgress returns remaining requirements for the next locked 
   const progress = buildNextTitleProgress(buildMyPageSummary(snapshot));
 
   assert.equal(progress?.title.id, "akami_fan");
-  assert.equal(progress?.remainingVisits, 2);
+  assert.equal(progress?.remainingVisits, 10);
   assert.equal(progress?.remainingCollectedParts, 3);
   assert.equal(progress?.remainingQuizCorrect, 165);
 });
@@ -235,7 +236,7 @@ test("buildCasualMissions builds low-frequency-friendly progress goals", () => {
       recentLogs: [],
     },
     history: {
-      visitCount: 1,
+      visitCount: 10,
       quizStats: {
         totalCorrectAnswers: 8,
         totalAnsweredQuestions: 12,
@@ -248,8 +249,8 @@ test("buildCasualMissions builds low-frequency-friendly progress goals", () => {
       currentTitle: {
         id: "beginner",
         name: "まぐろ入門者",
-        icon: "🐟",
-        requiredVisits: 1,
+        icon: "🎣",
+        requiredVisits: 10,
         requiredCollectedParts: 0,
         requiredQuizCorrect: 0,
       },

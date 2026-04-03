@@ -327,7 +327,7 @@ function MockTitles() {
           <span>🐟</span>
         </div>
         <p className="onboarding-mock-hero-title">まぐろ入門者</p>
-        <p className="onboarding-mock-hero-sub">来店 1回 ・ 6部位コンプ</p>
+        <p className="onboarding-mock-hero-sub">来店 10回 ・ 6部位コンプ</p>
       </div>
       <div className="onboarding-mock-stats-row">
         <div className="onboarding-mock-stat">
@@ -351,36 +351,43 @@ function MockTitles() {
         <div className="onboarding-mock-title-row">
           <span>🐟</span>
           <div>
-            <div className="onboarding-mock-tr-name">まぐろ入門者</div>
+            <div className="onboarding-mock-tr-name">まぐろ小僧</div>
           </div>
           <span className="onboarding-mock-chip-use">解放済み</span>
         </div>
         <div className="onboarding-mock-title-row onboarding-mock-title-row--locked">
           <span>🔒</span>
           <div>
+            <div className="onboarding-mock-tr-name">まぐろ入門者</div>
+            <div className="onboarding-mock-tr-meta">来店10回で解放</div>
+          </div>
+        </div>
+        <div className="onboarding-mock-title-row onboarding-mock-title-row--locked">
+          <span>🔒</span>
+          <div>
             <div className="onboarding-mock-tr-name">赤身の理解者</div>
-            <div className="onboarding-mock-tr-meta">来店3回・5部位・200問正解で解放</div>
+            <div className="onboarding-mock-tr-meta">来店20回・5部位・200問正解で解放</div>
           </div>
         </div>
         <div className="onboarding-mock-title-row onboarding-mock-title-row--locked">
           <span>🔒</span>
           <div>
             <div className="onboarding-mock-tr-name">中とろ通</div>
-            <div className="onboarding-mock-tr-meta">来店5回・5部位・500問正解で解放</div>
+            <div className="onboarding-mock-tr-meta">来店50回・5部位・500問正解で解放</div>
           </div>
         </div>
         <div className="onboarding-mock-title-row onboarding-mock-title-row--locked">
           <span>🔒</span>
           <div>
             <div className="onboarding-mock-tr-name">希少部位ハンター</div>
-            <div className="onboarding-mock-tr-meta">来店10回・6部位・750問正解で解放</div>
+            <div className="onboarding-mock-tr-meta">来店75回・6部位・750問正解で解放</div>
           </div>
         </div>
         <div className="onboarding-mock-title-row onboarding-mock-title-row--locked">
           <span>🔒</span>
           <div>
             <div className="onboarding-mock-tr-name">まぐろマスター</div>
-            <div className="onboarding-mock-tr-meta">来店20回・6部位・1000問正解で解放</div>
+            <div className="onboarding-mock-tr-meta">来店100回・6部位・1000問正解で解放</div>
           </div>
         </div>
       </div>
