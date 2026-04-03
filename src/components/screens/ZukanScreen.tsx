@@ -8,8 +8,6 @@ import { Card } from "@/components/ui/Card";
 import { NorenBanner } from "@/components/ui/NorenBanner";
 import { ScreenState } from "@/components/ui/ScreenState";
 import { SectionTitle } from "@/components/ui/SectionTitle";
-import { PartDetailProfileBlock } from "@/components/zukan/PartDetailProfile";
-import { PartMenuInsightBlock } from "@/components/zukan/PartMenuInsight";
 import { useAppSnapshot } from "@/lib/hooks/use-app-snapshot";
 import { buildZukanShare, type SharePayload } from "@/lib/share/share";
 
@@ -58,6 +56,7 @@ export function ZukanScreen() {
 
   const collectedPartIds = new Set(snapshot.zukan.collectedPartIds);
   const collectedParts = snapshot.parts.filter((part) => collectedPartIds.has(part.id));
+  const missingParts = snapshot.parts.filter((part) => !collectedPartIds.has(part.id));
   const progress = Math.round((snapshot.zukan.collectedCount / Math.max(snapshot.zukan.totalCount, 1)) * 100);
 
   return (
@@ -94,26 +93,52 @@ export function ZukanScreen() {
       />
 
       <SectionTitle subtitle="All parts" title="部位一覧" />
-      <div className="parts-grid">
-        {snapshot.parts.map((part) => {
-          const collected = collectedPartIds.has(part.id);
-          return (
-            <article className={`part-list-card ${collected ? "collected" : "missing"}`} key={part.id}>
-              <div className="part-name">{collected ? part.name : `？ ${part.name}`}</div>
-              <div className="part-area">
-                {part.area} / レア度: {"★".repeat(part.rarity) + "☆".repeat(3 - part.rarity)}
+      <Card>
+        <p className="helper-text">一覧はシンプル表示にしています。詳しい食感や出やすい丼は、上の部位マップをタップして確認できます。</p>
+      </Card>
+
+      <div className="zukan-list-section">
+        <div className="zukan-list-section-head">
+          <h3 className="zukan-list-section-title">食べた部位</h3>
+          <span className="zukan-list-section-count">{collectedParts.length}部位</span>
+        </div>
+        <div className="parts-grid">
+          {collectedParts.map((part) => (
+            <article className="part-list-card collected" key={part.id}>
+              <div className="part-list-card-head">
+                <div className="part-name">{part.name}</div>
+                <span className="badge badge-available">記録済み</span>
               </div>
-              <div className="plist-desc">{collected ? part.description : "まだ食べていません"}</div>
-              <PartDetailProfileBlock profile={snapshot.zukan.partProfiles[part.id]} />
-              {collected ? (
-                <PartMenuInsightBlock
-                  globalInsight={snapshot.zukan.globalPartInsights[part.id]}
-                  insight={snapshot.zukan.partInsights[part.id]}
-                />
-              ) : null}
+              <div className="part-list-meta-row">
+                <span className="part-list-meta-chip">{part.area}</span>
+                <span className="part-list-meta-chip">レア度 {"★".repeat(part.rarity) + "☆".repeat(3 - part.rarity)}</span>
+              </div>
+              <div className="plist-desc">{part.description}</div>
             </article>
-          );
-        })}
+          ))}
+        </div>
+      </div>
+
+      <div className="zukan-list-section">
+        <div className="zukan-list-section-head">
+          <h3 className="zukan-list-section-title">これから集めたい部位</h3>
+          <span className="zukan-list-section-count">{missingParts.length}部位</span>
+        </div>
+        <div className="parts-grid">
+          {missingParts.map((part) => (
+            <article className="part-list-card missing" key={part.id}>
+              <div className="part-list-card-head">
+                <div className="part-name">{part.name}</div>
+                <span className="badge badge-unset">未記録</span>
+              </div>
+              <div className="part-list-meta-row">
+                <span className="part-list-meta-chip">{part.area}</span>
+                <span className="part-list-meta-chip">レア度 {"★".repeat(part.rarity) + "☆".repeat(3 - part.rarity)}</span>
+              </div>
+              <div className="plist-desc">まだ食べていません</div>
+            </article>
+          ))}
+        </div>
       </div>
 
       <ShareModalDynamic onClose={() => setSharePayload(null)} open={Boolean(sharePayload)} payload={sharePayload} />

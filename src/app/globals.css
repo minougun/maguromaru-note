@@ -1316,6 +1316,57 @@ body {
   opacity: 0.7;
 }
 
+.zukan-list-section {
+  margin-top: 14px;
+}
+
+.zukan-list-section-head,
+.part-list-card-head,
+.part-list-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.zukan-list-section-head {
+  margin-bottom: 10px;
+}
+
+.zukan-list-section-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--cream);
+}
+
+.zukan-list-section-count {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--cream-dark);
+}
+
+.part-list-card-head {
+  margin-bottom: 8px;
+  align-items: flex-start;
+}
+
+.part-list-meta-row {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.part-list-meta-chip {
+  border-radius: 999px;
+  border: 1px solid rgba(27, 45, 79, 0.12);
+  background: rgba(255, 255, 255, 0.88);
+  padding: 5px 9px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--navy);
+}
+
 .part-insight-block {
   margin-top: 10px;
   border-radius: 12px;
