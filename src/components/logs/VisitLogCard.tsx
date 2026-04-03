@@ -17,10 +17,16 @@ export type VisitLogCardProps = {
 const priceFormatter = new Intl.NumberFormat("ja-JP");
 
 function visitLogTagColor(logPart: VisitRecord["parts"][number]) {
-  if (logPart.id === "otoro") {
-    return "#d96b85";
+  switch (logPart.id) {
+    case "otoro":
+      return "#d96b85";
+    case "noten":
+      return "#e57b8f";
+    case "hoho":
+      return "#e8848f";
+    default:
+      return mapDisplayColorForPart(logPart);
   }
-  return mapDisplayColorForPart(logPart);
 }
 
 export const VisitLogCard = memo(function VisitLogCard({
