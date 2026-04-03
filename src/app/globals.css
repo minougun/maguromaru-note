@@ -1157,6 +1157,63 @@ body {
   opacity: 0.7;
 }
 
+.part-insight-block {
+  margin-top: 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(27, 45, 79, 0.12);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(240, 244, 252, 0.9));
+  padding: 10px 12px;
+}
+
+.part-insight-title {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--navy);
+  letter-spacing: 0.03em;
+}
+
+.part-insight-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.part-insight-item {
+  margin: 0;
+}
+
+.part-insight-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.part-insight-menu {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.part-insight-rate {
+  flex-shrink: 0;
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--red);
+}
+
+.part-insight-meta,
+.part-insight-empty {
+  margin: 2px 0 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--cream-dark);
+}
+
 .complete-banner {
   margin: 0;
   text-align: center;

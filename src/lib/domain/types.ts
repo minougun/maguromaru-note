@@ -112,11 +112,26 @@ export interface HistoryData {
   visitLogsPage?: HistoryVisitLogsPage;
 }
 
+export interface PartMenuAppearanceStat {
+  menuItemId: MenuItemId;
+  menuItemName: string;
+  appearances: number;
+  totalMenuVisits: number;
+  appearanceRate: number;
+}
+
+export interface PartMenuInsight {
+  partId: PartId;
+  totalAppearances: number;
+  menuStats: PartMenuAppearanceStat[];
+}
+
 export interface ZukanData {
   collectedPartIds: PartId[];
   collectedCount: number;
   totalCount: number;
   isComplete: boolean;
+  partInsights: Record<PartId, PartMenuInsight | undefined>;
 }
 
 export interface AppSnapshot {

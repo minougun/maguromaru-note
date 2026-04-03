@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/Card";
 import { NorenBanner } from "@/components/ui/NorenBanner";
 import { ScreenState } from "@/components/ui/ScreenState";
 import { SectionTitle } from "@/components/ui/SectionTitle";
+import { PartMenuInsightBlock } from "@/components/zukan/PartMenuInsight";
 import { useAppSnapshot } from "@/lib/hooks/use-app-snapshot";
 import { buildZukanShare, type SharePayload } from "@/lib/share/share";
 
@@ -83,7 +84,11 @@ export function ZukanScreen() {
       ) : null}
 
       <SectionTitle subtitle="Tuna map" title="部位マップ" />
-      <TunaMap collectedPartIds={snapshot.zukan.collectedPartIds} parts={snapshot.parts} />
+      <TunaMap
+        collectedPartIds={snapshot.zukan.collectedPartIds}
+        partInsights={snapshot.zukan.partInsights}
+        parts={snapshot.parts}
+      />
 
       <SectionTitle subtitle="All parts" title="部位一覧" />
       <div className="parts-grid">
@@ -96,6 +101,7 @@ export function ZukanScreen() {
                 {part.area} / レア度: {"★".repeat(part.rarity) + "☆".repeat(3 - part.rarity)}
               </div>
               <div className="plist-desc">{collected ? part.description : "まだ食べていません"}</div>
+              {collected ? <PartMenuInsightBlock insight={snapshot.zukan.partInsights[part.id]} /> : null}
             </article>
           );
         })}

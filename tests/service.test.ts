@@ -177,6 +177,137 @@ test("home snapshot embeds side data for first paint", async () => {
   assert.ok(snapshot.home.recentLogs.length <= 3);
 });
 
+test("zukan snapshot includes per-part menu appearance insights from personal history", async () => {
+  try {
+    await writeMockState({
+      menuItemStatuses: seededMenuItemStatuses.map((entry) => ({ ...entry })),
+      quizSessions: seededQuizSessions.map((entry) => ({ ...entry })),
+      visitLogs: [
+        {
+          id: "10000000-0000-4000-8000-000000000101",
+          user_id: MOCK_USER_ID,
+          menu_item_id: "maguro_don",
+          visited_at: "2026-03-20",
+          memo: null,
+          photo_url: null,
+          created_at: "2026-03-20T12:00:00.000Z",
+        },
+        {
+          id: "10000000-0000-4000-8000-000000000102",
+          user_id: MOCK_USER_ID,
+          menu_item_id: "maguro_don",
+          visited_at: "2026-03-21",
+          memo: null,
+          photo_url: null,
+          created_at: "2026-03-21T12:00:00.000Z",
+        },
+        {
+          id: "10000000-0000-4000-8000-000000000103",
+          user_id: MOCK_USER_ID,
+          menu_item_id: "maguro_don",
+          visited_at: "2026-03-22",
+          memo: null,
+          photo_url: null,
+          created_at: "2026-03-22T12:00:00.000Z",
+        },
+        {
+          id: "10000000-0000-4000-8000-000000000104",
+          user_id: MOCK_USER_ID,
+          menu_item_id: "maguro_don_mini",
+          visited_at: "2026-03-23",
+          memo: null,
+          photo_url: null,
+          created_at: "2026-03-23T12:00:00.000Z",
+        },
+        {
+          id: "10000000-0000-4000-8000-000000000105",
+          user_id: MOCK_USER_ID,
+          menu_item_id: "maguro_don_mini",
+          visited_at: "2026-03-24",
+          memo: null,
+          photo_url: null,
+          created_at: "2026-03-24T12:00:00.000Z",
+        },
+        {
+          id: "10000000-0000-4000-8000-000000000106",
+          user_id: MOCK_USER_ID,
+          menu_item_id: "tokujo_don",
+          visited_at: "2026-03-25",
+          memo: null,
+          photo_url: null,
+          created_at: "2026-03-25T12:00:00.000Z",
+        },
+        {
+          id: "10000000-0000-4000-8000-000000000107",
+          user_id: MOCK_USER_ID,
+          menu_item_id: "tokujo_don",
+          visited_at: "2026-03-26",
+          memo: null,
+          photo_url: null,
+          created_at: "2026-03-26T12:00:00.000Z",
+        },
+      ],
+      visitLogParts: [
+        { id: "20000000-0000-4000-8000-000000000101", visit_log_id: "10000000-0000-4000-8000-000000000101", part_id: "otoro" },
+        { id: "20000000-0000-4000-8000-000000000102", visit_log_id: "10000000-0000-4000-8000-000000000102", part_id: "akami" },
+        { id: "20000000-0000-4000-8000-000000000103", visit_log_id: "10000000-0000-4000-8000-000000000103", part_id: "akami" },
+        { id: "20000000-0000-4000-8000-000000000104", visit_log_id: "10000000-0000-4000-8000-000000000104", part_id: "otoro" },
+        { id: "20000000-0000-4000-8000-000000000105", visit_log_id: "10000000-0000-4000-8000-000000000105", part_id: "akami" },
+        { id: "20000000-0000-4000-8000-000000000106", visit_log_id: "10000000-0000-4000-8000-000000000106", part_id: "otoro" },
+        { id: "20000000-0000-4000-8000-000000000107", visit_log_id: "10000000-0000-4000-8000-000000000107", part_id: "otoro" },
+      ],
+      storeStatus: { ...seededStoreStatus },
+      quizStats: [{ ...seededQuizStats }],
+      shareBonusEvents: seededShareBonusEvents.map((entry) => ({ ...entry })),
+    });
+
+    const snapshot = await getAppSnapshot(undefined, "zukan");
+    const otoroInsight = snapshot.zukan.partInsights.otoro;
+    const meuraInsight = snapshot.zukan.partInsights.meura;
+
+    assert.ok(otoroInsight);
+    assert.equal(otoroInsight.totalAppearances, 4);
+    assert.deepEqual(otoroInsight.menuStats.slice(0, 3), [
+      {
+        menuItemId: "tokujo_don",
+        menuItemName: "特上まぐろ丼（大とろ入り）",
+        appearances: 2,
+        totalMenuVisits: 2,
+        appearanceRate: 100,
+      },
+      {
+        menuItemId: "maguro_don_mini",
+        menuItemName: "まぐろ丼ミニ",
+        appearances: 1,
+        totalMenuVisits: 2,
+        appearanceRate: 50,
+      },
+      {
+        menuItemId: "maguro_don",
+        menuItemName: "まぐろ丼",
+        appearances: 1,
+        totalMenuVisits: 3,
+        appearanceRate: 33,
+      },
+    ]);
+    assert.deepEqual(meuraInsight, {
+      partId: "meura",
+      totalAppearances: 0,
+      menuStats: [],
+    });
+  } finally {
+    await writeMockState({
+      menuItemStatuses: seededMenuItemStatuses.map((entry) => ({ ...entry })),
+      quizSessions: seededQuizSessions.map((entry) => ({ ...entry })),
+      visitLogs: seededVisitLogs.map((entry) => ({ ...entry })),
+      visitLogParts: seededVisitLogParts.map((entry) => ({ ...entry })),
+      storeStatus: { ...seededStoreStatus },
+      quizStats: [{ ...seededQuizStats }],
+      shareBonusEvents: seededShareBonusEvents.map((entry) => ({ ...entry })),
+    });
+  }
+});
+
 test("quiz session is server-scored and cannot be submitted twice", async () => {
   const session = await createQuizSessionForViewer({ stageNumber: 1 });
   assert.equal(session.questions.length, 10);

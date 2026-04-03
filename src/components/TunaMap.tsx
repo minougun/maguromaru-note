@@ -5,9 +5,10 @@ import { memo, useId, useState } from "react";
 import tunaMapBase from "@/assets/zukan-tuna-map.webp";
 import tunaMapReveal from "@/assets/zukan-tuna-map-reveal.webp";
 
+import { PartMenuInsightBlock } from "@/components/zukan/PartMenuInsight";
 import { mapDisplayColorForPart } from "@/lib/domain/part-brand-colors";
 import { mapOverlayTintHex } from "@/lib/map-overlay-tint";
-import type { Part, PartId } from "@/lib/domain/types";
+import type { Part, PartId, PartMenuInsight } from "@/lib/domain/types";
 
 type RegionShape =
   | { type: "ellipse"; cx: number; cy: number; rx: number; ry: number }
@@ -146,10 +147,15 @@ const MAP_REGIONS: MapRegionDef[] = [
 interface TunaMapProps {
   parts: Part[];
   collectedPartIds: PartId[];
+  partInsights: Record<PartId, PartMenuInsight | undefined>;
 }
 
 function tunaMapPropsEqual(prev: TunaMapProps, next: TunaMapProps): boolean {
-  if (prev.parts === next.parts && prev.collectedPartIds === next.collectedPartIds) {
+  if (
+    prev.parts === next.parts &&
+    prev.collectedPartIds === next.collectedPartIds &&
+    prev.partInsights === next.partInsights
+  ) {
     return true;
   }
   if (prev.collectedPartIds.length !== next.collectedPartIds.length) return false;
@@ -169,6 +175,30 @@ function tunaMapPropsEqual(prev: TunaMapProps, next: TunaMapProps): boolean {
       a.description !== b.description
     ) {
       return false;
+    }
+  }
+  const prevKeys = Object.keys(prev.partInsights);
+  const nextKeys = Object.keys(next.partInsights);
+  if (prevKeys.length !== nextKeys.length) return false;
+  for (const key of prevKeys) {
+    const left = prev.partInsights[key as PartId];
+    const right = next.partInsights[key as PartId];
+    if (!left && !right) continue;
+    if (!left || !right) return false;
+    if (left.totalAppearances !== right.totalAppearances) return false;
+    if (left.menuStats.length !== right.menuStats.length) return false;
+    for (let i = 0; i < left.menuStats.length; i++) {
+      const a = left.menuStats[i]!;
+      const b = right.menuStats[i]!;
+      if (
+        a.menuItemId !== b.menuItemId ||
+        a.menuItemName !== b.menuItemName ||
+        a.appearances !== b.appearances ||
+        a.totalMenuVisits !== b.totalMenuVisits ||
+        a.appearanceRate !== b.appearanceRate
+      ) {
+        return false;
+      }
     }
   }
   return true;
@@ -208,7 +238,7 @@ function selectionOutlineEl(r: MapRegionDef["shape"]) {
   return <path d={r.d} fill="none" stroke={stroke} strokeWidth="3" opacity="0.95" />;
 }
 
-function TunaMapInner({ parts, collectedPartIds }: TunaMapProps) {
+function TunaMapInner({ parts, collectedPartIds, partInsights }: TunaMapProps) {
   const partsById = new Map(parts.map((part) => [part.id, part]));
   const collected = new Set(collectedPartIds);
   const [selectedRegionKey, setSelectedRegionKey] = useState<string | null>(null);
@@ -358,6 +388,7 @@ function TunaMapInner({ parts, collectedPartIds }: TunaMapProps) {
                 </span>
               </div>
               <p className="map-detail-desc">{isCollected ? part.description : "まだ食べていません"}</p>
+              <PartMenuInsightBlock insight={partInsights[part.id]} />
               {isCollected ? (
                 <span className="badge badge-available">記録済み</span>
               ) : (
@@ -385,6 +416,7 @@ function TunaMapInner({ parts, collectedPartIds }: TunaMapProps) {
                     </span>
                   </div>
                   <p className="map-detail-desc">{isCollected ? part.description : "まだ食べていません"}</p>
+                  <PartMenuInsightBlock insight={partInsights[part.id]} />
                   {isCollected ? (
                     <span className="badge badge-available">記録済み</span>
                   ) : (

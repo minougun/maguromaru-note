@@ -20,6 +20,7 @@ import type {
   HomeSideDataSnapshot,
   MenuItem,
   MenuItemId,
+  PartMenuInsight,
   MenuItemStatusRow,
   Part,
   PartId,
@@ -316,6 +317,67 @@ function buildCollectedPartIds(parts: Part[], visitLogParts: Database["public"][
   return [...collectedPartIds].sort(
     (left, right) => (orderMap.get(left) ?? 999) - (orderMap.get(right) ?? 999),
   );
+}
+
+function buildPartMenuInsights(parts: Part[], visitRecords: VisitRecord[]): Record<PartId, PartMenuInsight | undefined> {
+  const menuItemNameById = new Map<MenuItemId, string>();
+  const totalMenuVisits = new Map<MenuItemId, number>();
+  const partMenuAppearances = new Map<PartId, Map<MenuItemId, number>>();
+  const totalPartAppearances = new Map<PartId, number>();
+
+  for (const record of visitRecords) {
+    menuItemNameById.set(record.menuItem.id, record.menuItem.name);
+    totalMenuVisits.set(record.menuItem.id, (totalMenuVisits.get(record.menuItem.id) ?? 0) + 1);
+
+    for (const part of record.parts) {
+      totalPartAppearances.set(part.id, (totalPartAppearances.get(part.id) ?? 0) + 1);
+      const byMenu = partMenuAppearances.get(part.id) ?? new Map<MenuItemId, number>();
+      byMenu.set(record.menuItem.id, (byMenu.get(record.menuItem.id) ?? 0) + 1);
+      partMenuAppearances.set(part.id, byMenu);
+    }
+  }
+
+  const insights: Record<PartId, PartMenuInsight | undefined> = {};
+  for (const part of parts) {
+    const byMenu = partMenuAppearances.get(part.id);
+    if (!byMenu) {
+      insights[part.id] = {
+        partId: part.id,
+        totalAppearances: 0,
+        menuStats: [],
+      };
+      continue;
+    }
+
+    const menuStats = [...byMenu.entries()]
+      .map(([menuItemId, appearances]) => {
+        const totalVisitsForMenu = totalMenuVisits.get(menuItemId) ?? 0;
+        return {
+          menuItemId,
+          menuItemName: menuItemNameById.get(menuItemId) ?? menuItemId,
+          appearances,
+          totalMenuVisits: totalVisitsForMenu,
+          appearanceRate: totalVisitsForMenu > 0 ? Math.round((appearances / totalVisitsForMenu) * 100) : 0,
+        };
+      })
+      .sort((left, right) => {
+        if (right.appearanceRate !== left.appearanceRate) {
+          return right.appearanceRate - left.appearanceRate;
+        }
+        if (right.appearances !== left.appearances) {
+          return right.appearances - left.appearances;
+        }
+        return left.menuItemName.localeCompare(right.menuItemName, "ja");
+      });
+
+    insights[part.id] = {
+      partId: part.id,
+      totalAppearances: totalPartAppearances.get(part.id) ?? 0,
+      menuStats,
+    };
+  }
+
+  return insights;
 }
 
 async function getSupabaseViewer(client: SupabaseClient<Database>): Promise<ViewerContext> {
@@ -743,7 +805,7 @@ const SNAPSHOT_FETCH_PLANS: Record<SnapshotScope, SnapshotFetchPlan> = {
   },
   zukan: {
     masterParts: true,
-    masterMenuItems: false,
+    masterMenuItems: true,
     homeSideData: false,
     menuBundle: false,
     store: false,
@@ -949,6 +1011,7 @@ function buildSnapshotFromRecords(
     new Set(shareBonus.sharedVisitLogIds),
   );
   const trackedParts = filterTrackedParts(parts);
+  const partInsights = buildPartMenuInsights(trackedParts, visitRecords);
   const partsForCollection = buildCtx?.visitLogPartsForCollection ?? visitLogParts;
   const collectedPartIds = buildCollectedPartIds(
     trackedParts,
@@ -1004,6 +1067,7 @@ function buildSnapshotFromRecords(
       collectedCount: collectedPartIds.length,
       totalCount: trackedParts.length,
       isComplete: collectedPartIds.length === trackedParts.length,
+      partInsights,
     },
     canManageAdmin: viewer.role === "admin",
   };
