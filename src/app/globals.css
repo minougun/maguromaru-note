@@ -4115,6 +4115,55 @@ body {
   color: var(--cream-dark);
 }
 
+.onboarding-mock-account-settings {
+  margin-bottom: 6px;
+  padding: 8px;
+}
+
+.onboarding-mock-account-settings-title {
+  margin: 0 0 6px;
+  font-size: 7px;
+  font-weight: 900;
+  color: var(--ink);
+}
+
+.onboarding-mock-account-setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 6px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+.onboarding-mock-account-setting-row + .onboarding-mock-account-setting-row {
+  margin-top: 6px;
+}
+
+.onboarding-mock-account-pill-row {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.onboarding-mock-account-pill {
+  padding: 3px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(28, 45, 86, 0.14);
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--ink-soft);
+  font-size: 5px;
+  font-weight: 800;
+}
+
+.onboarding-mock-account-pill--active {
+  border-color: rgba(27, 45, 79, 0.3);
+  background: rgba(27, 45, 79, 0.1);
+  color: var(--navy);
+}
+
 .onboarding-mock-provider {
   display: flex;
   align-items: center;
@@ -4126,7 +4175,7 @@ body {
   background: #fff;
   font-size: 7px;
   font-weight: 800;
-  color: var(--cream);
+  color: var(--ink);
 }
 
 .onboarding-mock-provider--apple {
@@ -4137,6 +4186,13 @@ body {
 
 .onboarding-mock-provider--google {
   background: #fff;
+}
+
+.onboarding-mock-provider-status {
+  margin-left: auto;
+  font-size: 5px;
+  font-weight: 800;
+  color: var(--ink-soft);
 }
 
 .onboarding-mock-g-mark {
@@ -4159,13 +4215,60 @@ body {
 }
 
 .onboarding-mock-chev {
-  margin-left: auto;
+  margin-left: 4px;
   color: var(--cream-faint);
   font-weight: 400;
 }
 
 .onboarding-mock-provider--apple .onboarding-mock-chev {
   color: rgba(255, 255, 255, 0.5);
+}
+
+.onboarding-mock-provider--apple .onboarding-mock-provider-status {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.onboarding-mock-account-mail {
+  margin-top: 6px;
+  padding: 8px;
+}
+
+.onboarding-mock-account-mail-copy {
+  margin: 0 0 6px;
+  font-size: 6px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+.onboarding-mock-account-mail-input {
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(27, 45, 79, 0.14);
+  background: rgba(225, 236, 255, 0.7);
+  font-size: 7px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.onboarding-mock-account-mail-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 6px;
+  font-weight: 800;
+  color: var(--navy);
+}
+
+.onboarding-mock-account-mail-submit {
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #2080ff;
+  color: #fff;
 }
 
 .onboarding-mock-tabbar {

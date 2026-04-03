@@ -362,23 +362,53 @@ function MockAccount() {
   return (
     <>
       <MockNoren>アカウント連携</MockNoren>
+      <div className="onboarding-mock-card onboarding-mock-account-settings">
+        <p className="onboarding-mock-account-settings-title">表示設定</p>
+        <div className="onboarding-mock-account-setting-row">
+          <span>表示密度</span>
+          <div className="onboarding-mock-account-pill-row">
+            <span className="onboarding-mock-account-pill onboarding-mock-account-pill--active">かんたん表示</span>
+            <span className="onboarding-mock-account-pill">詳細表示</span>
+          </div>
+        </div>
+        <div className="onboarding-mock-account-setting-row">
+          <span>文字サイズ</span>
+          <div className="onboarding-mock-account-pill-row">
+            <span className="onboarding-mock-account-pill">標準</span>
+            <span className="onboarding-mock-account-pill onboarding-mock-account-pill--active">大きめ</span>
+          </div>
+        </div>
+      </div>
       <p className="onboarding-mock-account-lead">Apple・Google・メールのいずれかで連携できます。</p>
       <div className="onboarding-mock-provider onboarding-mock-provider--apple">
         <span aria-hidden className="onboarding-mock-apple-mark">
           🍎
         </span>
-        <span>Apple で連携</span>
+        <span>Apple</span>
+        <span className="onboarding-mock-provider-status">未連携</span>
         <span className="onboarding-mock-chev">›</span>
       </div>
       <div className="onboarding-mock-provider onboarding-mock-provider--google">
         <span className="onboarding-mock-g-mark">G</span>
-        <span>Google で連携</span>
+        <span>Google</span>
+        <span className="onboarding-mock-provider-status">未連携</span>
         <span className="onboarding-mock-chev">›</span>
       </div>
       <div className="onboarding-mock-provider">
         <span>✉️</span>
-        <span>メールアドレスで連携</span>
+        <span>メールアドレス</span>
+        <span className="onboarding-mock-provider-status">未連携</span>
         <span className="onboarding-mock-chev">›</span>
+      </div>
+      <div className="onboarding-mock-card onboarding-mock-account-mail">
+        <p className="onboarding-mock-account-mail-copy">
+          メールアドレスを入力し、届いた確認リンクを開くと連携が完了します。
+        </p>
+        <div className="onboarding-mock-account-mail-input">minougun@gmail.com</div>
+        <div className="onboarding-mock-account-mail-actions">
+          <span>閉じる</span>
+          <span className="onboarding-mock-account-mail-submit">確認メールを送る</span>
+        </div>
       </div>
     </>
   );
