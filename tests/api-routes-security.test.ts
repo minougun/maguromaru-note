@@ -67,18 +67,39 @@ test("verifyCsrfOrigin: 許可オリジンのみ true", () => {
     verifyCsrfOrigin(
       new Request(api("/x"), { headers: { origin: "http://127.0.0.1:3000" } }),
     ),
-    false,
+    true,
+  );
+  assert.equal(
+    verifyCsrfOrigin(
+      new Request("http://127.0.0.1:3000/api/x", { headers: { origin: "http://localhost:3000" } }),
+    ),
+    true,
   );
   assert.equal(
     verifyCsrfOrigin(
       new Request(api("/x"), { headers: { origin: "http://localhost:3000/" } }),
     ),
-    false,
+    true,
   );
   assert.equal(
     verifyCsrfOrigin(new Request(api("/x"), { headers: { origin: "null" } })),
     false,
   );
+});
+
+test("verifyCsrfOrigin: production では loopback alias を許可しない", () => {
+  const original = process.env.NODE_ENV;
+  process.env.NODE_ENV = "production";
+  try {
+    assert.equal(
+      verifyCsrfOrigin(
+        new Request(api("/x"), { headers: { origin: "http://127.0.0.1:3000" } }),
+      ),
+      false,
+    );
+  } finally {
+    process.env.NODE_ENV = original;
+  }
 });
 
 const mutationPosts: { name: string; post: (req: Request) => Promise<Response> }[] = [

@@ -84,9 +84,48 @@ export function isMockAdminEnabled() {
   return readOptionalEnv("MAGUROMARU_ENABLE_MOCK_ADMIN") === "true";
 }
 
+function tryParseOrigin(value: string | null | undefined): URL | null {
+  if (!value) {
+    return null;
+  }
+
+  try {
+    return new URL(value);
+  } catch {
+    return null;
+  }
+}
+
+function isLoopbackHost(hostname: string) {
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]" || hostname === "::1";
+}
+
+function isSameLoopbackOrigin(left: URL, right: URL) {
+  return (
+    left.protocol === right.protocol &&
+    left.port === right.port &&
+    isLoopbackHost(left.hostname) &&
+    isLoopbackHost(right.hostname)
+  );
+}
+
 export function verifyCsrfOrigin(request: Request): boolean {
-  const origin = request.headers.get("origin");
-  if (!origin) return false;
-  const siteOrigin = new URL(getSiteUrl()).origin;
-  return origin === siteOrigin;
+  const requestOrigin = tryParseOrigin(request.headers.get("origin"));
+  if (!requestOrigin) return false;
+
+  const allowedOrigins = [tryParseOrigin(getSiteUrl()), tryParseOrigin(request.url)].filter(
+    (value): value is URL => value !== null,
+  );
+
+  for (const allowedOrigin of allowedOrigins) {
+    if (requestOrigin.origin === allowedOrigin.origin) {
+      return true;
+    }
+  }
+
+  if (process.env.NODE_ENV !== "production") {
+    return allowedOrigins.some((allowedOrigin) => isSameLoopbackOrigin(requestOrigin, allowedOrigin));
+  }
+
+  return false;
 }
