@@ -4482,6 +4482,7 @@ body {
   line-height: 1.65;
   color: rgba(245, 247, 251, 0.82);
   max-width: 320px;
+  white-space: pre-line;
 }
 
 .onboarding-dots {
