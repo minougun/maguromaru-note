@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useLayoutEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { AppHeader } from "@/components/layout/AppHeader";
 import { useAuthState } from "@/components/providers/AuthProvider";
@@ -26,7 +26,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [scrollMainEl, setScrollMainEl] = useState<HTMLElement | null>(null);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     /* localStorage と認証状態の同期。ルールは意図的に抑止 */
     /* eslint-disable react-hooks/set-state-in-effect */
     if (!auth.ready || !auth.signedIn) {

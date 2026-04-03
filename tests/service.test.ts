@@ -25,6 +25,7 @@ import {
   submitQuizSession,
   updateStoreStatus,
 } from "@/lib/services/app-service";
+import { resetHomeSideDataServerCacheForTest } from "@/lib/home-side-data-server";
 
 test("getCurrentTitle requires both visit count and quiz correct answers", () => {
   assert.equal(getCurrentTitle(1, 0, 0)?.id, "beginner");
@@ -175,6 +176,16 @@ test("home snapshot embeds side data for first paint", async () => {
   assert.equal(typeof snapshot.home.sideData.trivia.trivia, "string");
   assert.match(snapshot.home.sideData.trivia.date, /^\d{4}-\d{2}-\d{2}$/);
   assert.ok(snapshot.home.recentLogs.length <= 3);
+});
+
+test("home scope skips global part insights while zukan scope keeps them", async () => {
+  resetHomeSideDataServerCacheForTest();
+
+  const homeSnapshot = await getAppSnapshot(undefined, "home");
+  const zukanSnapshot = await getAppSnapshot(undefined, "zukan");
+
+  assert.deepEqual(homeSnapshot.zukan.globalPartInsights, {});
+  assert.ok(Array.isArray(zukanSnapshot.zukan.globalPartInsights.otoro?.menuStats));
 });
 
 test("recordVisit stores per-part subjective tasting notes", async () => {

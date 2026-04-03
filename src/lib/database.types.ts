@@ -215,6 +215,9 @@ export interface Database {
           from_user_id: string;
           nonce: string;
           expires_at: string;
+          claimed_by_user_id: string | null;
+          claimed_at: string | null;
+          completed_at: string | null;
           created_at: string;
         };
         Insert: {
@@ -222,6 +225,9 @@ export interface Database {
           from_user_id: string;
           nonce: string;
           expires_at: string;
+          claimed_by_user_id?: string | null;
+          claimed_at?: string | null;
+          completed_at?: string | null;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["anonymous_link_nonces"]["Insert"]>;

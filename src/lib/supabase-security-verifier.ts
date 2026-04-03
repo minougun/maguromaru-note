@@ -156,6 +156,21 @@ export function verifySupabaseSecuritySql(sql: string) {
     /constraint anonymous_link_nonces_nonce_length check \(char_length\(nonce\) = 64\)/i,
     "anonymous_link_nonces: nonce length check is required",
   );
+  expectConstraint(
+    sql,
+    /alter table public\.anonymous_link_nonces\s+add column if not exists claimed_by_user_id uuid references auth\.users\(id\) on delete set null,/i,
+    "anonymous_link_nonces: claimed_by_user_id column is required for retryable claims",
+  );
+  expectConstraint(
+    sql,
+    /alter table public\.anonymous_link_nonces[\s\S]*add column if not exists completed_at timestamptz;/i,
+    "anonymous_link_nonces: completed_at column is required for idempotent completion",
+  );
+  expectConstraint(
+    sql,
+    /constraint anonymous_link_nonces_completion_order[\s\S]*completed_at is null[\s\S]*or claimed_at is not null/i,
+    "anonymous_link_nonces: completion order check is required",
+  );
 
   expectConstraint(
     sql,

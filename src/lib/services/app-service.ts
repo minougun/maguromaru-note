@@ -55,6 +55,8 @@ const VISIT_LOG_COLUMNS =
   "id, user_id, visited_at, created_at, memo, photo_url, menu_item_id" as const;
 const VISIT_LOG_PART_COLUMNS =
   "id, visit_log_id, part_id, fat_level, texture_level, satisfaction, want_again" as const;
+const VISIT_LOG_INSIGHT_COLUMNS = "id, menu_item_id" as const;
+const VISIT_LOG_PART_INSIGHT_COLUMNS = "visit_log_id, part_id" as const;
 const QUIZ_STATS_COLUMNS =
   "user_id, total_correct_answers, total_answered_questions, quizzes_completed, best_score, best_question_count" as const;
 const SHARE_BONUS_COLUMNS = "target_type, target_id, bonus_visit_tenths, bonus_correct_tenths" as const;
@@ -523,8 +525,7 @@ async function getGlobalPartInsights(
     GLOBAL_PART_INSIGHTS_CACHE_MS,
     async () => {
       const { visitLogs, visitLogParts } = await listGlobalVisitData(serviceRoleClient);
-      const visitRecords = buildVisitRecords(parts, menuItems, visitLogs, visitLogParts);
-      return buildPartMenuInsights(parts, visitRecords);
+      return buildGlobalPartMenuInsights(parts, menuItems, visitLogs, visitLogParts);
     },
     clonePartInsightsMap,
   );
@@ -799,22 +800,27 @@ async function listVisitData(
 }
 
 async function listGlobalVisitData(client: SupabaseClient<Database>) {
-  const { data: visitLogs, error: visitLogsError } = await fromAny(client, "visit_logs").select(VISIT_LOG_COLUMNS);
+  const { data: visitLogs, error: visitLogsError } = await fromAny(client, "visit_logs").select(
+    VISIT_LOG_INSIGHT_COLUMNS,
+  );
   if (visitLogsError || !visitLogs) {
     throw new AppServiceError(500, visitLogsError?.message ?? "全体の来店記録取得に失敗しました。");
   }
 
-  const typedVisitLogs = visitLogs as Database["public"]["Tables"]["visit_logs"]["Row"][];
+  const typedVisitLogs = visitLogs as Pick<
+    Database["public"]["Tables"]["visit_logs"]["Row"],
+    "id" | "menu_item_id"
+  >[];
   if (typedVisitLogs.length === 0) {
     return {
-      visitLogs: [] as Database["public"]["Tables"]["visit_logs"]["Row"][],
-      visitLogParts: [] as Database["public"]["Tables"]["visit_log_parts"]["Row"][],
+      visitLogs: [] as Pick<Database["public"]["Tables"]["visit_logs"]["Row"], "id" | "menu_item_id">[],
+      visitLogParts: [] as Pick<Database["public"]["Tables"]["visit_log_parts"]["Row"], "visit_log_id" | "part_id">[],
     };
   }
 
   const visitLogIds = typedVisitLogs.map((entry) => entry.id);
   const { data: visitLogParts, error: visitLogPartsError } = await fromAny(client, "visit_log_parts")
-    .select(VISIT_LOG_PART_COLUMNS)
+    .select(VISIT_LOG_PART_INSIGHT_COLUMNS)
     .in("visit_log_id", visitLogIds);
 
   if (visitLogPartsError || !visitLogParts) {
@@ -823,8 +829,85 @@ async function listGlobalVisitData(client: SupabaseClient<Database>) {
 
   return {
     visitLogs: typedVisitLogs,
-    visitLogParts: visitLogParts as Database["public"]["Tables"]["visit_log_parts"]["Row"][],
+    visitLogParts: visitLogParts as Pick<
+      Database["public"]["Tables"]["visit_log_parts"]["Row"],
+      "visit_log_id" | "part_id"
+    >[],
   };
+}
+
+function buildGlobalPartMenuInsights(
+  parts: Part[],
+  menuItems: MenuItem[],
+  visitLogs: ReadonlyArray<Pick<Database["public"]["Tables"]["visit_logs"]["Row"], "id" | "menu_item_id">>,
+  visitLogParts: ReadonlyArray<Pick<Database["public"]["Tables"]["visit_log_parts"]["Row"], "visit_log_id" | "part_id">>,
+): Record<PartId, PartMenuInsight | undefined> {
+  const menuItemNameById = new Map<MenuItemId, string>(menuItems.map((menuItem) => [menuItem.id, menuItem.name]));
+  const totalMenuVisits = new Map<MenuItemId, number>();
+  const menuByVisitId = new Map<string, MenuItemId>();
+  const partMenuAppearances = new Map<PartId, Map<MenuItemId, number>>();
+  const totalPartAppearances = new Map<PartId, number>();
+
+  for (const visitLog of visitLogs) {
+    const menuItemId = visitLog.menu_item_id as MenuItemId;
+    menuByVisitId.set(visitLog.id, menuItemId);
+    totalMenuVisits.set(menuItemId, (totalMenuVisits.get(menuItemId) ?? 0) + 1);
+  }
+
+  for (const entry of visitLogParts) {
+    const partId = entry.part_id as PartId;
+    const menuItemId = menuByVisitId.get(entry.visit_log_id);
+    if (!menuItemId) {
+      continue;
+    }
+
+    totalPartAppearances.set(partId, (totalPartAppearances.get(partId) ?? 0) + 1);
+    const byMenu = partMenuAppearances.get(partId) ?? new Map<MenuItemId, number>();
+    byMenu.set(menuItemId, (byMenu.get(menuItemId) ?? 0) + 1);
+    partMenuAppearances.set(partId, byMenu);
+  }
+
+  const insights: Record<PartId, PartMenuInsight | undefined> = {};
+  for (const part of parts) {
+    const byMenu = partMenuAppearances.get(part.id);
+    if (!byMenu) {
+      insights[part.id] = {
+        partId: part.id,
+        totalAppearances: 0,
+        menuStats: [],
+      };
+      continue;
+    }
+
+    const menuStats = [...byMenu.entries()]
+      .map(([menuItemId, appearances]) => {
+        const totalVisitsForMenu = totalMenuVisits.get(menuItemId) ?? 0;
+        return {
+          menuItemId,
+          menuItemName: menuItemNameById.get(menuItemId) ?? menuItemId,
+          appearances,
+          totalMenuVisits: totalVisitsForMenu,
+          appearanceRate: totalVisitsForMenu > 0 ? Math.round((appearances / totalVisitsForMenu) * 100) : 0,
+        };
+      })
+      .sort((left, right) => {
+        if (right.appearanceRate !== left.appearanceRate) {
+          return right.appearanceRate - left.appearanceRate;
+        }
+        if (right.appearances !== left.appearances) {
+          return right.appearances - left.appearances;
+        }
+        return left.menuItemName.localeCompare(right.menuItemName, "ja");
+      });
+
+    insights[part.id] = {
+      partId: part.id,
+      totalAppearances: totalPartAppearances.get(part.id) ?? 0,
+      menuStats,
+    };
+  }
+
+  return insights;
 }
 
 async function getStoreStatus(client?: SupabaseClient<Database>) {

@@ -10,6 +10,7 @@ import { snapshotReadLimits } from "@/lib/rate-limit";
 import {
   getAccessTokenFromRequest,
   getAppSnapshot,
+  getVerifiedUserIdForRateLimit,
   toRouteError,
   type AppSnapshotLoadOptions,
 } from "@/lib/services/app-service";
@@ -45,7 +46,10 @@ function parseHistoryPagingParams(url: URL): AppSnapshotLoadOptions | { error: s
 }
 
 export async function GET(request: Request) {
-  const rateLimit = await checkHttpRateLimit(request, "app-snapshot-get", snapshotReadLimits);
+  const accessToken = getAccessTokenFromRequest(request);
+  const rateLimit = await checkHttpRateLimit(request, "app-snapshot-get", snapshotReadLimits, {
+    verifiedUserId: await getVerifiedUserIdForRateLimit(accessToken),
+  });
   if (!rateLimit.ok) {
     return jsonWithSecurityHeaders(
       { error: "リクエストが多すぎます。時間をおいて再度お試しください。" },
@@ -83,7 +87,7 @@ export async function GET(request: Request) {
       loadOptions = parsed;
     }
 
-    const snapshot = await getAppSnapshot(getAccessTokenFromRequest(request), scopeParsed, loadOptions);
+    const snapshot = await getAppSnapshot(accessToken, scopeParsed, loadOptions);
     return jsonWithSecurityHeaders(snapshot, {
       headers: {
         "Cache-Control": "no-store",

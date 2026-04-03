@@ -8,6 +8,7 @@ import { getSupabaseEnv, getSupabaseServiceEnv } from "@/lib/env";
 import { AppServiceError } from "@/lib/services/app-service";
 
 type QuizStatsRow = Database["public"]["Tables"]["quiz_stats"]["Row"];
+type AnonymousLinkNonceRow = Database["public"]["Tables"]["anonymous_link_nonces"]["Row"];
 
 const NONCE_TTL_MS = 15 * 60 * 1000;
 
@@ -154,6 +155,90 @@ async function migratePhotoPathsForLinkedUser(admin: SupabaseClient<Database>, f
   }
 }
 
+async function claimAnonymousLinkNonce(
+  admin: SupabaseClient<Database>,
+  nonce: string,
+  toUserId: string,
+): Promise<{ fromUserId: string; completed: boolean }> {
+  const nowIso = new Date().toISOString();
+  const { data, error } = await fromAny(admin, "anonymous_link_nonces").select("*").eq("nonce", nonce).maybeSingle();
+
+  if (error) {
+    throw new AppServiceError(500, error.message);
+  }
+
+  const row = data as AnonymousLinkNonceRow | null;
+  if (!row || new Date(row.expires_at).getTime() <= Date.now()) {
+    throw new AppServiceError(400, "無効または期限切れのトークンです。");
+  }
+
+  if (row.completed_at) {
+    if (row.claimed_by_user_id && row.claimed_by_user_id !== toUserId) {
+      throw new AppServiceError(409, "この連携トークンは別のアカウントで使用済みです。");
+    }
+    return { fromUserId: row.from_user_id, completed: true };
+  }
+
+  if (row.claimed_by_user_id && row.claimed_by_user_id !== toUserId) {
+    throw new AppServiceError(409, "この連携トークンは別のアカウントで処理中です。");
+  }
+
+  if (!row.claimed_by_user_id) {
+    const { data: claimedRow, error: claimError } = await fromAny(admin, "anonymous_link_nonces")
+      .update({
+        claimed_by_user_id: toUserId,
+        claimed_at: nowIso,
+      })
+      .eq("id", row.id)
+      .is("claimed_by_user_id", null)
+      .select("id")
+      .maybeSingle();
+
+    if (claimError) {
+      throw new AppServiceError(500, claimError.message);
+    }
+    if (!claimedRow) {
+      throw new AppServiceError(409, "この連携トークンは別のアカウントで処理中です。");
+    }
+  }
+
+  return { fromUserId: row.from_user_id, completed: false };
+}
+
+async function markAnonymousLinkNonceCompleted(admin: SupabaseClient<Database>, nonce: string, toUserId: string) {
+  const { error } = await fromAny(admin, "anonymous_link_nonces")
+    .update({
+      claimed_by_user_id: toUserId,
+      claimed_at: new Date().toISOString(),
+      completed_at: new Date().toISOString(),
+    })
+    .eq("nonce", nonce);
+
+  if (error) {
+    throw new AppServiceError(500, error.message);
+  }
+}
+
+async function hasRemainingAnonymousSourceData(admin: SupabaseClient<Database>, fromUserId: string) {
+  const checks = await Promise.all([
+    fromAny(admin, "visit_logs").select("id", { count: "exact", head: true }).eq("user_id", fromUserId),
+    fromAny(admin, "quiz_sessions").select("id", { count: "exact", head: true }).eq("user_id", fromUserId),
+    fromAny(admin, "share_bonus_events").select("id", { count: "exact", head: true }).eq("user_id", fromUserId),
+    fromAny(admin, "quiz_stats").select("user_id", { count: "exact", head: true }).eq("user_id", fromUserId),
+  ]);
+
+  for (const result of checks) {
+    if (result.error) {
+      throw new AppServiceError(500, result.error.message);
+    }
+    if ((result.count ?? 0) > 0) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 export async function prepareAnonymousLinkNonce(accessToken: string | undefined): Promise<{ nonce: string }> {
   if (!accessToken?.trim()) {
     throw new AppServiceError(401, "ログインが必要です。");
@@ -211,30 +296,25 @@ export async function completeAnonymousLinkMigration(accessToken: string | undef
 
   const toUserId = user.id;
   const admin = createServiceRoleClient();
-  const nowIso = new Date().toISOString();
-
-  const { data: claimed, error: claimErr } = await fromAny(admin, "anonymous_link_nonces")
-    .delete()
-    .eq("nonce", body.nonce)
-    .gt("expires_at", nowIso)
-    .select("from_user_id")
-    .maybeSingle();
-
-  if (claimErr) {
-    throw new AppServiceError(500, claimErr.message);
-  }
-
-  const fromUserId = claimed?.from_user_id as string | undefined;
-  if (!fromUserId) {
-    throw new AppServiceError(400, "無効または期限切れのトークンです。");
-  }
+  const claim = await claimAnonymousLinkNonce(admin, body.nonce, toUserId);
+  const fromUserId = claim.fromUserId;
 
   if (fromUserId === toUserId) {
+    if (!claim.completed) {
+      await markAnonymousLinkNonceCompleted(admin, body.nonce, toUserId);
+    }
     return { ok: true };
   }
 
   const { data: fromAuth, error: authReadErr } = await admin.auth.admin.getUserById(fromUserId);
-  if (authReadErr || !fromAuth.user) {
+  if (authReadErr) {
+    throw new AppServiceError(500, authReadErr.message);
+  }
+  if (!fromAuth.user) {
+    if (claim.completed || !(await hasRemainingAnonymousSourceData(admin, fromUserId))) {
+      await markAnonymousLinkNonceCompleted(admin, body.nonce, toUserId);
+      return { ok: true };
+    }
     throw new AppServiceError(400, "元のアカウントが見つかりません。");
   }
   if (!fromAuth.user.is_anonymous) {
@@ -261,9 +341,11 @@ export async function completeAnonymousLinkMigration(accessToken: string | undef
   await migratePhotoPathsForLinkedUser(admin, fromUserId, toUserId);
 
   const { error: delUserError } = await admin.auth.admin.deleteUser(fromUserId);
-  if (delUserError) {
+  if (delUserError && !/not found/i.test(delUserError.message ?? "")) {
     throw new AppServiceError(500, delUserError.message);
   }
+
+  await markAnonymousLinkNonceCompleted(admin, body.nonce, toUserId);
 
   return { ok: true };
 }
