@@ -74,22 +74,44 @@ function MockHome() {
       <MockSectionTitle subtitle="Store status" title="営業状況" />
       <div className="onboarding-mock-card">
         <div className="onboarding-mock-weather-bar">
-          <span>☀️ 18℃ くもり</span>
+          <span>🌥️ 12℃ 曇り</span>
           <span>
-            <span className="onboarding-mock-badge-open">営業中</span>
-            <span className="onboarding-mock-time">最終更新時間 12:30</span>
+            <span className="onboarding-mock-badge-end">本日終了</span>
           </span>
         </div>
-        <p className="onboarding-mock-status-note">赤身たっぷりで営業中！本日の特上は脂がのっています。</p>
-      </div>
-      <MockSectionTitle subtitle="Recommendation" title="本日のおすすめ" />
-      <div className="onboarding-mock-card onboarding-mock-recommend-card">
-        <p className="onboarding-mock-recommend-copy">今日は特上まぐろ丼（大とろ入り）がおすすめです。</p>
+        <p className="onboarding-mock-status-note">混雑状況や売り切れ情報はここに表示されます。</p>
       </div>
       <div className="onboarding-mock-card onboarding-mock-bot-card">
         <p className="onboarding-mock-bot-label">まぐろ丸Bot 今日の豆知識</p>
         <p className="onboarding-mock-bot-body">本マグロの赤身は、脂だけではなく鉄っぽい香りと旨みの重なりでも評価されます。</p>
         <p className="onboarding-mock-bot-meta">日替わり豆知識 · 2026-04-03</p>
+      </div>
+      <MockSectionTitle subtitle="Easy goals" title="ゆるく進める目標" />
+      <div className="onboarding-mock-card onboarding-mock-goals-card">
+        <div className="onboarding-mock-goals-head">
+          <span>ミッション</span>
+          <span>2 / 4 達成</span>
+        </div>
+        {[
+          ["はじめての記録を残す", "達成済み", "達成"],
+          ["部位を3つ集める", "3 / 3", "達成"],
+          ["クイズで10問正解する", "0 / 10", "進行中"],
+          ["シェアボーナスを受け取る", "あと1回", "進行中"],
+        ].map(([title, meta, status]) => (
+          <div className="onboarding-mock-goal-row" key={title}>
+            <div>
+              <p className="onboarding-mock-goal-title">{title}</p>
+              <p className="onboarding-mock-goal-meta">{meta}</p>
+            </div>
+            <span
+              className={`onboarding-mock-goal-badge${
+                status === "達成" ? " onboarding-mock-goal-badge--done" : " onboarding-mock-goal-badge--progress"
+              }`}
+            >
+              {status}
+            </span>
+          </div>
+        ))}
       </div>
       <MockNoren>本日の入荷状況</MockNoren>
       <div className="onboarding-mock-card onboarding-mock-stock-card">
@@ -126,13 +148,6 @@ function MockHome() {
           <span className="onboarding-mock-stock-out">✕ 終了</span>
         </div>
         <p className="onboarding-mock-footnote">※ 店舗スタッフが更新しています</p>
-      </div>
-      <MockSectionTitle subtitle="Recent logs" title="最近の記録" />
-      <div className="onboarding-mock-card onboarding-mock-log-card">
-        <div className="onboarding-mock-log-line">
-          <span className="onboarding-mock-log-date">3/28</span>
-          <span>まぐろ丼</span>
-        </div>
       </div>
     </>
   );
@@ -171,10 +186,25 @@ function MockRecord() {
           <span>2,500円</span>
         </div>
       </div>
-      <MockSectionTitle subtitle="Parts" title="入っていた部位" />
-      <div className="onboarding-mock-card onboarding-mock-mini-text">
-        特上まぐろ丼（大とろ入り）の標準部位を自動で選択しています。実際に入っていた内容に合わせて修正してください。
+      <MockSectionTitle subtitle="Quick record" title="かんたん記録" />
+      <div className="onboarding-mock-card onboarding-mock-quick-card">
+        <p className="onboarding-mock-mini-text">
+          特上まぐろ丼（大とろ入り）の標準部位を自動でセットしました。わからなければ、このまま保存でOKです。
+        </p>
+        <div className="onboarding-mock-parts-mini">
+          {["大トロ", "中トロ", "赤身", "脳天", "ほほ肉", "目裏"].map((name) => (
+            <span className="onboarding-mock-part-chip onboarding-mock-part-chip--on" key={name}>
+              {name}
+            </span>
+          ))}
+        </div>
+        <p className="onboarding-mock-quick-help">トビウオと目立つ外見は、前もって自動では入れていません。</p>
+        <div className="onboarding-mock-quick-actions">
+          <div className="onboarding-mock-outline-fake">部位調整を閉じる</div>
+          <div className="onboarding-mock-outline-fake">味のメモも残す</div>
+        </div>
       </div>
+      <MockSectionTitle subtitle="Parts" title="入っていた部位を調整" />
       <div className="onboarding-mock-parts-grid">
         {[
           ["大トロ", "腹部"],
@@ -361,11 +391,12 @@ function MockTitles() {
 function MockAccount() {
   return (
     <>
-      <MockNoren>アカウント連携</MockNoren>
+      <MockNoren>設定</MockNoren>
       <div className="onboarding-mock-card onboarding-mock-account-settings">
-        <p className="onboarding-mock-account-settings-title">表示設定</p>
+        <p className="onboarding-mock-account-settings-title">見やすさ設定</p>
+        <p className="onboarding-mock-account-settings-head">表示を軽くする / 文字を大きくする</p>
         <div className="onboarding-mock-account-setting-row">
-          <span>表示密度</span>
+          <span>表示モード</span>
           <div className="onboarding-mock-account-pill-row">
             <span className="onboarding-mock-account-pill onboarding-mock-account-pill--active">かんたん表示</span>
             <span className="onboarding-mock-account-pill">詳細表示</span>
@@ -379,35 +410,27 @@ function MockAccount() {
           </div>
         </div>
       </div>
-      <p className="onboarding-mock-account-lead">Apple・Google・メールのいずれかで連携できます。</p>
-      <div className="onboarding-mock-provider onboarding-mock-provider--apple">
-        <span aria-hidden className="onboarding-mock-apple-mark">
-          🍎
-        </span>
-        <span>Apple</span>
-        <span className="onboarding-mock-provider-status">未連携</span>
-        <span className="onboarding-mock-chev">›</span>
-      </div>
-      <div className="onboarding-mock-provider onboarding-mock-provider--google">
-        <span className="onboarding-mock-g-mark">G</span>
-        <span>Google</span>
-        <span className="onboarding-mock-provider-status">未連携</span>
-        <span className="onboarding-mock-chev">›</span>
-      </div>
-      <div className="onboarding-mock-provider">
-        <span>✉️</span>
-        <span>メールアドレス</span>
-        <span className="onboarding-mock-provider-status">未連携</span>
-        <span className="onboarding-mock-chev">›</span>
-      </div>
-      <div className="onboarding-mock-card onboarding-mock-account-mail">
-        <p className="onboarding-mock-account-mail-copy">
-          メールアドレスを入力し、届いた確認リンクを開くと連携が完了します。
-        </p>
-        <div className="onboarding-mock-account-mail-input">minougun@gmail.com</div>
-        <div className="onboarding-mock-account-mail-actions">
-          <span>閉じる</span>
-          <span className="onboarding-mock-account-mail-submit">確認メールを送る</span>
+      <div className="onboarding-mock-card onboarding-mock-account-link-card">
+        <p className="onboarding-mock-account-link-title">データのバックアップや引き継ぎができます</p>
+        <div className="onboarding-mock-provider onboarding-mock-provider--plain">
+          <span aria-hidden className="onboarding-mock-apple-mark">
+            🍎
+          </span>
+          <span>Apple</span>
+          <span className="onboarding-mock-provider-status">未連携</span>
+          <span className="onboarding-mock-chev">›</span>
+        </div>
+        <div className="onboarding-mock-provider onboarding-mock-provider--plain">
+          <span className="onboarding-mock-g-mark">G</span>
+          <span>Google</span>
+          <span className="onboarding-mock-provider-status">未連携</span>
+          <span className="onboarding-mock-chev">›</span>
+        </div>
+        <div className="onboarding-mock-provider onboarding-mock-provider--plain">
+          <span>✉️</span>
+          <span>メールアドレス</span>
+          <span className="onboarding-mock-provider-status">未連携</span>
+          <span className="onboarding-mock-chev">›</span>
         </div>
       </div>
     </>

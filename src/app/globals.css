@@ -3263,6 +3263,15 @@ body {
   color: #2e7d32;
 }
 
+.onboarding-mock-badge-end {
+  font-size: 7px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #5c5952;
+  color: #fff;
+}
+
 .onboarding-mock-time {
   font-size: 6px;
   color: var(--cream-faint);
@@ -3375,6 +3384,68 @@ body {
 .onboarding-mock-log-date {
   color: var(--cream-faint);
   font-weight: 600;
+}
+
+.onboarding-mock-goals-card {
+  padding: 7px;
+}
+
+.onboarding-mock-goals-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 7px;
+  font-weight: 900;
+  color: var(--cream);
+}
+
+.onboarding-mock-goal-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 6px 7px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid var(--wood-mid);
+}
+
+.onboarding-mock-goal-row + .onboarding-mock-goal-row {
+  margin-top: 4px;
+}
+
+.onboarding-mock-goal-title {
+  margin: 0;
+  font-size: 7px;
+  font-weight: 900;
+  color: var(--cream);
+}
+
+.onboarding-mock-goal-meta {
+  margin: 2px 0 0;
+  font-size: 5px;
+  font-weight: 700;
+  color: var(--cream-faint);
+}
+
+.onboarding-mock-goal-badge {
+  flex-shrink: 0;
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-size: 6px;
+  font-weight: 900;
+}
+
+.onboarding-mock-goal-badge--done {
+  background: #1f7c46;
+  color: #fff;
+}
+
+.onboarding-mock-goal-badge--progress {
+  background: #6d6458;
+  color: #fff;
 }
 
 .onboarding-mock-intro {
@@ -3571,6 +3642,33 @@ body {
   line-height: 1.45;
   color: var(--cream-dark);
   margin-bottom: 6px;
+}
+
+.onboarding-mock-quick-card {
+  padding-bottom: 7px;
+}
+
+.onboarding-mock-quick-help {
+  margin: 0 0 6px;
+  font-size: 5px;
+  line-height: 1.4;
+  color: var(--cream-faint);
+}
+
+.onboarding-mock-quick-actions {
+  display: grid;
+  gap: 5px;
+}
+
+.onboarding-mock-outline-fake {
+  border: 1px solid rgba(232, 85, 85, 0.32);
+  border-radius: 9px;
+  background: #fff;
+  text-align: center;
+  padding: 6px;
+  font-size: 6px;
+  font-weight: 800;
+  color: var(--cream);
 }
 
 .onboarding-mock-parts-mini {
@@ -4117,6 +4215,14 @@ body {
   color: var(--ink);
 }
 
+.onboarding-mock-account-settings-head {
+  margin: 0 0 6px;
+  font-size: 7px;
+  line-height: 1.4;
+  font-weight: 900;
+  color: var(--ink);
+}
+
 .onboarding-mock-account-setting-row {
   display: flex;
   align-items: center;
@@ -4176,6 +4282,11 @@ body {
 
 .onboarding-mock-provider--google {
   background: #fff;
+}
+
+.onboarding-mock-provider--plain {
+  background: #fff;
+  color: var(--ink);
 }
 
 .onboarding-mock-provider-status {
@@ -4259,6 +4370,17 @@ body {
   border-radius: 999px;
   background: #2080ff;
   color: #fff;
+}
+
+.onboarding-mock-account-link-card {
+  padding: 8px;
+}
+
+.onboarding-mock-account-link-title {
+  margin: 0 0 7px;
+  font-size: 7px;
+  font-weight: 900;
+  color: var(--ink);
 }
 
 .onboarding-mock-tabbar {

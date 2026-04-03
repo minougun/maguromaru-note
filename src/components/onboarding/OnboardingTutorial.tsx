@@ -16,7 +16,7 @@ type Step = {
   screenshotSrc?: string;
 };
 
-const TUTORIAL_SCREENSHOT_REV = "20260404-2";
+const TUTORIAL_SCREENSHOT_REV = "20260404-3";
 
 const STEPS: Step[] = [
   {
