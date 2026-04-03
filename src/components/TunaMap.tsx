@@ -1,8 +1,9 @@
 "use client";
 
-import { memo, useState } from "react";
+import { memo, useId, useState } from "react";
 
 import tunaMapBase from "@/assets/zukan-tuna-map.webp";
+import tunaMapReveal from "@/assets/zukan-tuna-map-reveal.webp";
 
 import { mapDisplayColorForPart } from "@/lib/domain/part-brand-colors";
 import { mapOverlayTintHex } from "@/lib/map-overlay-tint";
@@ -34,7 +35,7 @@ const MAP_LEADER_STROKE = "#701d1d";
 /**
  * viewBox 1365×768。ベース画＋記録済みクリップ用の色付き画（同一クロップ）。
  * 各部位は `zukan-tuna-map-reveal.webp` 上の色塗りに沿うよう、
- * 脳天・目裏・ほほ・腹周りなどは、参考画像に合わせた手調整の path を使う。
+ * 脳天・目裏は楕円。ほほ・腹周りなどは flood＋外周輪郭＋RDP。
  * 赤身・中トロ（背）は広い塗りで輪郭自動生成が階段状に崩れやすいため手調整の path を維持。
  * WebP を差し替えた場合は scripts/build-map-regions-from-reveal.py で参考 path を再生成できる。
  */
@@ -43,85 +44,102 @@ const MAP_REGIONS: MapRegionDef[] = [
     key: "noten",
     partIds: ["noten"],
     shape: {
-      type: "path",
-      d: "M 245,246 L 309,236 L 346,243 L 341,269 L 286,279 L 252,271 Z",
+      type: "ellipse",
+      // 以前の目裏と同じ中心でやや大きめ（頭部〜目周りの塗りをまとめてクリップ）
+      cx: 308,
+      cy: 251,
+      rx: 48,
+      ry: 40,
     },
     label: { x: 228, y: 92 },
-    lineTo: { x: 294, y: 254 },
+    lineTo: { x: 308, y: 251 },
   },
   {
     key: "meura",
     partIds: ["meura"],
     shape: {
-      type: "path",
-      d: "M 190,289 L 234,281 L 265,286 L 258,308 L 214,317 L 188,308 Z",
+      type: "ellipse",
+      // 目とほほ肉のあいだのピンク塗り。脳天 (308,251) 楕円と角で重ならないよう左寄せ
+      cx: 236,
+      cy: 294,
+      rx: 24,
+      ry: 22,
     },
     label: { x: 155, y: 288 },
-    lineTo: { x: 230, y: 298 },
+    lineTo: { x: 236, y: 294 },
   },
   {
     key: "hoho",
     partIds: ["hoho"],
     shape: {
       type: "path",
-      d: "M 228,401 L 240,443 L 279,467 L 310,463 L 333,441 L 338,410 L 330,384 L 309,371 L 276,378 L 243,391 Z",
+      d: "M 241,432 L 249,464 L 307,471 L 340,460 L 350,447 L 353,401 L 352,376 L 342,356 L 335,352 L 295,393 L 246,418 Z",
     },
     label: { x: 92, y: 486 },
-    lineTo: { x: 283, y: 419 },
+    lineTo: { x: 303, y: 422 },
   },
   {
     key: "chutoro-back",
     partIds: ["chutoro"],
     shape: {
       type: "path",
-      d: "M 350,230 L 421,219 L 502,214 L 579,214 L 645,219 L 700,227 L 728,238 L 719,285 L 650,284 L 575,281 L 496,281 L 424,286 L 372,292 L 354,278 Z",
+      d:
+        // 上: y 減で拡張 / 下: y 増で拡張（akami 上縁より上に抑える）。560,212 を共有する 2 サブパス
+        "M 373,232 L 388,229 L 434,221 L 462,218 L 491,215 L 536,212 L 550,212 L 553,218 L 556,229 L 559,246 L 560,263 L 560,266 L 558,288 L 405,310 L 403,312 L 395,300 L 374,258 Z " +
+        // 尾びれ付近の突起はクリップ対象外（中トロ（背）の本体帯のみ）
+        "M 560,212 L 761,207 L 766,207 L 792,213 L 797,221 L 797,223 L 770,306 L 768,308 L 589,292 L 568,288 L 566,284 L 561,246 L 560,228 Z",
     },
     label: { x: 668, y: 82, text: "中トロ（背）" },
     labelWidth: 200,
-    lineTo: { x: 584, y: 248 },
+    lineTo: { x: 658, y: 258 },
   },
   {
     key: "akami",
     partIds: ["akami"],
     shape: {
       type: "path",
-      d: "M 507,322 L 549,304 L 621,302 L 699,309 L 774,323 L 832,344 L 861,377 L 842,411 L 791,436 L 721,449 L 639,447 L 570,439 L 525,421 L 494,383 Z",
+      // 尾びれ付近の細長い塗りはクリップ対象外（部位ラベル・記録対象としない）
+      d: "M 499,327 L 523,303 L 557,299 L 561,299 L 607,300 L 662,302 L 686,304 L 732,309 L 816,321 L 834,325 L 843,328 L 894,394 L 891,403 L 828,446 L 792,468 L 558,452 L 529,422 Z",
     },
     label: { x: 1040, y: 336 },
-    lineTo: { x: 699, y: 380 },
+    lineTo: { x: 738, y: 382 },
   },
+  // 腹の中トロ polygon が大トロと重なるため、先に中トロを描いてから大トロを上に載せる（さもなくば reveal が大トロを潰す）
   {
     key: "belly-chutoro",
     partIds: ["chutoro"],
     shape: {
       type: "path",
-      d: "M 760,501 L 804,476 L 875,458 L 930,462 L 923,484 L 844,504 Z",
+      // 下端は reveal の薄ピンクが続く範囲まで延ばし（尾側大トロブロックの上縁付近まで）。銀帯手前ギリギリまで拡大
+      d: "M 746,552 L 772,448 L 916,434 L 1005,407 L 992,460 L 875,536 L 752,554 Z",
     },
     label: { x: 1008, y: 608, text: "中トロ（腹）" },
     labelWidth: 210,
-    lineTo: { x: 848, y: 479 },
+    lineTo: { x: 886, y: 478 },
   },
   {
     key: "belly-otoro-rear",
     partIds: ["otoro"],
     shape: {
       type: "path",
-      d: "M 430,547 L 446,480 L 500,467 L 572,462 L 648,463 L 720,472 L 792,488 L 782,510 L 732,527 L 667,541 L 593,548 L 515,551 Z",
+      // 尾側・頭側の境界は同じ座標で接続。上縁は直線の継ぎ目を C で滑らかに（選択時の黒線のV字解消）
+      d: "M 560,557 L 562,472 L 568,474 C 648,458 724,448 794,456 L 800,456 L 801,457 L 801,459 L 800,470 L 796,482 L 788,496 L 775,510 L 755,524 L 732,536 L 704,546 L 672,552 L 640,555 L 608,557 L 572,557 Z",
     },
     label: { x: 808, y: 628, text: "大トロ" },
     labelWidth: 132,
-    lineTo: { x: 618, y: 490 },
+    lineTo: { x: 696, y: 486 },
   },
   {
     key: "belly-otoro-front",
     partIds: ["otoro"],
     shape: {
       type: "path",
-      d: "M 301,540 L 322,470 L 363,456 L 411,462 L 442,482 L 435,509 L 400,535 L 353,546 L 316,542 Z",
+      // 562,472 は belly-otoro-rear と共有。419→562 の長辺を C で腹の弧に近づける
+      d: "M 395,543 L 414,462 L 415,461 L 417,460 L 419,460 C 488,448 528,458 562,472 L 558,498 L 548,520 L 532,540 L 510,552 L 485,556 L 455,556 L 428,552 L 405,548 Z",
     },
     label: { x: 352, y: 692, text: "大トロ" },
     labelWidth: 132,
-    lineTo: { x: 370, y: 492 },
+    lineTo: { x: 482, y: 491 },
   },
 ];
 
@@ -166,11 +184,11 @@ function regionPrimaryPart(region: MapRegionDef, partsById: Map<PartId, Part>, c
   return partsById.get(id!) ?? null;
 }
 
-function filledShapeEl(r: MapRegionDef["shape"], fill: string, opacity: string) {
+function clipShapeEl(r: MapRegionDef["shape"]) {
   if (r.type === "ellipse") {
-    return <ellipse cx={r.cx} cy={r.cy} rx={r.rx} ry={r.ry} fill={fill} opacity={opacity} />;
+    return <ellipse cx={r.cx} cy={r.cy} rx={r.rx} ry={r.ry} />;
   }
-  return <path d={r.d} fill={fill} opacity={opacity} />;
+  return <path d={r.d} />;
 }
 
 function hitShapeEl(r: MapRegionDef["shape"]) {
@@ -194,8 +212,14 @@ function TunaMapInner({ parts, collectedPartIds }: TunaMapProps) {
   const partsById = new Map(parts.map((part) => [part.id, part]));
   const collected = new Set(collectedPartIds);
   const [selectedRegionKey, setSelectedRegionKey] = useState<string | null>(null);
+  const clipUid = useId().replace(/:/g, "");
+  const revealImageId = `${clipUid}-reveal`;
 
   const selectedRegion = selectedRegionKey ? MAP_REGIONS.find((r) => r.key === selectedRegionKey) : null;
+
+  function clipId(key: string) {
+    return `${clipUid}-clip-${key}`;
+  }
 
   function handleTapRegion(region: MapRegionDef) {
     setSelectedRegionKey((current) => (current === region.key ? null : region.key));
@@ -217,6 +241,21 @@ function TunaMapInner({ parts, collectedPartIds }: TunaMapProps) {
     <div>
       <div className="map-wrap">
         <svg viewBox="0 0 1365 768" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="まぐろ部位マップ">
+          <defs>
+            <image
+              id={revealImageId}
+              href={tunaMapReveal.src}
+              width="1365"
+              height="768"
+              preserveAspectRatio="xMidYMid meet"
+            />
+            {MAP_REGIONS.map((r) => (
+              <clipPath id={clipId(r.key)} key={`clip-${r.key}`} clipPathUnits="userSpaceOnUse">
+                {clipShapeEl(r.shape)}
+              </clipPath>
+            ))}
+          </defs>
+
           <image href={tunaMapBase.src} width="1365" height="768" preserveAspectRatio="xMidYMid meet" />
 
           {MAP_REGIONS.map((r) => {
@@ -227,9 +266,15 @@ function TunaMapInner({ parts, collectedPartIds }: TunaMapProps) {
             const primary = regionPrimaryPart(r, partsById, collected);
             const tint = primary ? mapOverlayTintHex(mapDisplayColorForPart(primary)) : null;
             const tintOpacity =
-              primary?.id === "otoro" || primary?.id === "chutoro" ? "0.72" : "0.64";
-            if (tint == null) return null;
-            return <g key={`fill-${r.key}`}>{filledShapeEl(r.shape, tint, tintOpacity)}</g>;
+              primary?.id === "otoro" || primary?.id === "chutoro" ? "0.56" : "0.48";
+            return (
+              <g key={`reveal-${r.key}`} clipPath={`url(#${clipId(r.key)})`}>
+                <use href={`#${revealImageId}`} width="1365" height="768" />
+                {tint != null ? (
+                  <rect width="1365" height="768" fill={tint} opacity={tintOpacity} />
+                ) : null}
+              </g>
+            );
           })}
 
           {MAP_REGIONS.map((r) => {
