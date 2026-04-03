@@ -169,12 +169,12 @@ test("buildNextTitleProgress returns remaining requirements for the next locked 
         },
       },
       currentTitle: {
-        id: "beginner",
-        name: "まぐろ入門者",
-        icon: "🎣",
-        requiredVisits: 10,
+        id: "kozou",
+        name: "まぐろ小僧",
+        icon: "🐟",
+        requiredVisits: 5,
         requiredCollectedParts: 0,
-        requiredQuizCorrect: 0,
+        requiredQuizCorrect: 10,
       },
       logs: [createVisitRecord("1", "2026-03-29")],
       shareBonus: {
@@ -198,10 +198,10 @@ test("buildNextTitleProgress returns remaining requirements for the next locked 
 
   const progress = buildNextTitleProgress(buildMyPageSummary(snapshot));
 
-  assert.equal(progress?.title.id, "akami_fan");
-  assert.equal(progress?.remainingVisits, 10);
-  assert.equal(progress?.remainingCollectedParts, 3);
-  assert.equal(progress?.remainingQuizCorrect, 165);
+  assert.equal(progress?.title.id, "beginner");
+  assert.equal(progress?.remainingVisits, 0);
+  assert.equal(progress?.remainingCollectedParts, 0);
+  assert.equal(progress?.remainingQuizCorrect, 65);
 });
 
 test("buildCasualMissions builds low-frequency-friendly progress goals", () => {
@@ -246,14 +246,7 @@ test("buildCasualMissions builds low-frequency-friendly progress goals", () => {
         accuracyRate: 67,
       },
       quizStageProgress: { correctByStage: { 1: 8 } },
-      currentTitle: {
-        id: "beginner",
-        name: "まぐろ入門者",
-        icon: "🎣",
-        requiredVisits: 10,
-        requiredCollectedParts: 0,
-        requiredQuizCorrect: 0,
-      },
+      currentTitle: null,
       logs: [createVisitRecord("1", "2026-03-29")],
       shareBonus: {
         bonusVisitCount: 0,

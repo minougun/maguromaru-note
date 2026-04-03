@@ -32,13 +32,13 @@ import {
 import { resetHomeSideDataServerCacheForTest } from "@/lib/home-side-data-server";
 
 test("getCurrentTitle requires both visit count and quiz correct answers", () => {
-  assert.equal(getCurrentTitle(5, 0, 0)?.id, "kozou");
-  assert.equal(getCurrentTitle(10, 0, 0)?.id, "beginner");
+  assert.equal(getCurrentTitle(5, 0, 10)?.id, "kozou");
+  assert.equal(getCurrentTitle(10, 0, 100)?.id, "beginner");
   assert.equal(getCurrentTitle(20, 5, 200)?.id, "akami_fan");
   assert.equal(getCurrentTitle(50, 5, 500)?.id, "chutoro");
   assert.equal(getCurrentTitle(75, 6, 750)?.id, "hunter");
   assert.equal(getCurrentTitle(100, 6, 1000)?.id, "master");
-  assert.equal(getCurrentTitle(10, 4, 900)?.id, "beginner");
+  assert.equal(getCurrentTitle(10, 4, 90)?.id, "kozou");
   assert.equal(getCurrentTitle(0, 8, 2000), null);
 });
 
