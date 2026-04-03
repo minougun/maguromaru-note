@@ -142,10 +142,10 @@ export function HomeScreen() {
         <p className="ai-store-blurb-meta">日替わり豆知識 · {sideData.trivia.date}</p>
       </Card>
 
-      <SectionTitle subtitle="Easy goals" title="ゆるく進める目標" />
+      <SectionTitle subtitle="Easy goals" title="ミッション" />
       <Card className="casual-mission-card">
         <div className="casual-mission-card-head">
-          <p className="casual-mission-card-title">来店頻度が少なくても進むミッション</p>
+          <p className="casual-mission-card-title">ミッション</p>
           <span className="casual-mission-card-count">
             {casualMissionCompletedCount} / {casualMissions.length} 達成
           </span>
