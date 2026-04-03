@@ -81,9 +81,9 @@ export function TitlesScreen() {
             <div className={`title-icon ${title.current ? "current" : ""}`}>{title.unlocked ? title.icon : "🔒"}</div>
             <div className="title-copy">
               <div className="title-name">{title.name}</div>
-              <div className="title-meta">{title.unlocked ? "解放済み" : title.requirementText}</div>
+              {!title.current ? <div className="title-meta">{title.unlocked ? "解放済み" : title.requirementText}</div> : null}
             </div>
-            {title.current ? <span className="title-status-chip">使用中</span> : null}
+            {title.current ? <span className="title-status-chip">解放済み</span> : null}
           </div>
         ))}
       </Card>

@@ -322,9 +322,8 @@ function MockTitles() {
           <span>🐟</span>
           <div>
             <div className="onboarding-mock-tr-name">まぐろ入門者</div>
-            <div className="onboarding-mock-tr-meta">解放済み</div>
           </div>
-          <span className="onboarding-mock-chip-use">使用中</span>
+          <span className="onboarding-mock-chip-use">解放済み</span>
         </div>
         <div className="onboarding-mock-title-row onboarding-mock-title-row--locked">
           <span>🔒</span>
