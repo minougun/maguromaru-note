@@ -23,7 +23,11 @@ test("fetchDailyTriviaSafe falls back safely when API payload is invalid", async
 
 
 test("daily trivia stock is large enough and stable per date", () => {
-  assert.ok(dailyTriviaCount() >= 50);
+  assert.ok(dailyTriviaCount() >= 365);
+
+  const allTrivia = new Set(Array.from({ length: dailyTriviaCount() }, (_, index) => pickDailyTrivia(`2026-04-${String((index % 30) + 1).padStart(2, "0")}`)));
+
+  assert.ok(allTrivia.size >= 25);
 
   const april3 = pickDailyTrivia("2026-04-03");
   const april3Again = pickDailyTrivia("2026-04-03");
