@@ -462,9 +462,17 @@ export async function signOutSupabase() {
   await client.auth.signOut();
 }
 
+export function resolveEmailLinkStrategy(session: {
+  access_token?: string | null;
+  user?: { is_anonymous?: boolean | null } | null;
+} | null): "anonymous_magic_link" | "attach_email" {
+  return session?.user?.is_anonymous && session.access_token ? "anonymous_magic_link" : "attach_email";
+}
+
 /**
- * ログイン済みユーザーにメールを紐づける: 確認メール送信（updateUser）。
- * ユーザーがメール内リンクを開くと確定（emailRedirectTo のコールバック経由）。
+ * メール連携の確認メール送信。
+ * - 匿名セッション: signInWithOtp による magic link で既存/新規メールアカウントへ入り、callback 後に匿名データを移行する
+ * - 通常セッション: updateUser(email) で現在のユーザーへメールを紐づける
  */
 export async function requestEmailLinkConfirmation(email: string, nextPath = "/mypage") {
   const client = getSupabaseBrowserClient();
@@ -475,15 +483,30 @@ export async function requestEmailLinkConfirmation(email: string, nextPath = "/m
   const {
     data: { session },
   } = await client.auth.getSession();
-  if (session?.user.is_anonymous && session.access_token) {
-    await ensureAnonymousLinkPrepareCookie(session.access_token);
+  const parsed = parseAuthEmail(email);
+
+  if (resolveEmailLinkStrategy(session) === "anonymous_magic_link") {
+    const accessToken = session?.access_token;
+    if (!accessToken) {
+      throw new Error("ログインが必要です。");
+    }
+
+    await ensureAnonymousLinkPrepareCookie(accessToken);
+
+    const { error } = await client.auth.signInWithOtp({
+      email: parsed,
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: buildAuthCallbackUrl(nextPath),
+      },
+    });
+    if (error) {
+      throw error;
+    }
+    return;
   }
 
-  const parsed = parseAuthEmail(email);
-  const { error } = await client.auth.updateUser(
-    { email: parsed },
-    { emailRedirectTo: buildAuthCallbackUrl(nextPath) },
-  );
+  const { error } = await client.auth.updateUser({ email: parsed }, { emailRedirectTo: buildAuthCallbackUrl(nextPath) });
   if (error) {
     throw error;
   }

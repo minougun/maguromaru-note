@@ -20,7 +20,7 @@ export function formatSupabaseAuthError(error: unknown): string {
   }
 
   if (/already been registered/i.test(message)) {
-    return "そのメールアドレスは別のアカウントですでに登録済みです。現在のメール連携ではこのアカウントへ引き継げません。";
+    return "そのメールアドレスは別のアカウントですでに登録済みです。メールでサインインするか、連携画面から確認メールを送り直してください。";
   }
 
   return message;

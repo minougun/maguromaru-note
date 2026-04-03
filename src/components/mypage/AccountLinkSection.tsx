@@ -199,7 +199,7 @@ export function AccountLinkSection({
           <div className="account-link-phone-panel">
             <p className="account-link-phone-lead">
               {emailFlow === "magic_link"
-                ? "未使用のメールアドレスを入力し、届いたメールのリンクを開くと連携が完了します。すでに別アカウントで登録済みのメールアドレスはここでは使えません。"
+                ? "メールアドレスを入力し、届いたメールのリンクを開くと連携が完了します。既存アカウントのメールアドレスでも、そのまま引き継げます。"
                 : isSignIn
                   ? "メールアドレスを入力し、届いた確認コードでサインインします。"
                   : "メールアドレスを入力し、届いた確認コードで連携します。"}
