@@ -2666,6 +2666,36 @@ body {
   color: var(--cream);
 }
 
+.onboarding-mock-bot-card {
+  padding: 7px 8px;
+  background:
+    radial-gradient(circle at top right, rgba(198, 61, 47, 0.26), transparent 44%),
+    linear-gradient(160deg, rgba(28, 40, 68, 0.98), rgba(56, 19, 22, 0.94));
+  border-color: rgba(191, 178, 155, 0.28);
+}
+
+.onboarding-mock-bot-label {
+  margin: 0 0 3px;
+  font-size: 6px;
+  letter-spacing: 0.08em;
+  font-weight: 800;
+  color: rgba(255, 242, 217, 0.74);
+}
+
+.onboarding-mock-bot-body {
+  margin: 0;
+  font-size: 7px;
+  line-height: 1.5;
+  font-weight: 700;
+  color: #fff4e8;
+}
+
+.onboarding-mock-bot-meta {
+  margin: 4px 0 0;
+  font-size: 6px;
+  color: rgba(255, 242, 217, 0.72);
+}
+
 .onboarding-mock-muted {
   color: var(--cream-dark);
   font-weight: 600;

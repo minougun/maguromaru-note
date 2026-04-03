@@ -85,6 +85,11 @@ function MockHome() {
       <div className="onboarding-mock-card onboarding-mock-recommend-card">
         <p className="onboarding-mock-recommend-copy">今日は特上まぐろ丼（大とろ入り）がおすすめです。</p>
       </div>
+      <div className="onboarding-mock-card onboarding-mock-bot-card">
+        <p className="onboarding-mock-bot-label">まぐろ丸Bot 今日の豆知識</p>
+        <p className="onboarding-mock-bot-body">本マグロの赤身は、脂だけではなく鉄っぽい香りと旨みの重なりでも評価されます。</p>
+        <p className="onboarding-mock-bot-meta">日替わり豆知識 · 2026-04-03</p>
+      </div>
       <MockNoren>本日の入荷状況</MockNoren>
       <div className="onboarding-mock-card onboarding-mock-stock-card">
         <div className="onboarding-mock-stock-head">
@@ -120,7 +125,6 @@ function MockHome() {
           <span className="onboarding-mock-stock-out">✕ 終了</span>
         </div>
         <p className="onboarding-mock-footnote">※ 店舗スタッフが更新しています</p>
-        <p className="onboarding-mock-footnote onboarding-mock-footnote--supplier">仕入・監修：雅鮮魚店・寺本商店</p>
       </div>
       <MockSectionTitle subtitle="Recent logs" title="最近の記録" />
       <div className="onboarding-mock-card onboarding-mock-log-card">
