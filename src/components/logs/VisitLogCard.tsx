@@ -46,7 +46,11 @@ export const VisitLogCard = memo(function VisitLogCard({
           log.parts.map((part) => {
             const c = mapDisplayColorForPart(part);
             return (
-              <span className="tag" key={part.id} style={{ backgroundColor: `${c}22`, borderColor: `${c}66` }}>
+              <span
+                className="tag"
+                key={part.id}
+                style={{ color: c, backgroundColor: `${c}2f`, borderColor: `${c}99`, boxShadow: `inset 0 1px 0 ${c}1a` }}
+              >
                 {part.name}
               </span>
             );
