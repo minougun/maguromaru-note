@@ -19,5 +19,9 @@ export function formatSupabaseAuthError(error: unknown): string {
     return "処理に失敗しました。";
   }
 
+  if (/already been registered/i.test(message)) {
+    return "そのメールアドレスは別のアカウントですでに登録済みです。現在のメール連携ではこのアカウントへ引き継げません。";
+  }
+
   return message;
 }

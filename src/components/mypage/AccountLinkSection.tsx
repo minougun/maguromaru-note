@@ -187,7 +187,7 @@ export function AccountLinkSection({
                 </span>
                 <span className="account-link-row-label">メールアドレス</span>
                 <span className="account-link-row-status">
-                  {isSignIn ? "メールでサインイン" : emailOn ? "連携済み" : "未連携"}
+                  {isSignIn ? "メールでサインイン" : emailOn ? "連携済み" : "このアカウントに未連携"}
                 </span>
                 <Chevron />
               </button>
@@ -199,7 +199,7 @@ export function AccountLinkSection({
           <div className="account-link-phone-panel">
             <p className="account-link-phone-lead">
               {emailFlow === "magic_link"
-                ? "メールアドレスを入力し、届いたメールのリンクを開くと連携が完了します。"
+                ? "未使用のメールアドレスを入力し、届いたメールのリンクを開くと連携が完了します。すでに別アカウントで登録済みのメールアドレスはここでは使えません。"
                 : isSignIn
                   ? "メールアドレスを入力し、届いた確認コードでサインインします。"
                   : "メールアドレスを入力し、届いた確認コードで連携します。"}
