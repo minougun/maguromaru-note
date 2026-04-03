@@ -71,6 +71,40 @@ body {
   overflow-y: hidden;
 }
 
+.app-shell[data-ui-text-size="large"] .header-subtitle,
+.app-shell[data-ui-text-size="large"] .helper-text,
+.app-shell[data-ui-text-size="large"] .part-area,
+.app-shell[data-ui-text-size="large"] .part-rarity,
+.app-shell[data-ui-text-size="large"] .stock-item-price,
+.app-shell[data-ui-text-size="large"] .ai-store-blurb-meta,
+.app-shell[data-ui-text-size="large"] .part-list-meta-chip,
+.app-shell[data-ui-text-size="large"] .plist-desc,
+.app-shell[data-ui-text-size="large"] .part-insight-meta,
+.app-shell[data-ui-text-size="large"] .part-profile-item dt,
+.app-shell[data-ui-text-size="large"] .part-profile-item dd,
+.app-shell[data-ui-text-size="large"] .part-profile-history-meta,
+.app-shell[data-ui-text-size="large"] .map-hint,
+.app-shell[data-ui-text-size="large"] .map-detail-desc,
+.app-shell[data-ui-text-size="large"] .settings-group-title,
+.app-shell[data-ui-text-size="large"] .casual-mission-progress {
+  font-size: 14px;
+}
+
+.app-shell[data-ui-text-size="large"] .header-title,
+.app-shell[data-ui-text-size="large"] .part-name,
+.app-shell[data-ui-text-size="large"] .stock-item-name,
+.app-shell[data-ui-text-size="large"] .loyalty-card-title,
+.app-shell[data-ui-text-size="large"] .casual-mission-label {
+  font-size: 18px;
+}
+
+.app-shell[data-ui-text-size="large"] .button-primary,
+.app-shell[data-ui-text-size="large"] .button-outline,
+.app-shell[data-ui-text-size="large"] .settings-pill,
+.app-shell[data-ui-text-size="large"] .part-tasting-pill {
+  font-size: 15px;
+}
+
 .app-shell > .screen-state {
   flex: 1 1 auto;
   min-height: 0;
@@ -738,6 +772,65 @@ body {
   text-decoration: none;
 }
 
+.casual-mission-card {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.casual-mission-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.casual-mission-card-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--cream);
+}
+
+.casual-mission-card-count {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--navy);
+}
+
+.casual-mission-list {
+  display: grid;
+  gap: 8px;
+}
+
+.casual-mission-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(27, 45, 79, 0.1);
+  background: rgba(255, 255, 255, 0.88);
+  padding: 10px 12px;
+}
+
+.casual-mission-item.completed {
+  border-color: rgba(32, 122, 63, 0.22);
+  background: rgba(32, 122, 63, 0.08);
+}
+
+.casual-mission-label {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.casual-mission-progress {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--cream-dark);
+}
+
 .ai-store-blurb-label {
   margin: 0 0 6px;
   font-size: 10px;
@@ -1111,6 +1204,68 @@ body {
 
 .record-assist-button {
   font-size: 13px;
+}
+
+.settings-card {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.settings-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.settings-card-label {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cream-faint);
+}
+
+.settings-card-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--cream);
+}
+
+.settings-group {
+  display: grid;
+  gap: 8px;
+}
+
+.settings-group-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--cream-dark);
+}
+
+.settings-option-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.settings-pill {
+  border-radius: 999px;
+  border: 1px solid rgba(27, 45, 79, 0.14);
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--ink);
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.settings-pill.active {
+  border-color: rgba(27, 45, 79, 0.34);
+  background: rgba(27, 45, 79, 0.08);
+  color: var(--navy);
 }
 
 .part-tasting-stack {

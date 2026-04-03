@@ -5,6 +5,7 @@ import "@/app/light-only.css";
 import { AppShellRouter } from "@/components/layout/AppShellRouter";
 import { AppSnapshotProvider } from "@/components/providers/AppSnapshotProvider";
 import { AuthProvider } from "@/components/providers/AuthProvider";
+import { UiPreferencesProvider } from "@/components/providers/UiPreferencesProvider";
 
 export const metadata: Metadata = {
   title: "まぐろ丸ノート",
@@ -26,9 +27,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ja" suppressHydrationWarning data-theme="light" style={{ colorScheme: "light" }}>
       <body data-mgn-revision={mgnRevision} data-theme="light" suppressHydrationWarning>
         <AuthProvider>
-          <AppSnapshotProvider>
-            <AppShellRouter>{children}</AppShellRouter>
-          </AppSnapshotProvider>
+          <UiPreferencesProvider>
+            <AppSnapshotProvider>
+              <AppShellRouter>{children}</AppShellRouter>
+            </AppSnapshotProvider>
+          </UiPreferencesProvider>
         </AuthProvider>
       </body>
     </html>

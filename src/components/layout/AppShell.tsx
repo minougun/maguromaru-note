@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { AppHeader } from "@/components/layout/AppHeader";
 import { useAuthState } from "@/components/providers/AuthProvider";
+import { useUiPreferences } from "@/components/providers/UiPreferencesProvider";
 import { ScreenState } from "@/components/ui/ScreenState";
 import { TabBar } from "@/components/ui/TabBar";
 import { markOnboardingDone, readOnboardingDone } from "@/lib/onboarding-storage";
@@ -23,6 +24,7 @@ const OnboardingTutorial = dynamic(
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const auth = useAuthState();
+  const { preferences } = useUiPreferences();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [scrollMainEl, setScrollMainEl] = useState<HTMLElement | null>(null);
 
@@ -39,7 +41,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   if (!auth.ready) {
     return (
-      <div className="app-shell">
+      <div className="app-shell" data-ui-density={preferences.density} data-ui-text-size={preferences.textSize}>
         <ScreenState description="認証情報を確認しています。" title="読み込み中" />
       </div>
     );
@@ -47,7 +49,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   if (auth.error && auth.usingSupabase) {
     return (
-      <div className="app-shell">
+      <div className="app-shell" data-ui-density={preferences.density} data-ui-text-size={preferences.textSize}>
         <AppHeader />
         <main className="screen-main">
           <ScreenState description={auth.error} title="認証エラー" />
@@ -61,7 +63,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="app-shell">
+    <div className="app-shell" data-ui-density={preferences.density} data-ui-text-size={preferences.textSize}>
       <AppHeader />
       <main className="screen-main" ref={setScrollMainEl}>
         {children}
@@ -83,9 +85,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 function LoginShell() {
   const [revealed, setRevealed] = useState(false);
   const onAnimationEnd = useCallback(() => setRevealed(true), []);
+  const { preferences } = useUiPreferences();
 
   return (
-    <div className="app-shell app-shell--login">
+    <div className="app-shell app-shell--login" data-ui-density={preferences.density} data-ui-text-size={preferences.textSize}>
       <main className="screen-main screen-main--login">
         <LoginScreen onAnimationEnd={onAnimationEnd} revealed={revealed} />
       </main>

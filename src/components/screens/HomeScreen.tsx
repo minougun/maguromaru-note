@@ -13,7 +13,7 @@ import { clearAuthCallbackQueryParams } from "@/lib/auth-callback-ui";
 import { menuStockLabels, type MenuStockStatus } from "@/lib/domain/constants";
 import type { VisitRecord } from "@/lib/domain/types";
 import { useAppSnapshot } from "@/lib/hooks/use-app-snapshot";
-import { buildMyPageSummary, buildNextTitleProgress } from "@/lib/mypage";
+import { buildCasualMissions, buildMyPageSummary, buildNextTitleProgress } from "@/lib/mypage";
 import { buildPastLogShare, type SharePayload } from "@/lib/share/share";
 import { formatCount } from "@/lib/utils/format";
 
@@ -92,6 +92,8 @@ export function HomeScreen() {
   const weatherText = `${sideData.weather.icon} ${Math.round(sideData.weather.temperature)}℃ ${sideData.weather.label}`;
   const myPageSummary = buildMyPageSummary(snapshot);
   const nextTitleProgress = buildNextTitleProgress(myPageSummary);
+  const casualMissions = buildCasualMissions(snapshot);
+  const casualMissionCompletedCount = casualMissions.filter((mission) => mission.completed).length;
   const titleSummary = myPageSummary.currentTitle
     ? `${myPageSummary.currentTitle.icon} ${myPageSummary.currentTitle.name}`
     : "称号なし";
@@ -138,6 +140,29 @@ export function HomeScreen() {
         <p className="ai-store-blurb-label">まぐろ丸Bot 今日の豆知識</p>
         <p className="ai-store-blurb-body">{sideData.trivia.trivia}</p>
         <p className="ai-store-blurb-meta">日替わり豆知識 · {sideData.trivia.date}</p>
+      </Card>
+
+      <SectionTitle subtitle="Easy goals" title="ゆるく進める目標" />
+      <Card className="casual-mission-card">
+        <div className="casual-mission-card-head">
+          <p className="casual-mission-card-title">来店頻度が少なくても進むミッション</p>
+          <span className="casual-mission-card-count">
+            {casualMissionCompletedCount} / {casualMissions.length} 達成
+          </span>
+        </div>
+        <div className="casual-mission-list">
+          {casualMissions.map((mission) => (
+            <div className={`casual-mission-item ${mission.completed ? "completed" : ""}`} key={mission.id}>
+              <div>
+                <div className="casual-mission-label">{mission.label}</div>
+                <div className="casual-mission-progress">{mission.progressLabel}</div>
+              </div>
+              <span className={`badge ${mission.completed ? "badge-available" : "badge-unset"}`}>
+                {mission.completed ? "達成" : "進行中"}
+              </span>
+            </div>
+          ))}
+        </div>
       </Card>
       <NorenBanner label="本日の入荷状況" />
       <Card className="stock-card">

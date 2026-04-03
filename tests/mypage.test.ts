@@ -4,7 +4,7 @@ import test from "node:test";
 import { defaultMenuStockById } from "@/lib/domain/constants";
 import { seededMenuItems, seededParts, seededStoreStatus } from "@/lib/domain/seed";
 import type { AppSnapshot, VisitRecord } from "@/lib/domain/types";
-import { buildMyPageSummary, buildNextTitleProgress, calculateVisitStreakWeeks } from "@/lib/mypage";
+import { buildCasualMissions, buildMyPageSummary, buildNextTitleProgress, calculateVisitStreakWeeks } from "@/lib/mypage";
 
 function createVisitRecord(id: string, visitedAt: string): VisitRecord {
   return {
@@ -201,4 +201,87 @@ test("buildNextTitleProgress returns remaining requirements for the next locked 
   assert.equal(progress?.remainingVisits, 2);
   assert.equal(progress?.remainingCollectedParts, 3);
   assert.equal(progress?.remainingQuizCorrect, 165);
+});
+
+test("buildCasualMissions builds low-frequency-friendly progress goals", () => {
+  const snapshot: AppSnapshot = {
+    viewer: {
+      userId: "user-1",
+      email: null,
+      role: "user",
+      isMock: true,
+    },
+    parts: seededParts,
+    menuItems: seededMenuItems,
+    home: {
+      menuItemStatuses: defaultMenuStockById,
+      menuStockUpdatedAt: null,
+      storeStatus: seededStoreStatus,
+      showStaffUpdateTimestamps: true,
+      aiStoreBlurb: null,
+      sideData: {
+        weather: {
+          temperature: 20,
+          code: 0,
+          icon: "☀️",
+          label: "快晴",
+        },
+        trivia: {
+          trivia: "まぐろの部位は個性が豊かです。",
+          date: "2026-04-03",
+        },
+        fetchedAt: "2026-04-03T00:00:00.000Z",
+      },
+      recentLogs: [],
+    },
+    history: {
+      visitCount: 1,
+      quizStats: {
+        totalCorrectAnswers: 8,
+        totalAnsweredQuestions: 12,
+        quizzesCompleted: 1,
+        bestScore: 8,
+        bestQuestionCount: 10,
+        accuracyRate: 67,
+      },
+      quizStageProgress: { correctByStage: { 1: 8 } },
+      currentTitle: {
+        id: "beginner",
+        name: "まぐろ入門者",
+        icon: "🐟",
+        requiredVisits: 1,
+        requiredCollectedParts: 0,
+        requiredQuizCorrect: 0,
+      },
+      logs: [createVisitRecord("1", "2026-03-29")],
+      shareBonus: {
+        bonusVisitCount: 0,
+        bonusCorrectAnswers: 0,
+        sharedVisitLogIds: [],
+        sharedQuizSessionIds: [],
+      },
+    },
+    zukan: {
+      collectedPartIds: ["otoro", "chutoro"],
+      collectedCount: 2,
+      totalCount: seededParts.length,
+      isComplete: false,
+      partInsights: {},
+      globalPartInsights: {},
+      partProfiles: {},
+    },
+    canManageAdmin: false,
+  };
+
+  const missions = buildCasualMissions(snapshot);
+
+  assert.deepEqual(
+    missions.map((mission) => ({ id: mission.id, completed: mission.completed, progressLabel: mission.progressLabel })),
+    [
+      { id: "first_record", completed: true, progressLabel: "達成済み" },
+      { id: "collect_three_parts", completed: false, progressLabel: "2 / 3" },
+      { id: "quiz_ten_correct", completed: false, progressLabel: "8 / 10" },
+      { id: "first_share", completed: false, progressLabel: "あと1回" },
+    ],
+  );
 });

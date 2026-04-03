@@ -23,6 +23,13 @@ export interface NextTitleProgress {
   remainingQuizCorrect: number;
 }
 
+export interface CasualMission {
+  id: "first_record" | "collect_three_parts" | "quiz_ten_correct" | "first_share";
+  label: string;
+  progressLabel: string;
+  completed: boolean;
+}
+
 function buildRequirementText(title: Title) {
   const conditions = [`来店${title.requiredVisits}回`];
 
@@ -111,4 +118,36 @@ export function buildNextTitleProgress(summary: MyPageSummary): NextTitleProgres
     remainingCollectedParts: Math.max(0, nextTitle.requiredCollectedParts - summary.collectedCount),
     remainingQuizCorrect: Math.max(0, nextTitle.requiredQuizCorrect - summary.totalCorrectAnswers),
   };
+}
+
+export function buildCasualMissions(snapshot: AppSnapshot): CasualMission[] {
+  const shareCount =
+    snapshot.history.shareBonus.sharedVisitLogIds.length + snapshot.history.shareBonus.sharedQuizSessionIds.length;
+
+  return [
+    {
+      id: "first_record",
+      label: "はじめての記録を残す",
+      progressLabel: snapshot.history.logs.length > 0 ? "達成済み" : "あと1回",
+      completed: snapshot.history.logs.length > 0,
+    },
+    {
+      id: "collect_three_parts",
+      label: "部位を3つ集める",
+      progressLabel: `${Math.min(snapshot.zukan.collectedCount, 3)} / 3`,
+      completed: snapshot.zukan.collectedCount >= 3,
+    },
+    {
+      id: "quiz_ten_correct",
+      label: "クイズで10問正解する",
+      progressLabel: `${Math.min(snapshot.history.quizStats.totalCorrectAnswers, 10)} / 10`,
+      completed: snapshot.history.quizStats.totalCorrectAnswers >= 10,
+    },
+    {
+      id: "first_share",
+      label: "シェアボーナスを受け取る",
+      progressLabel: shareCount > 0 ? "達成済み" : "あと1回",
+      completed: shareCount > 0,
+    },
+  ];
 }

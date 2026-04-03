@@ -8,6 +8,7 @@ import { ZodError } from "zod";
 import { isProviderLinked } from "@/components/mypage/is-provider-linked";
 import { requestAppSnapshotRefresh } from "@/components/providers/AppSnapshotProvider";
 import { useAuthState } from "@/components/providers/AuthProvider";
+import { useUiPreferences } from "@/components/providers/UiPreferencesProvider";
 import { Card } from "@/components/ui/Card";
 import { NorenBanner } from "@/components/ui/NorenBanner";
 import {
@@ -49,6 +50,7 @@ function profileErrorMessage(error: unknown) {
 export function MyPageScreen() {
   const router = useRouter();
   const auth = useAuthState();
+  const { preferences, setDensity, setTextSize } = useUiPreferences();
   const [profile, setProfile] = useState<BrowserAuthProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
   const [linkNotice, setLinkNotice] = useState<string | null>(null);
@@ -118,6 +120,55 @@ export function MyPageScreen() {
   return (
     <>
       <NorenBanner label="アカウント連携" />
+
+      <Card className="settings-card">
+        <div className="settings-card-head">
+          <div>
+            <p className="settings-card-label">見やすさ設定</p>
+            <p className="settings-card-title">表示を軽くする / 文字を大きくする</p>
+          </div>
+        </div>
+        <div className="settings-group">
+          <div className="settings-group-title">表示モード</div>
+          <div className="settings-option-row">
+            <button
+              className={`settings-pill ${preferences.density === "simple" ? "active" : ""}`}
+              onClick={() => setDensity("simple")}
+              type="button"
+            >
+              かんたん表示
+            </button>
+            <button
+              className={`settings-pill ${preferences.density === "detail" ? "active" : ""}`}
+              onClick={() => setDensity("detail")}
+              type="button"
+            >
+              詳細表示
+            </button>
+          </div>
+          <p className="helper-text">かんたん表示では、図鑑一覧などの情報量を抑えて見やすくします。</p>
+        </div>
+        <div className="settings-group">
+          <div className="settings-group-title">文字サイズ</div>
+          <div className="settings-option-row">
+            <button
+              className={`settings-pill ${preferences.textSize === "standard" ? "active" : ""}`}
+              onClick={() => setTextSize("standard")}
+              type="button"
+            >
+              標準
+            </button>
+            <button
+              className={`settings-pill ${preferences.textSize === "large" ? "active" : ""}`}
+              onClick={() => setTextSize("large")}
+              type="button"
+            >
+              大きめ
+            </button>
+          </div>
+          <p className="helper-text">大きめ文字は、ホームや図鑑、記録画面の文字を少し読みやすくします。</p>
+        </div>
+      </Card>
 
       {auth.usingSupabase ? (
         <AccountLinkSection

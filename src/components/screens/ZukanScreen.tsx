@@ -3,11 +3,14 @@
 import dynamic from "next/dynamic";
 import { useState } from "react";
 
+import { useUiPreferences } from "@/components/providers/UiPreferencesProvider";
 import { ShareModalDynamic } from "@/components/share/ShareModalDynamic";
 import { Card } from "@/components/ui/Card";
 import { NorenBanner } from "@/components/ui/NorenBanner";
 import { ScreenState } from "@/components/ui/ScreenState";
 import { SectionTitle } from "@/components/ui/SectionTitle";
+import { PartDetailProfileBlock } from "@/components/zukan/PartDetailProfile";
+import { PartMenuInsightBlock } from "@/components/zukan/PartMenuInsight";
 import { useAppSnapshot } from "@/lib/hooks/use-app-snapshot";
 import { buildZukanShare, type SharePayload } from "@/lib/share/share";
 
@@ -34,6 +37,7 @@ const TunaMap = dynamic(
 
 export function ZukanScreen() {
   const { snapshot, loading, error, refresh } = useAppSnapshot();
+  const { preferences } = useUiPreferences();
   const [sharePayload, setSharePayload] = useState<SharePayload | null>(null);
 
   if (loading) {
@@ -94,7 +98,11 @@ export function ZukanScreen() {
 
       <SectionTitle subtitle="All parts" title="部位一覧" />
       <Card>
-        <p className="helper-text">一覧はシンプル表示にしています。詳しい食感や出やすい丼は、上の部位マップをタップして確認できます。</p>
+        <p className="helper-text">
+          {preferences.density === "detail"
+            ? "詳細表示では、一覧でも部位メモと出やすい丼を確認できます。"
+            : "一覧はシンプル表示です。詳しい食感や出やすい丼は、上の部位マップをタップして確認できます。"}
+        </p>
       </Card>
 
       <div className="zukan-list-section">
@@ -114,6 +122,15 @@ export function ZukanScreen() {
                 <span className="part-list-meta-chip">レア度 {"★".repeat(part.rarity) + "☆".repeat(3 - part.rarity)}</span>
               </div>
               <div className="plist-desc">{part.description}</div>
+              {preferences.density === "detail" ? (
+                <>
+                  <PartDetailProfileBlock profile={snapshot.zukan.partProfiles[part.id]} />
+                  <PartMenuInsightBlock
+                    globalInsight={snapshot.zukan.globalPartInsights[part.id]}
+                    insight={snapshot.zukan.partInsights[part.id]}
+                  />
+                </>
+              ) : null}
             </article>
           ))}
         </div>
