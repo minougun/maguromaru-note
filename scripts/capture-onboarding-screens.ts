@@ -594,7 +594,6 @@ const ROUTES: { file: string; path: string }[] = [
 
 /** OnboardingTutorial の STEPS と同じ順・同じ mockId */
 const MOCK_TUTORIAL_STEPS: { file: string; screen: string }[] = [
-  { file: "intro.png", screen: "intro" },
   { file: "home.png", screen: "home" },
   { file: "record.png", screen: "record" },
   { file: "zukan.png", screen: "zukan" },
