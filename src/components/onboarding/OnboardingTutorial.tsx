@@ -149,7 +149,10 @@ export function OnboardingTutorial({ onComplete }: OnboardingTutorialProps) {
 
       <div className="onboarding-panel">
         {step.mockId !== "intro" ? (
-          <div className="onboarding-art onboarding-art--mock" aria-hidden="true">
+          <div
+            className={`onboarding-art ${step.screenshotSrc ? "onboarding-art--screenshot" : "onboarding-art--mock"}`}
+            aria-hidden="true"
+          >
             {step.screenshotSrc ? (
               <>
                 {/* eslint-disable-next-line @next/next/no-img-element -- 引き継ぎ前どおり公開 WebP（publicPath で basePath 対応） */}
