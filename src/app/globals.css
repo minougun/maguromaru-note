@@ -193,7 +193,7 @@ body {
   border-radius: 50%;
   object-fit: contain;
   display: block;
-  filter: brightness(0) invert(1);
+  filter: none;
 }
 
 .header-title {
@@ -2438,7 +2438,7 @@ body {
   margin: 0;
   font-size: clamp(2.15rem, 7.8vw, 2.95rem);
   line-height: 1.22;
-  color: #5cdbef;
+  color: #ffffff;
   text-shadow: 0 6px 18px rgba(9, 19, 37, 0.28);
 }
 
