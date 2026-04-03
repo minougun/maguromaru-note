@@ -46,6 +46,19 @@ test("buildMyPageSummary marks unlocked and current titles from snapshot progres
       storeStatus: seededStoreStatus,
       showStaffUpdateTimestamps: true,
       aiStoreBlurb: null,
+      sideData: {
+        weather: {
+          temperature: 20,
+          code: 0,
+          icon: "☀️",
+          label: "快晴",
+        },
+        trivia: {
+          trivia: "まぐろの部位は個性が豊かです。",
+          date: "2026-04-03",
+        },
+        fetchedAt: "2026-04-03T00:00:00.000Z",
+      },
       recentLogs: [],
     },
     history: {
@@ -91,6 +104,8 @@ test("buildMyPageSummary marks unlocked and current titles from snapshot progres
       collectedCount: 5,
       totalCount: seededParts.length,
       isComplete: false,
+      partInsights: {},
+      partProfiles: {},
     },
     canManageAdmin: false,
   };

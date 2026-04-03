@@ -18,6 +18,7 @@ import type {
   AppSnapshot,
   HomeAiStoreBlurb,
   HomeSideDataSnapshot,
+  PartDetailProfile,
   MenuItem,
   MenuItemId,
   PartMenuInsight,
@@ -34,6 +35,7 @@ import type {
   VisitRecord,
 } from "@/lib/domain/types";
 import { defaultMenuStockById, quizQuestionsPerStage, quizStageCount, type MenuStockStatus } from "@/lib/domain/constants";
+import { buildPartDetailProfile } from "@/lib/domain/part-detail-notes";
 import { applyPartDisplayColors } from "@/lib/domain/part-brand-colors";
 import { seededQuizStats, seededShareBonusEvents, seededStoreStatus } from "@/lib/domain/seed";
 import { applyCustomerFacingStoreAndStock } from "@/lib/domain/store-business-hours";
@@ -378,6 +380,26 @@ function buildPartMenuInsights(parts: Part[], visitRecords: VisitRecord[]): Reco
   }
 
   return insights;
+}
+
+function buildPartDetailProfiles(parts: Part[], visitRecords: VisitRecord[]): Record<PartId, PartDetailProfile | undefined> {
+  const earliestVisitByPart = new Map<PartId, string>();
+
+  for (const record of visitRecords) {
+    for (const part of record.parts) {
+      const current = earliestVisitByPart.get(part.id);
+      if (!current || record.visitedAt.localeCompare(current) < 0) {
+        earliestVisitByPart.set(part.id, record.visitedAt);
+      }
+    }
+  }
+
+  const profiles: Record<PartId, PartDetailProfile | undefined> = {};
+  for (const part of parts) {
+    profiles[part.id] = buildPartDetailProfile(part, earliestVisitByPart.get(part.id) ?? null);
+  }
+
+  return profiles;
 }
 
 async function getSupabaseViewer(client: SupabaseClient<Database>): Promise<ViewerContext> {
@@ -1012,6 +1034,7 @@ function buildSnapshotFromRecords(
   );
   const trackedParts = filterTrackedParts(parts);
   const partInsights = buildPartMenuInsights(trackedParts, visitRecords);
+  const partProfiles = buildPartDetailProfiles(trackedParts, visitRecords);
   const partsForCollection = buildCtx?.visitLogPartsForCollection ?? visitLogParts;
   const collectedPartIds = buildCollectedPartIds(
     trackedParts,
@@ -1068,6 +1091,7 @@ function buildSnapshotFromRecords(
       totalCount: trackedParts.length,
       isComplete: collectedPartIds.length === trackedParts.length,
       partInsights,
+      partProfiles,
     },
     canManageAdmin: viewer.role === "admin",
   };

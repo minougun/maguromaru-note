@@ -264,6 +264,8 @@ test("zukan snapshot includes per-part menu appearance insights from personal hi
     const snapshot = await getAppSnapshot(undefined, "zukan");
     const otoroInsight = snapshot.zukan.partInsights.otoro;
     const meuraInsight = snapshot.zukan.partInsights.meura;
+    const akamiProfile = snapshot.zukan.partProfiles.akami;
+    const meuraProfile = snapshot.zukan.partProfiles.meura;
 
     assert.ok(otoroInsight);
     assert.equal(otoroInsight.totalAppearances, 4);
@@ -295,6 +297,15 @@ test("zukan snapshot includes per-part menu appearance insights from personal hi
       totalAppearances: 0,
       menuStats: [],
     });
+    assert.deepEqual(akamiProfile, {
+      partId: "akami",
+      rarityLabel: "比較的出会いやすい",
+      rarityMemo: "比較的出会いやすい基準部位で、ほかの部位との違いを測る軸にもなります。",
+      textureMemo: "筋肉質でほどよい弾力があり、噛むほど旨みが広がるタイプです。",
+      fatMemo: "脂は控えめで、香りと鉄っぽい旨みを楽しむすっきり寄りの部位です。",
+      firstCollectedAt: "2026-03-21",
+    });
+    assert.equal(meuraProfile?.firstCollectedAt, null);
   } finally {
     await writeMockState({
       menuItemStatuses: seededMenuItemStatuses.map((entry) => ({ ...entry })),

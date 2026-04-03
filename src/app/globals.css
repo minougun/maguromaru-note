@@ -1214,6 +1214,57 @@ body {
   color: var(--cream-dark);
 }
 
+.part-profile-block {
+  margin-top: 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(27, 45, 79, 0.1);
+  background: rgba(255, 255, 255, 0.9);
+  padding: 10px 12px;
+}
+
+.part-profile-title {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--navy);
+  letter-spacing: 0.03em;
+}
+
+.part-profile-grid {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.part-profile-item {
+  display: grid;
+  gap: 3px;
+}
+
+.part-profile-item dt {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--cream-dark);
+}
+
+.part-profile-item dd {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--ink);
+}
+
+.part-profile-item dd strong {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 13px;
+  color: var(--red);
+}
+
+.part-profile-item dd span {
+  display: block;
+}
+
 .complete-banner {
   margin: 0;
   text-align: center;

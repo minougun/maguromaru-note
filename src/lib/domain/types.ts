@@ -126,12 +126,22 @@ export interface PartMenuInsight {
   menuStats: PartMenuAppearanceStat[];
 }
 
+export interface PartDetailProfile {
+  partId: PartId;
+  rarityLabel: string;
+  rarityMemo: string;
+  textureMemo: string;
+  fatMemo: string;
+  firstCollectedAt: string | null;
+}
+
 export interface ZukanData {
   collectedPartIds: PartId[];
   collectedCount: number;
   totalCount: number;
   isComplete: boolean;
   partInsights: Record<PartId, PartMenuInsight | undefined>;
+  partProfiles: Record<PartId, PartDetailProfile | undefined>;
 }
 
 export interface AppSnapshot {

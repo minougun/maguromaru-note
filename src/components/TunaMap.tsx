@@ -5,10 +5,11 @@ import { memo, useId, useState } from "react";
 import tunaMapBase from "@/assets/zukan-tuna-map.webp";
 import tunaMapReveal from "@/assets/zukan-tuna-map-reveal.webp";
 
+import { PartDetailProfileBlock } from "@/components/zukan/PartDetailProfile";
 import { PartMenuInsightBlock } from "@/components/zukan/PartMenuInsight";
 import { mapDisplayColorForPart } from "@/lib/domain/part-brand-colors";
 import { mapOverlayTintHex } from "@/lib/map-overlay-tint";
-import type { Part, PartId, PartMenuInsight } from "@/lib/domain/types";
+import type { Part, PartDetailProfile, PartId, PartMenuInsight } from "@/lib/domain/types";
 
 type RegionShape =
   | { type: "ellipse"; cx: number; cy: number; rx: number; ry: number }
@@ -148,13 +149,15 @@ interface TunaMapProps {
   parts: Part[];
   collectedPartIds: PartId[];
   partInsights: Record<PartId, PartMenuInsight | undefined>;
+  partProfiles: Record<PartId, PartDetailProfile | undefined>;
 }
 
 function tunaMapPropsEqual(prev: TunaMapProps, next: TunaMapProps): boolean {
   if (
     prev.parts === next.parts &&
     prev.collectedPartIds === next.collectedPartIds &&
-    prev.partInsights === next.partInsights
+    prev.partInsights === next.partInsights &&
+    prev.partProfiles === next.partProfiles
   ) {
     return true;
   }
@@ -201,6 +204,24 @@ function tunaMapPropsEqual(prev: TunaMapProps, next: TunaMapProps): boolean {
       }
     }
   }
+  const prevProfileKeys = Object.keys(prev.partProfiles);
+  const nextProfileKeys = Object.keys(next.partProfiles);
+  if (prevProfileKeys.length !== nextProfileKeys.length) return false;
+  for (const key of prevProfileKeys) {
+    const left = prev.partProfiles[key as PartId];
+    const right = next.partProfiles[key as PartId];
+    if (!left && !right) continue;
+    if (!left || !right) return false;
+    if (
+      left.rarityLabel !== right.rarityLabel ||
+      left.rarityMemo !== right.rarityMemo ||
+      left.textureMemo !== right.textureMemo ||
+      left.fatMemo !== right.fatMemo ||
+      left.firstCollectedAt !== right.firstCollectedAt
+    ) {
+      return false;
+    }
+  }
   return true;
 }
 
@@ -238,7 +259,7 @@ function selectionOutlineEl(r: MapRegionDef["shape"]) {
   return <path d={r.d} fill="none" stroke={stroke} strokeWidth="3" opacity="0.95" />;
 }
 
-function TunaMapInner({ parts, collectedPartIds, partInsights }: TunaMapProps) {
+function TunaMapInner({ parts, collectedPartIds, partInsights, partProfiles }: TunaMapProps) {
   const partsById = new Map(parts.map((part) => [part.id, part]));
   const collected = new Set(collectedPartIds);
   const [selectedRegionKey, setSelectedRegionKey] = useState<string | null>(null);
@@ -388,6 +409,7 @@ function TunaMapInner({ parts, collectedPartIds, partInsights }: TunaMapProps) {
                 </span>
               </div>
               <p className="map-detail-desc">{isCollected ? part.description : "まだ食べていません"}</p>
+              <PartDetailProfileBlock profile={partProfiles[part.id]} />
               <PartMenuInsightBlock insight={partInsights[part.id]} />
               {isCollected ? (
                 <span className="badge badge-available">記録済み</span>
@@ -416,6 +438,7 @@ function TunaMapInner({ parts, collectedPartIds, partInsights }: TunaMapProps) {
                     </span>
                   </div>
                   <p className="map-detail-desc">{isCollected ? part.description : "まだ食べていません"}</p>
+                  <PartDetailProfileBlock profile={partProfiles[part.id]} />
                   <PartMenuInsightBlock insight={partInsights[part.id]} />
                   {isCollected ? (
                     <span className="badge badge-available">記録済み</span>
