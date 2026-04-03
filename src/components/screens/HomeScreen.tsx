@@ -13,7 +13,6 @@ import { menuStockLabels, type MenuStockStatus } from "@/lib/domain/constants";
 import type { VisitRecord } from "@/lib/domain/types";
 import { useAppSnapshot } from "@/lib/hooks/use-app-snapshot";
 import { buildPastLogShare, type SharePayload } from "@/lib/share/share";
-import { fetchHomeSideDataSafe, readFallbackHomeSideData } from "@/lib/home-side-data";
 
 const homeTimeFormatter = new Intl.DateTimeFormat("ja-JP", {
   hour: "2-digit",
@@ -51,7 +50,6 @@ function menuItemStock(
 export function HomeScreen() {
   const { snapshot, loading, error, refresh } = useAppSnapshot();
   const [sharePayload, setSharePayload] = useState<SharePayload | null>(null);
-  const [sideData, setSideData] = useState(() => readFallbackHomeSideData());
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -59,22 +57,6 @@ export function HomeScreen() {
     if (auth === "linked" || auth === "error") {
       clearAuthCallbackQueryParams();
     }
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadHomeSideData() {
-      const nextData = await fetchHomeSideDataSafe();
-      if (!cancelled) {
-        setSideData(nextData);
-      }
-    }
-
-    void loadHomeSideData();
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
   const openShare = useCallback((log: VisitRecord) => {
@@ -103,6 +85,7 @@ export function HomeScreen() {
   const statusBadge = storeStatus === "unset" ? null : storeStatusMeta(storeStatus);
   const formatHm = (iso: string) => homeTimeFormatter.format(new Date(iso));
   const showStoreLastUpdated = snapshot.home.showStaffUpdateTimestamps && storeStatus !== "unset";
+  const sideData = snapshot.home.sideData;
   const weatherText = `${sideData.weather.icon} ${Math.round(sideData.weather.temperature)}℃ ${sideData.weather.label}`;
 
   return (

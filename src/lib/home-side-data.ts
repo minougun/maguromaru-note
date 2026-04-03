@@ -1,12 +1,7 @@
-import { readFallbackDailyTrivia, type DailyTriviaSnapshot } from "@/lib/maguro-bot";
+import type { HomeSideDataSnapshot } from "@/lib/domain/types";
+import { readFallbackDailyTrivia } from "@/lib/maguro-bot";
 import { withAppBasePath } from "@/lib/public-path";
-import { getFallbackWeatherSnapshot, isFallbackWeatherSnapshot, type WeatherSnapshot } from "@/lib/weather";
-
-export interface HomeSideDataSnapshot {
-  weather: WeatherSnapshot;
-  trivia: DailyTriviaSnapshot;
-  fetchedAt: string;
-}
+import { getFallbackWeatherSnapshot, isFallbackWeatherSnapshot } from "@/lib/weather";
 
 interface HomeSideDataRouteResponse extends HomeSideDataSnapshot {
   success: boolean;

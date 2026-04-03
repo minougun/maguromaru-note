@@ -17,6 +17,7 @@ import {
 import type {
   AppSnapshot,
   HomeAiStoreBlurb,
+  HomeSideDataSnapshot,
   MenuItem,
   MenuItemId,
   MenuItemStatusRow,
@@ -55,7 +56,11 @@ const SHARE_BONUS_COLUMNS = "target_type, target_id, bonus_visit_tenths, bonus_c
 const QUIZ_SESSION_PROGRESS_COLUMNS =
   "submitted_at, question_ids, correct_question_ids, score, question_count" as const;
 const MENU_ITEM_STATUS_COLUMNS = "menu_item_id, status, updated_at" as const;
+const MASTER_DATA_CACHE_MS = 5 * 60 * 1000;
+const STORE_STATUS_CACHE_MS = 15 * 1000;
+const MENU_STATUS_CACHE_MS = 15 * 1000;
 import { filterTrackedParts, isTrackedPartId } from "@/lib/domain/tracked-parts";
+import { readCachedHomeSideDataServer, readFallbackHomeSideDataServer } from "@/lib/home-side-data-server";
 import { readBearerToken } from "@/lib/auth-bearer";
 import { getAdminEmail, getSupabaseEnv, getSupabaseServiceEnv, hasSupabaseEnv, isMockAllowed } from "@/lib/env";
 import { createMockPhotoUrl, createMockViewerContext, mockMasterData, readMockState, writeMockState } from "@/lib/mock/store";
@@ -71,6 +76,90 @@ export class AppServiceError extends Error {
     super(message);
     this.status = status;
   }
+}
+
+type SharedCacheEntry<T> = {
+  value: T | null;
+  expiresAt: number;
+  inflight: Promise<T> | null;
+};
+
+const masterDataCache: SharedCacheEntry<{ parts: Part[]; menuItems: MenuItem[] }> = {
+  value: null,
+  expiresAt: 0,
+  inflight: null,
+};
+
+const storeStatusCache: SharedCacheEntry<StoreStatus> = {
+  value: null,
+  expiresAt: 0,
+  inflight: null,
+};
+
+const menuStatusCache: SharedCacheEntry<{
+  statuses: Record<MenuItemId, MenuStockStatus>;
+  lastUpdatedAt: string | null;
+}> = {
+  value: null,
+  expiresAt: 0,
+  inflight: null,
+};
+
+function cloneParts(parts: Part[]) {
+  return parts.map((part) => ({ ...part }));
+}
+
+function cloneMenuItems(menuItems: MenuItem[]) {
+  return menuItems.map((menuItem) => ({ ...menuItem }));
+}
+
+function cloneStoreStatus(storeStatus: StoreStatus): StoreStatus {
+  return { ...storeStatus };
+}
+
+function cloneMenuStatusBundle(bundle: {
+  statuses: Record<MenuItemId, MenuStockStatus>;
+  lastUpdatedAt: string | null;
+}) {
+  return {
+    statuses: { ...bundle.statuses },
+    lastUpdatedAt: bundle.lastUpdatedAt,
+  };
+}
+
+async function readSharedCache<T>(
+  cache: SharedCacheEntry<T>,
+  ttlMs: number,
+  loader: () => Promise<T>,
+  clone: (value: T) => T,
+): Promise<T> {
+  const now = Date.now();
+  if (cache.value && cache.expiresAt > now) {
+    return clone(cache.value);
+  }
+
+  if (!cache.inflight) {
+    cache.inflight = loader().then((value) => {
+      cache.value = clone(value);
+      cache.expiresAt = Date.now() + ttlMs;
+      return value;
+    });
+  }
+
+  try {
+    return clone(await cache.inflight);
+  } finally {
+    cache.inflight = null;
+  }
+}
+
+function invalidateStoreSnapshotCaches() {
+  storeStatusCache.value = null;
+  storeStatusCache.expiresAt = 0;
+  storeStatusCache.inflight = null;
+  menuStatusCache.value = null;
+  menuStatusCache.expiresAt = 0;
+  menuStatusCache.inflight = null;
 }
 
 function isMissingShareBonusSchemaError(message: string | undefined) {
@@ -338,27 +427,39 @@ async function listMasterDataPartial(
     };
   }
 
-  const [partsResult, menuItemsResult] = await Promise.all([
-    needParts
-      ? fromAny(client, "parts").select("*").order("sort_order")
-      : Promise.resolve({ data: [] as Part[], error: null }),
-    needMenuItems
-      ? fromAny(client, "menu_items").select("*").order("sort_order")
-      : Promise.resolve({ data: [] as MenuItem[], error: null }),
-  ]);
+  const shared = await readSharedCache(
+    masterDataCache,
+    MASTER_DATA_CACHE_MS,
+    async () => {
+      const [partsResult, menuItemsResult] = await Promise.all([
+        fromAny(client, "parts").select("*").order("sort_order"),
+        fromAny(client, "menu_items").select("*").order("sort_order"),
+      ]);
 
-  const partsError = needParts ? partsResult.error : null;
-  const menuItemsError = needMenuItems ? menuItemsResult.error : null;
-  const parts = (needParts ? partsResult.data : []) as Part[] | null;
-  const menuItems = (needMenuItems ? menuItemsResult.data : []) as MenuItem[] | null;
+      const parts = partsResult.data as Part[] | null;
+      const menuItems = menuItemsResult.data as MenuItem[] | null;
 
-  if (partsError || menuItemsError || (needParts && !parts) || (needMenuItems && !menuItems)) {
-    throw new AppServiceError(500, partsError?.message ?? menuItemsError?.message ?? "マスターデータの取得に失敗しました。");
-  }
+      if (partsResult.error || menuItemsResult.error || !parts || !menuItems) {
+        throw new AppServiceError(
+          500,
+          partsResult.error?.message ?? menuItemsResult.error?.message ?? "マスターデータの取得に失敗しました。",
+        );
+      }
+
+      return {
+        parts: applyPartDisplayColors(parts),
+        menuItems,
+      };
+    },
+    (value) => ({
+      parts: cloneParts(value.parts),
+      menuItems: cloneMenuItems(value.menuItems),
+    }),
+  );
 
   return {
-    parts: applyPartDisplayColors(parts ?? []),
-    menuItems: menuItems ?? [],
+    parts: needParts ? shared.parts : [],
+    menuItems: needMenuItems ? shared.menuItems : [],
   };
 }
 
@@ -491,12 +592,18 @@ async function getStoreStatus(client?: SupabaseClient<Database>) {
     return state.storeStatus;
   }
 
-  const { data, error } = await fromAny(client, "store_status").select("*").eq("id", 1).maybeSingle();
-  if (error) {
-    throw new AppServiceError(500, error.message);
-  }
-
-  return (data as StoreStatus | null) ?? seededStoreStatus;
+  return readSharedCache(
+    storeStatusCache,
+    STORE_STATUS_CACHE_MS,
+    async () => {
+      const { data, error } = await fromAny(client, "store_status").select("*").eq("id", 1).maybeSingle();
+      if (error) {
+        throw new AppServiceError(500, error.message);
+      }
+      return (data as StoreStatus | null) ?? seededStoreStatus;
+    },
+    cloneStoreStatus,
+  );
 }
 
 function buildMenuItemStatuses(rows: MenuItemStatusRow[]) {
@@ -529,16 +636,23 @@ async function getMenuItemStatuses(client?: SupabaseClient<Database>): Promise<{
     };
   }
 
-  const { data, error } = await fromAny(client, "menu_item_statuses").select(MENU_ITEM_STATUS_COLUMNS);
-  if (error) {
-    throw new AppServiceError(500, error.message);
-  }
+  return readSharedCache(
+    menuStatusCache,
+    MENU_STATUS_CACHE_MS,
+    async () => {
+      const { data, error } = await fromAny(client, "menu_item_statuses").select(MENU_ITEM_STATUS_COLUMNS);
+      if (error) {
+        throw new AppServiceError(500, error.message);
+      }
 
-  const rows = (data as MenuItemStatusRow[] | null) ?? [];
-  return {
-    statuses: buildMenuItemStatuses(rows),
-    lastUpdatedAt: maxIsoTimestamp(rows.map((row) => row.updated_at)),
-  };
+      const rows = (data as MenuItemStatusRow[] | null) ?? [];
+      return {
+        statuses: buildMenuItemStatuses(rows),
+        lastUpdatedAt: maxIsoTimestamp(rows.map((row) => row.updated_at)),
+      };
+    },
+    cloneMenuStatusBundle,
+  );
 }
 
 function createEmptyQuizStats(userId: string): QuizStatsRow {
@@ -558,6 +672,8 @@ type SnapshotFetchPlan = {
   masterParts: boolean;
   /** `menu_items`（来店ログの丼名解決・ホーム在庫一覧など）。図鑑スコープでは不要のため省略 */
   masterMenuItems: boolean;
+  /** ホーム天気＋日替わり豆知識。home/full 以外は fallback を返せば十分 */
+  homeSideData: boolean;
   menuBundle: boolean;
   store: boolean;
   quizStats: boolean;
@@ -572,6 +688,7 @@ const SNAPSHOT_FETCH_PLANS: Record<SnapshotScope, SnapshotFetchPlan> = {
   full: {
     masterParts: true,
     masterMenuItems: true,
+    homeSideData: true,
     menuBundle: true,
     store: true,
     quizStats: true,
@@ -582,6 +699,7 @@ const SNAPSHOT_FETCH_PLANS: Record<SnapshotScope, SnapshotFetchPlan> = {
   home: {
     masterParts: true,
     masterMenuItems: true,
+    homeSideData: true,
     menuBundle: true,
     store: true,
     quizStats: false,
@@ -593,6 +711,7 @@ const SNAPSHOT_FETCH_PLANS: Record<SnapshotScope, SnapshotFetchPlan> = {
   admin: {
     masterParts: true,
     masterMenuItems: true,
+    homeSideData: false,
     menuBundle: true,
     store: true,
     quizStats: false,
@@ -603,6 +722,7 @@ const SNAPSHOT_FETCH_PLANS: Record<SnapshotScope, SnapshotFetchPlan> = {
   history: {
     masterParts: true,
     masterMenuItems: true,
+    homeSideData: false,
     menuBundle: false,
     store: false,
     quizStats: true,
@@ -613,6 +733,7 @@ const SNAPSHOT_FETCH_PLANS: Record<SnapshotScope, SnapshotFetchPlan> = {
   mypage: {
     masterParts: true,
     masterMenuItems: true,
+    homeSideData: false,
     menuBundle: false,
     store: false,
     quizStats: true,
@@ -623,6 +744,7 @@ const SNAPSHOT_FETCH_PLANS: Record<SnapshotScope, SnapshotFetchPlan> = {
   zukan: {
     masterParts: true,
     masterMenuItems: false,
+    homeSideData: false,
     menuBundle: false,
     store: false,
     quizStats: false,
@@ -633,6 +755,7 @@ const SNAPSHOT_FETCH_PLANS: Record<SnapshotScope, SnapshotFetchPlan> = {
   record: {
     masterParts: true,
     masterMenuItems: true,
+    homeSideData: false,
     menuBundle: false,
     store: false,
     quizStats: false,
@@ -643,6 +766,7 @@ const SNAPSHOT_FETCH_PLANS: Record<SnapshotScope, SnapshotFetchPlan> = {
   quiz: {
     masterParts: true,
     masterMenuItems: true,
+    homeSideData: false,
     menuBundle: false,
     store: false,
     quizStats: true,
@@ -800,6 +924,7 @@ function buildSnapshotFromRecords(
   visitLogs: Database["public"]["Tables"]["visit_logs"]["Row"][],
   visitLogParts: Database["public"]["Tables"]["visit_log_parts"]["Row"][],
   buildCtx: SnapshotBuildContext | undefined,
+  homeSideData: HomeSideDataSnapshot,
   aiStoreBlurb: HomeAiStoreBlurb | null,
 ): AppSnapshot {
   let homeMenuItemStatuses = menuItemStatuses;
@@ -862,6 +987,7 @@ function buildSnapshotFromRecords(
       storeStatus: homeStoreStatus,
       showStaffUpdateTimestamps: homeShowStaffUpdateTimestamps,
       aiStoreBlurb,
+      sideData: homeSideData,
       recentLogs: visitRecords.slice(0, 3),
     },
     history: {
@@ -978,6 +1104,7 @@ export async function getAppSnapshot(
   if (shouldUseMockBackend()) {
     const viewer = createMockViewerContext();
     const state = await readMockState();
+    const homeSideData = plan.homeSideData ? await readCachedHomeSideDataServer() : readFallbackHomeSideDataServer();
     const { parts, menuItems } = await listMasterDataPartial(undefined, plan.masterParts, plan.masterMenuItems);
     const quizStatsRow = plan.quizStats
       ? (state.quizStats.find((entry) => entry.user_id === viewer.userId) ?? seededQuizStats)
@@ -1046,6 +1173,7 @@ export async function getAppSnapshot(
       visitLogs,
       visitLogParts,
       buildCtx,
+      homeSideData,
       null,
     );
   }
@@ -1055,7 +1183,15 @@ export async function getAppSnapshot(
     : await getSupabaseContext();
   const serviceRoleClient = snapshotPlanNeedsServiceRole(plan) ? createServiceRoleClient() : null;
 
-  const [{ parts, menuItems }, menuBundle, storeStatus, quizStatsRow, quizSessions, shareBonusEvents] = await Promise.all([
+  const [
+    { parts, menuItems },
+    menuBundle,
+    storeStatus,
+    quizStatsRow,
+    quizSessions,
+    shareBonusEvents,
+    homeSideData,
+  ] = await Promise.all([
     listMasterDataPartial(client, plan.masterParts, plan.masterMenuItems),
     plan.menuBundle ? getMenuItemStatuses(client) : Promise.resolve(defaultMenuStatusesBundle()),
     plan.store ? getStoreStatus(client) : Promise.resolve(seededStoreStatus),
@@ -1066,6 +1202,7 @@ export async function getAppSnapshot(
     plan.shareBonus && serviceRoleClient
       ? getShareBonusEvents(serviceRoleClient, viewer.userId)
       : Promise.resolve([] as ShareBonusEventRow[]),
+    plan.homeSideData ? readCachedHomeSideDataServer() : Promise.resolve(readFallbackHomeSideDataServer()),
   ]);
 
   let visitLogs: Database["public"]["Tables"]["visit_logs"]["Row"][] = [];
@@ -1124,6 +1261,7 @@ export async function getAppSnapshot(
     visitLogs,
     visitLogParts,
     buildCtx,
+    homeSideData,
     null,
   );
 }
@@ -1938,6 +2076,7 @@ export async function updateStoreStatus(input: unknown, accessToken?: string) {
       updated_at: state.storeStatus.updated_at,
     })) as MenuItemStatusRow[];
     await writeMockState(state);
+    invalidateStoreSnapshotCaches();
     return {
       ok: true,
       storeStatus: state.storeStatus,
@@ -1977,6 +2116,8 @@ export async function updateStoreStatus(input: unknown, accessToken?: string) {
   if (menuStatusError || !menuStatusRows) {
     throw new AppServiceError(500, menuStatusError?.message ?? "メニュー在庫の更新に失敗しました。");
   }
+
+  invalidateStoreSnapshotCaches();
 
   return {
     ok: true,

@@ -1,9 +1,5 @@
 import { withAppBasePath } from "@/lib/public-path";
-
-export interface DailyTriviaSnapshot {
-  trivia: string;
-  date: string;
-}
+import type { DailyTriviaSnapshot } from "@/lib/domain/types";
 
 interface DailyTriviaRouteResponse extends DailyTriviaSnapshot {
   success: boolean;

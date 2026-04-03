@@ -168,6 +168,15 @@ test("updateStoreStatus succeeds in mock mode only when explicitly enabled", asy
   }
 });
 
+test("home snapshot embeds side data for first paint", async () => {
+  const snapshot = await getAppSnapshot(undefined, "home");
+
+  assert.equal(typeof snapshot.home.sideData.weather.icon, "string");
+  assert.equal(typeof snapshot.home.sideData.trivia.trivia, "string");
+  assert.match(snapshot.home.sideData.trivia.date, /^\d{4}-\d{2}-\d{2}$/);
+  assert.ok(snapshot.home.recentLogs.length <= 3);
+});
+
 test("quiz session is server-scored and cannot be submitted twice", async () => {
   const session = await createQuizSessionForViewer({ stageNumber: 1 });
   assert.equal(session.questions.length, 10);

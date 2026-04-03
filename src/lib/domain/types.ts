@@ -41,6 +41,17 @@ export interface WeatherSnapshot {
   label: string;
 }
 
+export interface DailyTriviaSnapshot {
+  trivia: string;
+  date: string;
+}
+
+export interface HomeSideDataSnapshot {
+  weather: WeatherSnapshot;
+  trivia: DailyTriviaSnapshot;
+  fetchedAt: string;
+}
+
 export interface QuizStatsSummary {
   totalCorrectAnswers: number;
   totalAnsweredQuestions: number;
@@ -78,6 +89,8 @@ export interface HomeData {
   showStaffUpdateTimestamps: boolean;
   /** OpenAI 生成。未設定・テーブル未適用時は null */
   aiStoreBlurb: HomeAiStoreBlurb | null;
+  /** ホーム初期表示で使う天気＋日替わり豆知識。別 fetch を避けるため snapshot に同梱 */
+  sideData: HomeSideDataSnapshot;
   recentLogs: VisitRecord[];
 }
 

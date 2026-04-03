@@ -131,11 +131,16 @@ export function AppSnapshotProvider({ children }: { children: React.ReactNode })
   const currentScope = useMemo(() => snapshotScopeForPathname(pathname), [pathname]);
 
   const snapshotCacheRef = useRef<Map<SnapshotScope, SnapshotCacheEntry>>(new Map());
+  const snapshotRef = useRef<AppSnapshot | null>(null);
 
   const [snapshot, setSnapshot] = useState<AppSnapshot | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState(0);
+
+  useEffect(() => {
+    snapshotRef.current = snapshot;
+  }, [snapshot]);
 
   const refresh = useCallback(
     (target: SnapshotRefreshTarget = "current") => {
@@ -180,8 +185,7 @@ export function AppSnapshotProvider({ children }: { children: React.ReactNode })
       return;
     }
 
-    setSnapshot(null);
-    setLoading(true);
+    setLoading(snapshotRef.current == null);
     setError(null);
   }, [auth.accessToken, auth.ready, auth.signedIn, auth.usingSupabase, currentScope, refreshToken]);
 
@@ -203,7 +207,7 @@ export function AppSnapshotProvider({ children }: { children: React.ReactNode })
       return;
     }
 
-    const blockingLoad = !entry;
+    const blockingLoad = !entry && snapshotRef.current == null;
     let cancelled = false;
     const abortController = new AbortController();
     const snapshotUrl = buildSnapshotRequestUrl(currentScope);
