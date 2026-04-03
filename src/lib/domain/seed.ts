@@ -77,11 +77,11 @@ export const seededVisitLogs: VisitLog[] = [
 ];
 
 export const seededVisitLogParts: VisitLogPart[] = [
-  { id: "20000000-0000-4000-8000-000000000001", visit_log_id: "10000000-0000-4000-8000-000000000001", part_id: "otoro" },
-  { id: "20000000-0000-4000-8000-000000000002", visit_log_id: "10000000-0000-4000-8000-000000000001", part_id: "noten" },
-  { id: "20000000-0000-4000-8000-000000000003", visit_log_id: "10000000-0000-4000-8000-000000000001", part_id: "chutoro" },
-  { id: "20000000-0000-4000-8000-000000000004", visit_log_id: "10000000-0000-4000-8000-000000000002", part_id: "akami" },
-  { id: "20000000-0000-4000-8000-000000000005", visit_log_id: "10000000-0000-4000-8000-000000000002", part_id: "kama" },
+  { id: "20000000-0000-4000-8000-000000000001", visit_log_id: "10000000-0000-4000-8000-000000000001", part_id: "otoro", fat_level: "rich", texture_level: "melty", satisfaction: 5, want_again: true },
+  { id: "20000000-0000-4000-8000-000000000002", visit_log_id: "10000000-0000-4000-8000-000000000001", part_id: "noten", fat_level: "rich", texture_level: "smooth", satisfaction: 5, want_again: true },
+  { id: "20000000-0000-4000-8000-000000000003", visit_log_id: "10000000-0000-4000-8000-000000000001", part_id: "chutoro", fat_level: "balanced", texture_level: "smooth", satisfaction: 4, want_again: true },
+  { id: "20000000-0000-4000-8000-000000000004", visit_log_id: "10000000-0000-4000-8000-000000000002", part_id: "akami", fat_level: "light", texture_level: "firm", satisfaction: 4, want_again: true },
+  { id: "20000000-0000-4000-8000-000000000005", visit_log_id: "10000000-0000-4000-8000-000000000002", part_id: "kama", fat_level: "balanced", texture_level: "smooth", satisfaction: 4, want_again: true },
 ];
 
 export const seededQuizSessions: QuizSessionRow[] = [];

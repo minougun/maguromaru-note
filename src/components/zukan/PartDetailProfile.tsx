@@ -43,6 +43,28 @@ export function PartDetailProfileBlock({ profile }: { profile: PartDetailProfile
           <dt>自分の初達成日</dt>
           <dd>{formatFirstCollectedAt(profile.firstCollectedAt)}</dd>
         </div>
+        <div className="part-profile-item">
+          <dt>あなたの主観記録</dt>
+          <dd>
+            {profile.subjectiveSummary.tastingCount > 0 ? (
+              <>
+                <strong>{profile.subjectiveSummary.tastingCount}回ぶんの感想</strong>
+                <span>
+                  脂感: {profile.subjectiveSummary.dominantFatLevelLabel ?? "未集計"} / 食感:{" "}
+                  {profile.subjectiveSummary.dominantTextureLabel ?? "未集計"}
+                </span>
+                <span>
+                  満足度平均: {profile.subjectiveSummary.averageSatisfaction?.toFixed(1) ?? "未集計"} / 5
+                  {profile.subjectiveSummary.wantAgainRate != null
+                    ? ` / また食べたい ${profile.subjectiveSummary.wantAgainRate}%`
+                    : ""}
+                </span>
+              </>
+            ) : (
+              "まだ主観記録はありません"
+            )}
+          </dd>
+        </div>
       </dl>
     </div>
   );

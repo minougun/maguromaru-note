@@ -126,6 +126,14 @@ export interface PartMenuInsight {
   menuStats: PartMenuAppearanceStat[];
 }
 
+export interface PartPreferenceSummary {
+  tastingCount: number;
+  dominantFatLevelLabel: string | null;
+  dominantTextureLabel: string | null;
+  averageSatisfaction: number | null;
+  wantAgainRate: number | null;
+}
+
 export interface PartDetailProfile {
   partId: PartId;
   rarityLabel: string;
@@ -133,6 +141,7 @@ export interface PartDetailProfile {
   textureMemo: string;
   fatMemo: string;
   firstCollectedAt: string | null;
+  subjectiveSummary: PartPreferenceSummary;
 }
 
 export interface ZukanData {

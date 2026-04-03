@@ -178,4 +178,20 @@ export function verifySupabaseSecuritySql(sql: string) {
     /create unique index store_ai_blurbs_one_closing_per_day\s+on public\.store_ai_blurbs \(jst_date\)\s+where kind = 'closing_summary';/i,
     "store_ai_blurbs: only one closing summary per day is allowed",
   );
+
+  expectConstraint(
+    sql,
+    /constraint visit_log_parts_fat_level_check\s+check \(fat_level is null or fat_level in \('light', 'balanced', 'rich'\)\)/i,
+    "visit_log_parts: fat_level allowlist must remain closed",
+  );
+  expectConstraint(
+    sql,
+    /constraint visit_log_parts_texture_level_check\s+check \(texture_level is null or texture_level in \('firm', 'smooth', 'melty'\)\)/i,
+    "visit_log_parts: texture_level allowlist must remain closed",
+  );
+  expectConstraint(
+    sql,
+    /constraint visit_log_parts_satisfaction_check\s+check \(satisfaction is null or satisfaction between 1 and 5\)/i,
+    "visit_log_parts: satisfaction range must remain closed",
+  );
 }

@@ -1010,6 +1010,62 @@ body {
   background: var(--navy);
 }
 
+.part-tasting-stack {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.part-tasting-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.part-tasting-group {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.part-tasting-label {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--cream-dark);
+}
+
+.part-tasting-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.part-tasting-pill {
+  border-radius: 999px;
+  border: 1px solid rgba(27, 45, 79, 0.14);
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--ink);
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.part-tasting-pill.active {
+  border-color: rgba(183, 28, 40, 0.34);
+  background: rgba(183, 28, 40, 0.08);
+  color: var(--red);
+}
+
+.part-tasting-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
 .part-area,
 .part-rarity,
 .plist-desc,

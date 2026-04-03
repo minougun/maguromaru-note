@@ -12,6 +12,12 @@ import { ScreenState } from "@/components/ui/ScreenState";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import { getDefaultPartIdsForMenuItem } from "@/lib/domain/menu-part-defaults";
 import type { MenuItemId, PartId, VisitRecord } from "@/lib/domain/types";
+import {
+  DEFAULT_PART_TASTING_INPUT,
+  PART_FAT_LEVEL_LABELS,
+  PART_TEXTURE_LEVEL_LABELS,
+  type PartTastingInput,
+} from "@/lib/domain/part-tasting";
 import { useAppSnapshot } from "@/lib/hooks/use-app-snapshot";
 import { mapDisplayColorForPart } from "@/lib/domain/part-brand-colors";
 import { FetchJsonError, fetchJsonWithAuth } from "@/lib/http/fetch-json";
@@ -26,11 +32,19 @@ function todayString() {
 const RECORD_VISIT_REFRESH_SCOPES = ["record", "home", "history", "zukan", "mypage", "quiz"] as const;
 const RECORD_SHARE_REFRESH_SCOPES = ["history", "mypage", "quiz"] as const;
 
+function createPartTasting(partId: PartId): PartTastingInput {
+  return {
+    partId,
+    ...DEFAULT_PART_TASTING_INPUT,
+  };
+}
+
 export function RecordScreen() {
   const auth = useAuthState();
   const { snapshot, loading, error, refresh } = useAppSnapshot();
   const [selectedMenuItemId, setSelectedMenuItemId] = useState<MenuItemId | null>(null);
   const [selectedPartIds, setSelectedPartIds] = useState<Set<PartId>>(new Set());
+  const [partTastings, setPartTastings] = useState<Record<PartId, PartTastingInput>>({} as Record<PartId, PartTastingInput>);
   const [memo, setMemo] = useState("");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
@@ -60,15 +74,20 @@ export function RecordScreen() {
     ? snapshot.menuItems.find((item) => item.id === selectedMenuItemId) ?? null
     : null;
   const availablePartIds = new Set(snapshot.parts.map((part) => part.id));
+  const selectedParts = snapshot.parts.filter((part) => selectedPartIds.has(part.id));
 
   function togglePart(partId: PartId) {
     const next = new Set(selectedPartIds);
+    const nextTastings = { ...partTastings };
     if (next.has(partId)) {
       next.delete(partId);
+      delete nextTastings[partId];
     } else {
       next.add(partId);
+      nextTastings[partId] = partTastings[partId] ?? createPartTasting(partId);
     }
     setSelectedPartIds(next);
+    setPartTastings(nextTastings);
   }
 
   async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
@@ -84,8 +103,26 @@ export function RecordScreen() {
   }
 
   function handleMenuSelection(menuItemId: MenuItemId) {
+    const defaultPartIds = getDefaultPartIdsForMenuItem(menuItemId).filter((partId) => availablePartIds.has(partId));
+    const nextTastings = defaultPartIds.reduce<Record<PartId, PartTastingInput>>((acc, partId) => {
+      acc[partId] = partTastings[partId] ?? createPartTasting(partId);
+      return acc;
+    }, {} as Record<PartId, PartTastingInput>);
+
     setSelectedMenuItemId(menuItemId);
-    setSelectedPartIds(new Set(getDefaultPartIdsForMenuItem(menuItemId).filter((partId) => availablePartIds.has(partId))));
+    setSelectedPartIds(new Set(defaultPartIds));
+    setPartTastings(nextTastings);
+  }
+
+  function updatePartTasting(partId: PartId, patch: Partial<Omit<PartTastingInput, "partId">>) {
+    setPartTastings((current) => ({
+      ...current,
+      [partId]: {
+        ...(current[partId] ?? createPartTasting(partId)),
+        ...patch,
+        partId,
+      },
+    }));
   }
 
   async function handleSubmit() {
@@ -107,6 +144,7 @@ export function RecordScreen() {
             visitedAt: todayString(),
             menuItemId: selectedMenuItemId,
             partIds: [...selectedPartIds],
+            partTastings: [...selectedPartIds].map((partId) => partTastings[partId] ?? createPartTasting(partId)),
             memo,
             photoDataUrl,
           }),
@@ -121,6 +159,7 @@ export function RecordScreen() {
 
     setSelectedMenuItemId(null);
     setSelectedPartIds(new Set());
+    setPartTastings({} as Record<PartId, PartTastingInput>);
     setMemo("");
     setPreviewUrl(null);
     setPhotoDataUrl(null);
@@ -230,6 +269,80 @@ export function RecordScreen() {
           );
         })}
       </div>
+
+      {selectedParts.length > 0 ? (
+        <>
+          <SectionTitle subtitle="Tasting notes" title="部位ごとの主観記録" />
+          <div className="part-tasting-stack">
+            {selectedParts.map((part) => {
+              const tasting = partTastings[part.id] ?? createPartTasting(part.id);
+              return (
+                <Card key={part.id}>
+                  <div className="part-tasting-header">
+                    <div className="part-name">{part.name}</div>
+                    <div className="part-area">{part.area}</div>
+                  </div>
+                  <div className="part-tasting-group">
+                    <div className="part-tasting-label">脂感</div>
+                    <div className="part-tasting-options">
+                      {Object.entries(PART_FAT_LEVEL_LABELS).map(([value, label]) => (
+                        <button
+                          className={`part-tasting-pill ${tasting.fatLevel === value ? "active" : ""}`}
+                          key={value}
+                          onClick={() => updatePartTasting(part.id, { fatLevel: value as PartTastingInput["fatLevel"] })}
+                          type="button"
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="part-tasting-group">
+                    <div className="part-tasting-label">食感</div>
+                    <div className="part-tasting-options">
+                      {Object.entries(PART_TEXTURE_LEVEL_LABELS).map(([value, label]) => (
+                        <button
+                          className={`part-tasting-pill ${tasting.textureLevel === value ? "active" : ""}`}
+                          key={value}
+                          onClick={() =>
+                            updatePartTasting(part.id, { textureLevel: value as PartTastingInput["textureLevel"] })
+                          }
+                          type="button"
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="part-tasting-group">
+                    <div className="part-tasting-label">満足度</div>
+                    <div className="part-tasting-options">
+                      {[1, 2, 3, 4, 5].map((value) => (
+                        <button
+                          className={`part-tasting-pill ${tasting.satisfaction === value ? "active" : ""}`}
+                          key={value}
+                          onClick={() => updatePartTasting(part.id, { satisfaction: value as PartTastingInput["satisfaction"] })}
+                          type="button"
+                        >
+                          {value}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <label className="part-tasting-checkbox">
+                    <input
+                      checked={tasting.wantAgain}
+                      onChange={(event) => updatePartTasting(part.id, { wantAgain: event.target.checked })}
+                      type="checkbox"
+                    />
+                    また食べたい
+                  </label>
+                </Card>
+              );
+            })}
+          </div>
+        </>
+      ) : null}
 
       <input
         className="memo-input"

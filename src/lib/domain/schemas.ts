@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { menuItemIds, partIds, quizStageCount, storeStatuses } from "@/lib/domain/constants";
+import { partFatLevels, partTextureLevels } from "@/lib/domain/part-tasting";
 
 const isoDateRegex = /^\d{4}-\d{2}-\d{2}$/;
 const allowedPhotoDataUrlRegex = /^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$/;
@@ -29,6 +30,8 @@ function isValidIsoDate(value: string) {
 
 export const menuItemIdSchema = z.enum(menuItemIds);
 export const partIdSchema = z.enum(partIds);
+export const partFatLevelSchema = z.enum(partFatLevels);
+export const partTextureLevelSchema = z.enum(partTextureLevels);
 export const storeStatusSchema = z.enum(storeStatuses);
 export const menuStockStatusSchema = z.enum(["available", "few", "soldout", "unset"]);
 
@@ -94,10 +97,21 @@ export const menuStocksSchema = z
   })
   .strict();
 
+export const partTastingInputSchema = z
+  .object({
+    partId: partIdSchema,
+    fatLevel: partFatLevelSchema,
+    textureLevel: partTextureLevelSchema,
+    satisfaction: z.number().int().min(1).max(5),
+    wantAgain: z.boolean(),
+  })
+  .strict();
+
 export const recordVisitInputSchema = z
   .object({
     menuItemId: menuItemIdSchema,
     partIds: z.array(partIdSchema).max(partIds.length, "部位数が不正です。").default([]),
+    partTastings: z.array(partTastingInputSchema).max(partIds.length, "部位感想の数が不正です。").default([]),
     memo: z
       .string()
       .trim()
@@ -121,6 +135,26 @@ export const recordVisitInputSchema = z
         path: ["partIds"],
         message: "同じ部位を重複して記録できません。",
       });
+    }
+
+    const tastingPartIds = value.partTastings.map((entry) => entry.partId);
+    if (new Set(tastingPartIds).size !== tastingPartIds.length) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["partTastings"],
+        message: "同じ部位の主観記録を重複して送信できません。",
+      });
+    }
+
+    const selectedPartIds = new Set(value.partIds);
+    for (const [index, entry] of value.partTastings.entries()) {
+      if (!selectedPartIds.has(entry.partId)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["partTastings", index, "partId"],
+          message: "選択していない部位の主観記録は送信できません。",
+        });
+      }
     }
   });
 

@@ -63,6 +63,76 @@ test("recordVisitInputSchema rejects duplicate parts", () => {
   );
 });
 
+test("recordVisitInputSchema rejects invalid subjective enum values", () => {
+  assert.throws(
+    () =>
+      recordVisitInputSchema.parse({
+        menuItemId: "maguro_don",
+        visitedAt: "2026-03-28",
+        partIds: ["akami"],
+        partTastings: [
+          {
+            partId: "akami",
+            fatLevel: "too_much",
+            textureLevel: "firm",
+            satisfaction: 4,
+            wantAgain: true,
+          },
+        ],
+      }),
+    /Invalid option/,
+  );
+});
+
+test("recordVisitInputSchema rejects subjective entries for unselected parts", () => {
+  assert.throws(
+    () =>
+      recordVisitInputSchema.parse({
+        menuItemId: "maguro_don",
+        visitedAt: "2026-03-28",
+        partIds: ["akami"],
+        partTastings: [
+          {
+            partId: "otoro",
+            fatLevel: "rich",
+            textureLevel: "melty",
+            satisfaction: 5,
+            wantAgain: true,
+          },
+        ],
+      }),
+    /選択していない部位/,
+  );
+});
+
+test("recordVisitInputSchema rejects duplicate subjective entries", () => {
+  assert.throws(
+    () =>
+      recordVisitInputSchema.parse({
+        menuItemId: "maguro_don",
+        visitedAt: "2026-03-28",
+        partIds: ["akami"],
+        partTastings: [
+          {
+            partId: "akami",
+            fatLevel: "light",
+            textureLevel: "firm",
+            satisfaction: 4,
+            wantAgain: true,
+          },
+          {
+            partId: "akami",
+            fatLevel: "balanced",
+            textureLevel: "smooth",
+            satisfaction: 5,
+            wantAgain: true,
+          },
+        ],
+      }),
+    /重複/,
+  );
+});
+
 test("recordVisitInputSchema rejects invalid calendar dates", () => {
   assert.throws(
     () =>

@@ -63,5 +63,12 @@ export function buildPartDetailProfile(part: Part, firstCollectedAt: string | nu
     textureMemo: notes.textureMemo,
     fatMemo: notes.fatMemo,
     firstCollectedAt,
+    subjectiveSummary: {
+      tastingCount: 0,
+      dominantFatLevelLabel: null,
+      dominantTextureLabel: null,
+      averageSatisfaction: null,
+      wantAgainRate: null,
+    },
   };
 }

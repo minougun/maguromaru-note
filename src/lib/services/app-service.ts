@@ -37,6 +37,7 @@ import type {
 import { defaultMenuStockById, quizQuestionsPerStage, quizStageCount, type MenuStockStatus } from "@/lib/domain/constants";
 import { buildPartDetailProfile } from "@/lib/domain/part-detail-notes";
 import { applyPartDisplayColors } from "@/lib/domain/part-brand-colors";
+import { PART_FAT_LEVEL_LABELS, PART_TEXTURE_LEVEL_LABELS } from "@/lib/domain/part-tasting";
 import { seededQuizStats, seededShareBonusEvents, seededStoreStatus } from "@/lib/domain/seed";
 import { applyCustomerFacingStoreAndStock } from "@/lib/domain/store-business-hours";
 import {
@@ -52,7 +53,8 @@ export type AppSnapshotLoadOptions = {
 
 const VISIT_LOG_COLUMNS =
   "id, user_id, visited_at, created_at, memo, photo_url, menu_item_id" as const;
-const VISIT_LOG_PART_COLUMNS = "id, visit_log_id, part_id" as const;
+const VISIT_LOG_PART_COLUMNS =
+  "id, visit_log_id, part_id, fat_level, texture_level, satisfaction, want_again" as const;
 const QUIZ_STATS_COLUMNS =
   "user_id, total_correct_answers, total_answered_questions, quizzes_completed, best_score, best_question_count" as const;
 const SHARE_BONUS_COLUMNS = "target_type, target_id, bonus_visit_tenths, bonus_correct_tenths" as const;
@@ -403,21 +405,91 @@ function buildPartMenuInsights(parts: Part[], visitRecords: VisitRecord[]): Reco
   return insights;
 }
 
-function buildPartDetailProfiles(parts: Part[], visitRecords: VisitRecord[]): Record<PartId, PartDetailProfile | undefined> {
-  const earliestVisitByPart = new Map<PartId, string>();
+function dominantLabel(counts: Map<string, number>, labels: Record<string, string>) {
+  if (counts.size === 0) {
+    return null;
+  }
 
-  for (const record of visitRecords) {
-    for (const part of record.parts) {
-      const current = earliestVisitByPart.get(part.id);
-      if (!current || record.visitedAt.localeCompare(current) < 0) {
-        earliestVisitByPart.set(part.id, record.visitedAt);
+  return [...counts.entries()]
+    .sort((left, right) => {
+      if (right[1] !== left[1]) {
+        return right[1] - left[1];
       }
+      return left[0].localeCompare(right[0], "ja");
+    })
+    .map(([key]) => labels[key] ?? key)[0] ?? null;
+}
+
+function buildPartDetailProfiles(
+  parts: Part[],
+  visitLogs: Database["public"]["Tables"]["visit_logs"]["Row"][],
+  visitLogParts: Database["public"]["Tables"]["visit_log_parts"]["Row"][],
+): Record<PartId, PartDetailProfile | undefined> {
+  const visitedAtByLogId = new Map(visitLogs.map((visitLog) => [visitLog.id, visitLog.visited_at]));
+  const earliestVisitByPart = new Map<PartId, string>();
+  const fatCountsByPart = new Map<PartId, Map<string, number>>();
+  const textureCountsByPart = new Map<PartId, Map<string, number>>();
+  const satisfactionTotalsByPart = new Map<PartId, { sum: number; count: number }>();
+  const wantAgainCountsByPart = new Map<PartId, { yes: number; count: number }>();
+
+  for (const entry of visitLogParts) {
+    const partId = entry.part_id as PartId;
+    const visitedAt = visitedAtByLogId.get(entry.visit_log_id);
+    if (visitedAt) {
+      const current = earliestVisitByPart.get(partId);
+      if (!current || visitedAt.localeCompare(current) < 0) {
+        earliestVisitByPart.set(partId, visitedAt);
+      }
+    }
+
+    if (entry.fat_level) {
+      const counts = fatCountsByPart.get(partId) ?? new Map<string, number>();
+      counts.set(entry.fat_level, (counts.get(entry.fat_level) ?? 0) + 1);
+      fatCountsByPart.set(partId, counts);
+    }
+
+    if (entry.texture_level) {
+      const counts = textureCountsByPart.get(partId) ?? new Map<string, number>();
+      counts.set(entry.texture_level, (counts.get(entry.texture_level) ?? 0) + 1);
+      textureCountsByPart.set(partId, counts);
+    }
+
+    if (typeof entry.satisfaction === "number") {
+      const current = satisfactionTotalsByPart.get(partId) ?? { sum: 0, count: 0 };
+      current.sum += entry.satisfaction;
+      current.count += 1;
+      satisfactionTotalsByPart.set(partId, current);
+    }
+
+    if (typeof entry.want_again === "boolean") {
+      const current = wantAgainCountsByPart.get(partId) ?? { yes: 0, count: 0 };
+      current.yes += entry.want_again ? 1 : 0;
+      current.count += 1;
+      wantAgainCountsByPart.set(partId, current);
     }
   }
 
   const profiles: Record<PartId, PartDetailProfile | undefined> = {};
   for (const part of parts) {
-    profiles[part.id] = buildPartDetailProfile(part, earliestVisitByPart.get(part.id) ?? null);
+    const profile = buildPartDetailProfile(part, earliestVisitByPart.get(part.id) ?? null);
+    const satisfaction = satisfactionTotalsByPart.get(part.id);
+    const wantAgain = wantAgainCountsByPart.get(part.id);
+
+    profile.subjectiveSummary = {
+      tastingCount: satisfaction?.count ?? wantAgain?.count ?? 0,
+      dominantFatLevelLabel: dominantLabel(fatCountsByPart.get(part.id) ?? new Map(), PART_FAT_LEVEL_LABELS),
+      dominantTextureLabel: dominantLabel(
+        textureCountsByPart.get(part.id) ?? new Map(),
+        PART_TEXTURE_LEVEL_LABELS,
+      ),
+      averageSatisfaction:
+        satisfaction && satisfaction.count > 0
+          ? Math.round((satisfaction.sum / satisfaction.count) * 10) / 10
+          : null,
+      wantAgainRate:
+        wantAgain && wantAgain.count > 0 ? Math.round((wantAgain.yes / wantAgain.count) * 100) : null,
+    };
+    profiles[part.id] = profile;
   }
 
   return profiles;
@@ -1129,7 +1201,7 @@ function buildSnapshotFromRecords(
   );
   const trackedParts = filterTrackedParts(parts);
   const partInsights = buildPartMenuInsights(trackedParts, visitRecords);
-  const partProfiles = buildPartDetailProfiles(trackedParts, visitRecords);
+  const partProfiles = buildPartDetailProfiles(trackedParts, visitLogs, visitLogParts);
   const partsForCollection = buildCtx?.visitLogPartsForCollection ?? visitLogParts;
   const collectedPartIds = buildCollectedPartIds(
     trackedParts,
@@ -1464,6 +1536,7 @@ export async function recordVisit(input: unknown, accessToken?: string) {
   const visitId = randomUUID();
   const createdAt = new Date().toISOString();
   const visitedAt = parsed.visitedAt ?? todayIsoDate();
+  const tastingByPartId = new Map(parsed.partTastings.map((entry) => [entry.partId, entry]));
 
   if (shouldUseMockBackend()) {
     const viewer = createMockViewerContext();
@@ -1481,10 +1554,15 @@ export async function recordVisit(input: unknown, accessToken?: string) {
     });
 
     for (const partId of parsed.partIds) {
+      const tasting = tastingByPartId.get(partId);
       state.visitLogParts.push({
         id: randomUUID(),
         visit_log_id: visitId,
         part_id: partId,
+        fat_level: tasting?.fatLevel ?? null,
+        texture_level: tasting?.textureLevel ?? null,
+        satisfaction: tasting?.satisfaction ?? null,
+        want_again: tasting?.wantAgain ?? null,
       });
     }
 
@@ -1544,11 +1622,18 @@ export async function recordVisit(input: unknown, accessToken?: string) {
   }
 
   if (parsed.partIds.length > 0) {
-    const partPayloads: Database["public"]["Tables"]["visit_log_parts"]["Insert"][] = parsed.partIds.map((partId) => ({
-      id: randomUUID(),
-      visit_log_id: visitId,
-      part_id: partId,
-    }));
+    const partPayloads: Database["public"]["Tables"]["visit_log_parts"]["Insert"][] = parsed.partIds.map((partId) => {
+      const tasting = tastingByPartId.get(partId);
+      return {
+        id: randomUUID(),
+        visit_log_id: visitId,
+        part_id: partId,
+        fat_level: tasting?.fatLevel ?? null,
+        texture_level: tasting?.textureLevel ?? null,
+        satisfaction: tasting?.satisfaction ?? null,
+        want_again: tasting?.wantAgain ?? null,
+      };
+    });
 
     const { error: partsError } = await fromAny(client, "visit_log_parts").insert(partPayloads);
     if (partsError) {

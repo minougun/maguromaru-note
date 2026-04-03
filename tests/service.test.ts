@@ -177,6 +177,56 @@ test("home snapshot embeds side data for first paint", async () => {
   assert.ok(snapshot.home.recentLogs.length <= 3);
 });
 
+test("recordVisit stores per-part subjective tasting notes", async () => {
+  try {
+    await writeMockState({
+      menuItemStatuses: seededMenuItemStatuses.map((entry) => ({ ...entry })),
+      quizSessions: seededQuizSessions.map((entry) => ({ ...entry })),
+      visitLogs: [],
+      visitLogParts: [],
+      storeStatus: { ...seededStoreStatus },
+      quizStats: [{ ...seededQuizStats }],
+      shareBonusEvents: seededShareBonusEvents.map((entry) => ({ ...entry })),
+    });
+
+    await recordVisit({
+      menuItemId: "tokujo_don",
+      visitedAt: "2026-04-03",
+      partIds: ["otoro"],
+      partTastings: [
+        {
+          partId: "otoro",
+          fatLevel: "rich",
+          textureLevel: "melty",
+          satisfaction: 5,
+          wantAgain: true,
+        },
+      ],
+      memo: "",
+      photoDataUrl: null,
+    });
+
+    const snapshot = await getAppSnapshot(undefined, "zukan");
+    assert.deepEqual(snapshot.zukan.partProfiles.otoro?.subjectiveSummary, {
+      tastingCount: 1,
+      dominantFatLevelLabel: "濃厚",
+      dominantTextureLabel: "とろける",
+      averageSatisfaction: 5,
+      wantAgainRate: 100,
+    });
+  } finally {
+    await writeMockState({
+      menuItemStatuses: seededMenuItemStatuses.map((entry) => ({ ...entry })),
+      quizSessions: seededQuizSessions.map((entry) => ({ ...entry })),
+      visitLogs: seededVisitLogs.map((entry) => ({ ...entry })),
+      visitLogParts: seededVisitLogParts.map((entry) => ({ ...entry })),
+      storeStatus: { ...seededStoreStatus },
+      quizStats: [{ ...seededQuizStats }],
+      shareBonusEvents: seededShareBonusEvents.map((entry) => ({ ...entry })),
+    });
+  }
+});
+
 test("zukan snapshot includes per-part menu appearance insights from personal history", async () => {
   try {
     await writeMockState({
@@ -266,15 +316,15 @@ test("zukan snapshot includes per-part menu appearance insights from personal hi
         },
       ],
       visitLogParts: [
-        { id: "20000000-0000-4000-8000-000000000101", visit_log_id: "10000000-0000-4000-8000-000000000101", part_id: "otoro" },
-        { id: "20000000-0000-4000-8000-000000000102", visit_log_id: "10000000-0000-4000-8000-000000000102", part_id: "akami" },
-        { id: "20000000-0000-4000-8000-000000000103", visit_log_id: "10000000-0000-4000-8000-000000000103", part_id: "akami" },
-        { id: "20000000-0000-4000-8000-000000000104", visit_log_id: "10000000-0000-4000-8000-000000000104", part_id: "otoro" },
-        { id: "20000000-0000-4000-8000-000000000105", visit_log_id: "10000000-0000-4000-8000-000000000105", part_id: "akami" },
-        { id: "20000000-0000-4000-8000-000000000106", visit_log_id: "10000000-0000-4000-8000-000000000106", part_id: "otoro" },
-        { id: "20000000-0000-4000-8000-000000000107", visit_log_id: "10000000-0000-4000-8000-000000000107", part_id: "otoro" },
-        { id: "20000000-0000-4000-8000-000000000108", visit_log_id: "10000000-0000-4000-8000-000000000108", part_id: "otoro" },
-        { id: "20000000-0000-4000-8000-000000000109", visit_log_id: "10000000-0000-4000-8000-000000000109", part_id: "otoro" },
+        { id: "20000000-0000-4000-8000-000000000101", visit_log_id: "10000000-0000-4000-8000-000000000101", part_id: "otoro", fat_level: "rich", texture_level: "melty", satisfaction: 5, want_again: true },
+        { id: "20000000-0000-4000-8000-000000000102", visit_log_id: "10000000-0000-4000-8000-000000000102", part_id: "akami", fat_level: "light", texture_level: "firm", satisfaction: 3, want_again: false },
+        { id: "20000000-0000-4000-8000-000000000103", visit_log_id: "10000000-0000-4000-8000-000000000103", part_id: "akami", fat_level: "light", texture_level: "firm", satisfaction: 4, want_again: true },
+        { id: "20000000-0000-4000-8000-000000000104", visit_log_id: "10000000-0000-4000-8000-000000000104", part_id: "otoro", fat_level: "balanced", texture_level: "smooth", satisfaction: 4, want_again: true },
+        { id: "20000000-0000-4000-8000-000000000105", visit_log_id: "10000000-0000-4000-8000-000000000105", part_id: "akami", fat_level: "balanced", texture_level: "smooth", satisfaction: 4, want_again: true },
+        { id: "20000000-0000-4000-8000-000000000106", visit_log_id: "10000000-0000-4000-8000-000000000106", part_id: "otoro", fat_level: "rich", texture_level: "melty", satisfaction: 5, want_again: true },
+        { id: "20000000-0000-4000-8000-000000000107", visit_log_id: "10000000-0000-4000-8000-000000000107", part_id: "otoro", fat_level: "rich", texture_level: "melty", satisfaction: 5, want_again: true },
+        { id: "20000000-0000-4000-8000-000000000108", visit_log_id: "10000000-0000-4000-8000-000000000108", part_id: "otoro", fat_level: "balanced", texture_level: "smooth", satisfaction: 4, want_again: true },
+        { id: "20000000-0000-4000-8000-000000000109", visit_log_id: "10000000-0000-4000-8000-000000000109", part_id: "otoro", fat_level: "balanced", texture_level: "smooth", satisfaction: 4, want_again: true },
       ],
       storeStatus: { ...seededStoreStatus },
       quizStats: [{ ...seededQuizStats }],
@@ -348,8 +398,16 @@ test("zukan snapshot includes per-part menu appearance insights from personal hi
       textureMemo: "筋肉質でほどよい弾力があり、噛むほど旨みが広がるタイプです。",
       fatMemo: "脂は控えめで、香りと鉄っぽい旨みを楽しむすっきり寄りの部位です。",
       firstCollectedAt: "2026-03-21",
+      subjectiveSummary: {
+        tastingCount: 3,
+        dominantFatLevelLabel: "あっさり",
+        dominantTextureLabel: "弾力あり",
+        averageSatisfaction: 3.7,
+        wantAgainRate: 67,
+      },
     });
     assert.equal(meuraProfile?.firstCollectedAt, null);
+    assert.equal(meuraProfile?.subjectiveSummary.tastingCount, 0);
   } finally {
     await writeMockState({
       menuItemStatuses: seededMenuItemStatuses.map((entry) => ({ ...entry })),

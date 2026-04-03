@@ -80,11 +80,19 @@ export interface Database {
           id: string;
           visit_log_id: string;
           part_id: string;
+          fat_level: "light" | "balanced" | "rich" | null;
+          texture_level: "firm" | "smooth" | "melty" | null;
+          satisfaction: number | null;
+          want_again: boolean | null;
         };
         Insert: {
           id?: string;
           visit_log_id: string;
           part_id: string;
+          fat_level?: "light" | "balanced" | "rich" | null;
+          texture_level?: "firm" | "smooth" | "melty" | null;
+          satisfaction?: number | null;
+          want_again?: boolean | null;
         };
         Update: Partial<Database["public"]["Tables"]["visit_log_parts"]["Insert"]>;
         Relationships: [];
