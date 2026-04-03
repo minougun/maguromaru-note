@@ -21,6 +21,7 @@ import type {
   PartDetailProfile,
   MenuItem,
   MenuItemId,
+  PartRecentTastingEntry,
   PartMenuInsight,
   MenuItemStatusRow,
   Part,
@@ -483,19 +484,23 @@ function dominantLabel(counts: Map<string, number>, labels: Record<string, strin
 
 function buildPartDetailProfiles(
   parts: Part[],
+  menuItems: MenuItem[],
   visitLogs: Database["public"]["Tables"]["visit_logs"]["Row"][],
   visitLogParts: Database["public"]["Tables"]["visit_log_parts"]["Row"][],
 ): Record<PartId, PartDetailProfile | undefined> {
-  const visitedAtByLogId = new Map(visitLogs.map((visitLog) => [visitLog.id, visitLog.visited_at]));
+  const visitLogById = new Map(visitLogs.map((visitLog) => [visitLog.id, visitLog]));
+  const menuItemNameById = new Map(menuItems.map((menuItem) => [menuItem.id, menuItem.name]));
   const earliestVisitByPart = new Map<PartId, string>();
   const fatCountsByPart = new Map<PartId, Map<string, number>>();
   const textureCountsByPart = new Map<PartId, Map<string, number>>();
   const satisfactionTotalsByPart = new Map<PartId, { sum: number; count: number }>();
   const wantAgainCountsByPart = new Map<PartId, { yes: number; count: number }>();
+  const recentTastingsByPart = new Map<PartId, PartRecentTastingEntry[]>();
 
   for (const entry of visitLogParts) {
     const partId = entry.part_id as PartId;
-    const visitedAt = visitedAtByLogId.get(entry.visit_log_id);
+    const visitLog = visitLogById.get(entry.visit_log_id);
+    const visitedAt = visitLog?.visited_at;
     if (visitedAt) {
       const current = earliestVisitByPart.get(partId);
       if (!current || visitedAt.localeCompare(current) < 0) {
@@ -528,6 +533,25 @@ function buildPartDetailProfiles(
       current.count += 1;
       wantAgainCountsByPart.set(partId, current);
     }
+
+    if (
+      visitLog &&
+      (entry.fat_level != null ||
+        entry.texture_level != null ||
+        entry.satisfaction != null ||
+        entry.want_again != null)
+    ) {
+      const recent = recentTastingsByPart.get(partId) ?? [];
+      recent.push({
+        visitedAt: visitLog.visited_at,
+        menuItemName: menuItemNameById.get(visitLog.menu_item_id as MenuItemId) ?? visitLog.menu_item_id,
+        fatLevelLabel: entry.fat_level ? PART_FAT_LEVEL_LABELS[entry.fat_level] ?? entry.fat_level : null,
+        textureLevelLabel: entry.texture_level ? PART_TEXTURE_LEVEL_LABELS[entry.texture_level] ?? entry.texture_level : null,
+        satisfaction: entry.satisfaction ?? null,
+        wantAgain: entry.want_again ?? null,
+      });
+      recentTastingsByPart.set(partId, recent);
+    }
   }
 
   const profiles: Record<PartId, PartDetailProfile | undefined> = {};
@@ -550,6 +574,9 @@ function buildPartDetailProfiles(
       wantAgainRate:
         wantAgain && wantAgain.count > 0 ? Math.round((wantAgain.yes / wantAgain.count) * 100) : null,
     };
+    profile.recentTastings = (recentTastingsByPart.get(part.id) ?? [])
+      .sort((left, right) => right.visitedAt.localeCompare(left.visitedAt))
+      .slice(0, 3);
     profiles[part.id] = profile;
   }
 
@@ -1353,7 +1380,7 @@ function buildSnapshotFromRecords(
   );
   const trackedParts = filterTrackedParts(parts);
   const partInsights = buildPartMenuInsights(trackedParts, visitRecords);
-  const partProfiles = buildPartDetailProfiles(trackedParts, visitLogs, visitLogParts);
+  const partProfiles = buildPartDetailProfiles(trackedParts, menuItems, visitLogs, visitLogParts);
   const partsForCollection = buildCtx?.visitLogPartsForCollection ?? visitLogParts;
   const collectedPartIds = buildCollectedPartIds(
     trackedParts,

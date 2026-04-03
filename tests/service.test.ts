@@ -461,9 +461,36 @@ test("zukan snapshot includes per-part menu appearance insights from personal hi
         averageSatisfaction: 3.7,
         wantAgainRate: 67,
       },
+      recentTastings: [
+        {
+          visitedAt: "2026-03-24",
+          menuItemName: "まぐろ丼ミニ",
+          fatLevelLabel: "ちょうどいい",
+          textureLevelLabel: "なめらか",
+          satisfaction: 4,
+          wantAgain: true,
+        },
+        {
+          visitedAt: "2026-03-22",
+          menuItemName: "まぐろ丼",
+          fatLevelLabel: "あっさり",
+          textureLevelLabel: "弾力あり",
+          satisfaction: 4,
+          wantAgain: true,
+        },
+        {
+          visitedAt: "2026-03-21",
+          menuItemName: "まぐろ丼",
+          fatLevelLabel: "あっさり",
+          textureLevelLabel: "弾力あり",
+          satisfaction: 3,
+          wantAgain: false,
+        },
+      ],
     });
     assert.equal(meuraProfile?.firstCollectedAt, null);
     assert.equal(meuraProfile?.subjectiveSummary.tastingCount, 0);
+    assert.deepEqual(meuraProfile?.recentTastings, []);
   } finally {
     await writeMockState({
       menuItemStatuses: seededMenuItemStatuses.map((entry) => ({ ...entry })),

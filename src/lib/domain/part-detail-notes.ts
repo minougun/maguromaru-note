@@ -70,5 +70,6 @@ export function buildPartDetailProfile(part: Part, firstCollectedAt: string | nu
       averageSatisfaction: null,
       wantAgainRate: null,
     },
+    recentTastings: [],
   };
 }

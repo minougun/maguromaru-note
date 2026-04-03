@@ -44,6 +44,28 @@ function PartMenuInsightSection({
   );
 }
 
+function buildContrastSummary(insight: PartMenuInsight | undefined, globalInsight: PartMenuInsight | undefined) {
+  const personalTop = insight?.menuStats[0];
+  const globalTop = globalInsight?.menuStats[0];
+
+  if (!personalTop && !globalTop) {
+    return null;
+  }
+
+  if (personalTop && globalTop) {
+    if (personalTop.menuItemId === globalTop.menuItemId) {
+      return `あなたもみんなも、いま一番当たりやすいのは「${personalTop.menuItemName}」です。`;
+    }
+    return `あなたは「${personalTop.menuItemName}」派、みんなは「${globalTop.menuItemName}」派です。`;
+  }
+
+  if (personalTop) {
+    return `あなたの記録では「${personalTop.menuItemName}」が一番当たりやすいです。`;
+  }
+
+  return `みんなの記録では「${globalTop?.menuItemName}」が一番当たりやすいです。`;
+}
+
 export function PartMenuInsightBlock({
   insight,
   globalInsight,
@@ -51,8 +73,11 @@ export function PartMenuInsightBlock({
   insight: PartMenuInsight | undefined;
   globalInsight?: PartMenuInsight | undefined;
 }) {
+  const contrastSummary = buildContrastSummary(insight, globalInsight);
+
   return (
     <div className="part-insight-block">
+      {contrastSummary ? <p className="part-insight-compare">{contrastSummary}</p> : null}
       <PartMenuInsightSection
         emptyText="まだデータ不足です。記録が増えると、どの丼で出やすいかが分かります。"
         insight={insight}

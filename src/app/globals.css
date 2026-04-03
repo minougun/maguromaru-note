@@ -1221,6 +1221,17 @@ body {
   padding: 10px 12px;
 }
 
+.part-insight-compare {
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(27, 45, 79, 0.06);
+  color: var(--navy);
+  font-size: 12px;
+  line-height: 1.55;
+  font-weight: 700;
+}
+
 .part-insight-title {
   margin: 0 0 6px;
   font-size: 12px;
@@ -1325,6 +1336,45 @@ body {
 
 .part-profile-item dd span {
   display: block;
+}
+
+.part-profile-history-list {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.part-profile-history-item {
+  border-radius: 10px;
+  border: 1px solid rgba(27, 45, 79, 0.1);
+  background: rgba(244, 247, 252, 0.9);
+  padding: 8px 10px;
+}
+
+.part-profile-history-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 3px;
+}
+
+.part-profile-history-head strong {
+  font-size: 12px;
+  color: var(--navy);
+}
+
+.part-profile-history-head span {
+  font-size: 11px;
+  color: var(--cream-dark);
+}
+
+.part-profile-history-meta {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--ink);
 }
 
 .complete-banner {

@@ -15,6 +15,14 @@ function formatFirstCollectedAt(date: string | null) {
   return `${year}/${month}/${day}`;
 }
 
+function formatShortDate(date: string) {
+  const [year, month, day] = date.split("-");
+  if (!year || !month || !day) {
+    return date;
+  }
+  return `${year.slice(2)}/${month}/${day}`;
+}
+
 export function PartDetailProfileBlock({ profile }: { profile: PartDetailProfile | undefined }) {
   if (!profile) {
     return null;
@@ -62,6 +70,32 @@ export function PartDetailProfileBlock({ profile }: { profile: PartDetailProfile
               </>
             ) : (
               "まだ主観記録はありません"
+            )}
+          </dd>
+        </div>
+        <div className="part-profile-item">
+          <dt>最近の主観記録</dt>
+          <dd>
+            {profile.recentTastings.length > 0 ? (
+              <ul className="part-profile-history-list">
+                {profile.recentTastings.map((entry) => (
+                  <li className="part-profile-history-item" key={`${entry.visitedAt}-${entry.menuItemName}`}>
+                    <div className="part-profile-history-head">
+                      <strong>{formatShortDate(entry.visitedAt)}</strong>
+                      <span>{entry.menuItemName}</span>
+                    </div>
+                    <div className="part-profile-history-meta">
+                      脂感: {entry.fatLevelLabel ?? "未記録"} / 食感: {entry.textureLevelLabel ?? "未記録"}
+                    </div>
+                    <div className="part-profile-history-meta">
+                      満足度: {entry.satisfaction != null ? `${entry.satisfaction}/5` : "未記録"} / また食べたい:{" "}
+                      {entry.wantAgain == null ? "未記録" : entry.wantAgain ? "はい" : "いいえ"}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              "主観記録をつけると、最近の好みの変化を見返せます。"
             )}
           </dd>
         </div>

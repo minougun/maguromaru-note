@@ -134,6 +134,15 @@ export interface PartPreferenceSummary {
   wantAgainRate: number | null;
 }
 
+export interface PartRecentTastingEntry {
+  visitedAt: string;
+  menuItemName: string;
+  fatLevelLabel: string | null;
+  textureLevelLabel: string | null;
+  satisfaction: number | null;
+  wantAgain: boolean | null;
+}
+
 export interface PartDetailProfile {
   partId: PartId;
   rarityLabel: string;
@@ -142,6 +151,7 @@ export interface PartDetailProfile {
   fatMemo: string;
   firstCollectedAt: string | null;
   subjectiveSummary: PartPreferenceSummary;
+  recentTastings: PartRecentTastingEntry[];
 }
 
 export interface ZukanData {
