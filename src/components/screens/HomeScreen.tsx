@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import { VisitLogCardDynamic } from "@/components/logs/VisitLogCardDynamic";
@@ -12,7 +13,9 @@ import { clearAuthCallbackQueryParams } from "@/lib/auth-callback-ui";
 import { menuStockLabels, type MenuStockStatus } from "@/lib/domain/constants";
 import type { VisitRecord } from "@/lib/domain/types";
 import { useAppSnapshot } from "@/lib/hooks/use-app-snapshot";
+import { buildMyPageSummary, buildNextTitleProgress } from "@/lib/mypage";
 import { buildPastLogShare, type SharePayload } from "@/lib/share/share";
+import { formatCount } from "@/lib/utils/format";
 
 const homeTimeFormatter = new Intl.DateTimeFormat("ja-JP", {
   hour: "2-digit",
@@ -87,6 +90,16 @@ export function HomeScreen() {
   const showStoreLastUpdated = snapshot.home.showStaffUpdateTimestamps && storeStatus !== "unset";
   const sideData = snapshot.home.sideData;
   const weatherText = `${sideData.weather.icon} ${Math.round(sideData.weather.temperature)}℃ ${sideData.weather.label}`;
+  const myPageSummary = buildMyPageSummary(snapshot);
+  const nextTitleProgress = buildNextTitleProgress(myPageSummary);
+  const titleSummary = myPageSummary.currentTitle
+    ? `${myPageSummary.currentTitle.icon} ${myPageSummary.currentTitle.name}`
+    : "称号なし";
+  const progressBits = [
+    nextTitleProgress?.remainingVisits ? `来店あと${formatCount(nextTitleProgress.remainingVisits)}回` : null,
+    nextTitleProgress?.remainingCollectedParts ? `${nextTitleProgress.remainingCollectedParts}部位` : null,
+    nextTitleProgress?.remainingQuizCorrect ? `${nextTitleProgress.remainingQuizCorrect}問正解` : null,
+  ].filter(Boolean);
 
   return (
     <>
@@ -120,6 +133,43 @@ export function HomeScreen() {
           </Card>
         </>
       ) : null}
+
+      <SectionTitle subtitle="Member perks" title="常連メリット" />
+      <Card className="loyalty-card" glow>
+        <div className="loyalty-card-head">
+          <div>
+            <p className="loyalty-card-label">今のあなた</p>
+            <p className="loyalty-card-title">{titleSummary}</p>
+          </div>
+          <div className="loyalty-card-chip">来店 {formatCount(myPageSummary.visitCount)}回</div>
+        </div>
+        <p className="loyalty-card-copy">
+          記録はメニューを選ぶだけでもOK。SNSにシェアすると、その記録の来店回数が <strong>1.2倍</strong> で集計されます。
+        </p>
+        <div className="loyalty-card-progress">
+          {nextTitleProgress ? (
+            <>
+              <p className="loyalty-card-progress-label">
+                次の称号: {nextTitleProgress.title.icon} {nextTitleProgress.title.name}
+              </p>
+              <p className="loyalty-card-progress-body">{progressBits.join(" / ")} で到達</p>
+            </>
+          ) : (
+            <>
+              <p className="loyalty-card-progress-label">称号コンプリート達成中</p>
+              <p className="loyalty-card-progress-body">あとは記録と図鑑を育てて、自分の好みを深掘りできます。</p>
+            </>
+          )}
+        </div>
+        <div className="loyalty-card-actions">
+          <Link className="button-primary loyalty-card-link" href="/record">
+            かんたん記録へ
+          </Link>
+          <Link className="button-outline loyalty-card-link" href="/titles">
+            称号を見る
+          </Link>
+        </div>
+      </Card>
 
       <Card aria-label="まぐろ丸Botの日替わり豆知識" className="ai-store-blurb-card">
         <p className="ai-store-blurb-label">まぐろ丸Bot 今日の豆知識</p>

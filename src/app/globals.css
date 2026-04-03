@@ -667,6 +667,77 @@ body {
   box-shadow: 0 3px 12px rgba(27, 45, 79, 0.08);
 }
 
+.loyalty-card {
+  display: grid;
+  gap: 14px;
+}
+
+.loyalty-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.loyalty-card-label {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cream-faint);
+}
+
+.loyalty-card-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--cream);
+}
+
+.loyalty-card-chip {
+  border-radius: 999px;
+  border: 1px solid rgba(27, 45, 79, 0.12);
+  background: rgba(255, 255, 255, 0.88);
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--navy);
+  white-space: nowrap;
+}
+
+.loyalty-card-copy,
+.loyalty-card-progress-body {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--cream);
+}
+
+.loyalty-card-progress {
+  display: grid;
+  gap: 4px;
+  border-top: 1px solid rgba(27, 45, 79, 0.08);
+  padding-top: 12px;
+}
+
+.loyalty-card-progress-label {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--cream-dark);
+}
+
+.loyalty-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.loyalty-card-link {
+  text-decoration: none;
+}
+
 .ai-store-blurb-label {
   margin: 0 0 6px;
   font-size: 10px;
@@ -1008,6 +1079,38 @@ body {
   opacity: 1;
   color: #fff;
   background: var(--navy);
+}
+
+.record-assist-card {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.record-assist-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.record-assist-chip {
+  border-radius: 999px;
+  border: 1px solid rgba(183, 28, 40, 0.18);
+  background: rgba(183, 28, 40, 0.08);
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--red);
+}
+
+.record-assist-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.record-assist-button {
+  font-size: 13px;
 }
 
 .part-tasting-stack {

@@ -45,6 +45,8 @@ export function RecordScreen() {
   const [selectedMenuItemId, setSelectedMenuItemId] = useState<MenuItemId | null>(null);
   const [selectedPartIds, setSelectedPartIds] = useState<Set<PartId>>(new Set());
   const [partTastings, setPartTastings] = useState<Record<PartId, PartTastingInput>>({} as Record<PartId, PartTastingInput>);
+  const [showPartEditor, setShowPartEditor] = useState(false);
+  const [showTastingNotes, setShowTastingNotes] = useState(false);
   const [memo, setMemo] = useState("");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
@@ -84,7 +86,6 @@ export function RecordScreen() {
       delete nextTastings[partId];
     } else {
       next.add(partId);
-      nextTastings[partId] = partTastings[partId] ?? createPartTasting(partId);
     }
     setSelectedPartIds(next);
     setPartTastings(nextTastings);
@@ -104,14 +105,21 @@ export function RecordScreen() {
 
   function handleMenuSelection(menuItemId: MenuItemId) {
     const defaultPartIds = getDefaultPartIdsForMenuItem(menuItemId).filter((partId) => availablePartIds.has(partId));
-    const nextTastings = defaultPartIds.reduce<Record<PartId, PartTastingInput>>((acc, partId) => {
-      acc[partId] = partTastings[partId] ?? createPartTasting(partId);
-      return acc;
-    }, {} as Record<PartId, PartTastingInput>);
+    const nextTastings = Object.fromEntries(
+      defaultPartIds
+        .map((partId) => {
+          const tasting = partTastings[partId];
+          return tasting ? [partId, tasting] : null;
+        })
+        .filter(Boolean)
+        .map((entry) => entry as [PartId, PartTastingInput]),
+    ) as Record<PartId, PartTastingInput>;
 
     setSelectedMenuItemId(menuItemId);
     setSelectedPartIds(new Set(defaultPartIds));
     setPartTastings(nextTastings);
+    setShowPartEditor(false);
+    setShowTastingNotes(false);
   }
 
   function updatePartTasting(partId: PartId, patch: Partial<Omit<PartTastingInput, "partId">>) {
@@ -144,7 +152,7 @@ export function RecordScreen() {
             visitedAt: todayString(),
             menuItemId: selectedMenuItemId,
             partIds: [...selectedPartIds],
-            partTastings: [...selectedPartIds].map((partId) => partTastings[partId] ?? createPartTasting(partId)),
+            partTastings: [...selectedPartIds].flatMap((partId) => (partTastings[partId] ? [partTastings[partId]!] : [])),
             memo,
             photoDataUrl,
           }),
@@ -160,6 +168,8 @@ export function RecordScreen() {
     setSelectedMenuItemId(null);
     setSelectedPartIds(new Set());
     setPartTastings({} as Record<PartId, PartTastingInput>);
+    setShowPartEditor(false);
+    setShowTastingNotes(false);
     setMemo("");
     setPreviewUrl(null);
     setPhotoDataUrl(null);
@@ -239,38 +249,67 @@ export function RecordScreen() {
         })}
       </div>
 
-      <SectionTitle subtitle="Parts" title="入っていた部位" />
-      <Card>
+      <SectionTitle subtitle="Quick record" title="かんたん記録" />
+      <Card className="record-assist-card">
         <p className="helper-text">
           {selectedMenuItem
-            ? `${selectedMenuItem.name} の標準部位を自動で選択しています。実際に入っていた内容に合わせて修正してください。`
-            : "メニューを選ぶと、標準の部位セットを自動で入力します。"}
+            ? `${selectedMenuItem.name} の標準部位を自動でセットしました。わからなければ、このまま保存でOKです。`
+            : "まずメニューを選ぶと、標準の部位セットを自動で入れます。"}
         </p>
-        <p className="helper-text">トビコなど部位以外の具材は、この部位図鑑の自動選択には含めていません。</p>
-      </Card>
-      <div className="parts-grid">
-        {snapshot.parts.map((part) => {
-          const selected = selectedPartIds.has(part.id);
-          return (
+        {selectedParts.length > 0 ? (
+          <div className="record-assist-chip-row">
+            {selectedParts.map((part) => (
+              <span className="record-assist-chip" key={part.id}>
+                {part.name}
+              </span>
+            ))}
+          </div>
+        ) : null}
+        <p className="helper-text">トビコなど部位以外の具材は、自動セットに含めていません。</p>
+        {selectedMenuItem ? (
+          <div className="record-assist-actions">
+            <button className="button-outline record-assist-button" onClick={() => setShowPartEditor((value) => !value)} type="button">
+              {showPartEditor ? "部位調整を閉じる" : "部位を自分で調整する"}
+            </button>
             <button
-              className={`part-cell ${selected ? "selected" : ""}`}
-              key={part.id}
-              onClick={() => togglePart(part.id)}
-              style={{ borderColor: selected ? mapDisplayColorForPart(part) : undefined }}
+              className="button-outline record-assist-button"
+              onClick={() => setShowTastingNotes((value) => !value)}
               type="button"
             >
-              <span className="part-check">✓</span>
-              <div className="part-name">{part.name}</div>
-              <div className="part-area">{part.area}</div>
-              <div className="part-rarity">
-                レア度: {"★".repeat(part.rarity) + "☆".repeat(3 - part.rarity)}
-              </div>
+              {showTastingNotes ? "主観メモを閉じる" : "味のメモも残す"}
             </button>
-          );
-        })}
-      </div>
+          </div>
+        ) : null}
+      </Card>
 
-      {selectedParts.length > 0 ? (
+      {showPartEditor ? (
+        <>
+          <SectionTitle subtitle="Parts" title="入っていた部位を調整" />
+          <div className="parts-grid">
+            {snapshot.parts.map((part) => {
+              const selected = selectedPartIds.has(part.id);
+              return (
+                <button
+                  className={`part-cell ${selected ? "selected" : ""}`}
+                  key={part.id}
+                  onClick={() => togglePart(part.id)}
+                  style={{ borderColor: selected ? mapDisplayColorForPart(part) : undefined }}
+                  type="button"
+                >
+                  <span className="part-check">✓</span>
+                  <div className="part-name">{part.name}</div>
+                  <div className="part-area">{part.area}</div>
+                  <div className="part-rarity">
+                    レア度: {"★".repeat(part.rarity) + "☆".repeat(3 - part.rarity)}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </>
+      ) : null}
+
+      {showTastingNotes && selectedParts.length > 0 ? (
         <>
           <SectionTitle subtitle="Tasting notes" title="部位ごとの主観記録" />
           <div className="part-tasting-stack">

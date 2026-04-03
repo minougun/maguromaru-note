@@ -4,7 +4,7 @@ import test from "node:test";
 import { defaultMenuStockById } from "@/lib/domain/constants";
 import { seededMenuItems, seededParts, seededStoreStatus } from "@/lib/domain/seed";
 import type { AppSnapshot, VisitRecord } from "@/lib/domain/types";
-import { buildMyPageSummary, calculateVisitStreakWeeks } from "@/lib/mypage";
+import { buildMyPageSummary, buildNextTitleProgress, calculateVisitStreakWeeks } from "@/lib/mypage";
 
 function createVisitRecord(id: string, visitedAt: string): VisitRecord {
   return {
@@ -119,4 +119,86 @@ test("buildMyPageSummary marks unlocked and current titles from snapshot progres
   assert.equal(summary.titles.find((title) => title.id === "akami_fan")?.unlocked, true);
   assert.equal(summary.titles.find((title) => title.id === "chutoro")?.current, true);
   assert.equal(summary.titles.find((title) => title.id === "hunter")?.requirementText, "来店10回・6部位・750問正解で解放");
+});
+
+test("buildNextTitleProgress returns remaining requirements for the next locked title", () => {
+  const snapshot: AppSnapshot = {
+    viewer: {
+      userId: "user-1",
+      email: null,
+      role: "user",
+      isMock: true,
+    },
+    parts: seededParts,
+    menuItems: seededMenuItems,
+    home: {
+      menuItemStatuses: defaultMenuStockById,
+      menuStockUpdatedAt: null,
+      storeStatus: seededStoreStatus,
+      showStaffUpdateTimestamps: true,
+      aiStoreBlurb: null,
+      sideData: {
+        weather: {
+          temperature: 20,
+          code: 0,
+          icon: "☀️",
+          label: "快晴",
+        },
+        trivia: {
+          trivia: "まぐろの部位は個性が豊かです。",
+          date: "2026-04-03",
+        },
+        fetchedAt: "2026-04-03T00:00:00.000Z",
+      },
+      recentLogs: [],
+    },
+    history: {
+      visitCount: 1,
+      quizStats: {
+        totalCorrectAnswers: 35,
+        totalAnsweredQuestions: 70,
+        quizzesCompleted: 2,
+        bestScore: 18,
+        bestQuestionCount: 20,
+        accuracyRate: 50,
+      },
+      quizStageProgress: {
+        correctByStage: {
+          1: 10,
+        },
+      },
+      currentTitle: {
+        id: "beginner",
+        name: "まぐろ入門者",
+        icon: "🐟",
+        requiredVisits: 1,
+        requiredCollectedParts: 0,
+        requiredQuizCorrect: 0,
+      },
+      logs: [createVisitRecord("1", "2026-03-29")],
+      shareBonus: {
+        bonusVisitCount: 0,
+        bonusCorrectAnswers: 0,
+        sharedVisitLogIds: [],
+        sharedQuizSessionIds: [],
+      },
+    },
+    zukan: {
+      collectedPartIds: ["otoro", "chutoro"],
+      collectedCount: 2,
+      totalCount: seededParts.length,
+      isComplete: false,
+      partInsights: {},
+      globalPartInsights: {},
+      partProfiles: {},
+    },
+    canManageAdmin: false,
+  };
+
+  const progress = buildNextTitleProgress(buildMyPageSummary(snapshot));
+
+  assert.equal(progress?.title.id, "akami_fan");
+  assert.equal(progress?.remainingVisits, 2);
+  assert.equal(progress?.remainingCollectedParts, 3);
+  assert.equal(progress?.remainingQuizCorrect, 165);
 });

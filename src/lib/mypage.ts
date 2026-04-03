@@ -16,6 +16,13 @@ export interface MyPageSummary {
   visitCount: number;
 }
 
+export interface NextTitleProgress {
+  title: Title;
+  remainingVisits: number;
+  remainingCollectedParts: number;
+  remainingQuizCorrect: number;
+}
+
 function buildRequirementText(title: Title) {
   const conditions = [`来店${title.requiredVisits}回`];
 
@@ -89,5 +96,19 @@ export function buildMyPageSummary(snapshot: AppSnapshot): MyPageSummary {
         requirementText: buildRequirementText(title),
       };
     }),
+  };
+}
+
+export function buildNextTitleProgress(summary: MyPageSummary): NextTitleProgress | null {
+  const nextTitle = summary.titles.find((title) => !title.unlocked);
+  if (!nextTitle) {
+    return null;
+  }
+
+  return {
+    title: nextTitle,
+    remainingVisits: Math.max(0, nextTitle.requiredVisits - summary.visitCount),
+    remainingCollectedParts: Math.max(0, nextTitle.requiredCollectedParts - summary.collectedCount),
+    remainingQuizCorrect: Math.max(0, nextTitle.requiredQuizCorrect - summary.totalCorrectAnswers),
   };
 }
