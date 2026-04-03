@@ -15,8 +15,6 @@ export type VisitLogCardProps = {
 };
 
 const priceFormatter = new Intl.NumberFormat("ja-JP");
-const RECENT_LOG_TAG_BG = "#1f232b";
-const RECENT_LOG_TAG_BORDER = "#4b5563";
 
 function visitLogTagColor(logPart: VisitRecord["parts"][number]) {
   switch (logPart.id) {
@@ -64,12 +62,7 @@ export const VisitLogCard = memo(function VisitLogCard({
               <span
                 className="tag"
                 key={part.id}
-                style={{
-                  color: c,
-                  backgroundColor: RECENT_LOG_TAG_BG,
-                  borderColor: RECENT_LOG_TAG_BORDER,
-                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)",
-                }}
+                style={{ color: c, backgroundColor: `${c}2f`, borderColor: `${c}99`, boxShadow: `inset 0 1px 0 ${c}1a` }}
               >
                 {part.name}
               </span>
