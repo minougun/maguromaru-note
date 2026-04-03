@@ -2414,8 +2414,8 @@ body {
   justify-content: center;
   min-height: 0;
   padding: 4px 6px calc(16px + var(--safe-bottom));
-  background: #ffffff;
-  color: var(--ink);
+  background: var(--navy);
+  color: #ffffff;
 }
 
 /* ロゴ＋ボタンをまとめて縦方向の中央よりやや上へ */
@@ -2438,8 +2438,8 @@ body {
   margin: 0;
   font-size: clamp(2.15rem, 7.8vw, 2.95rem);
   line-height: 1.22;
-  color: var(--navy);
-  text-shadow: none;
+  color: #5cdbef;
+  text-shadow: 0 6px 18px rgba(9, 19, 37, 0.28);
 }
 
 .login-launch-icon-stage {
@@ -2458,12 +2458,13 @@ body {
   width: min(100vw - 12px, 100%);
   height: min(48dvh, 88vw, 480px);
   margin: 0 auto;
-  filter: drop-shadow(0 10px 28px rgba(27, 45, 79, 0.18));
+  filter: drop-shadow(0 16px 30px rgba(4, 10, 24, 0.42));
 }
 
 .login-launch-mark-img {
   /* 筆書きの円をフレーム内でやや上寄せ（contain 時の見かけ重心） */
   object-position: center 28%;
+  filter: saturate(1.08) brightness(1.02);
 }
 
 /* GIF アニメ完了後のフェードイン演出 */
@@ -2496,7 +2497,7 @@ body {
   text-align: center;
   font-size: 12px;
   line-height: 1.5;
-  color: var(--ink-soft);
+  color: rgba(255, 255, 255, 0.76);
 }
 
 .login-launch-flash--error {
@@ -2547,9 +2548,9 @@ body {
 }
 
 .login-launch-btn--secondary {
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  background: #ffffff;
-  color: #252525;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
 }
 
 .login-signin {
