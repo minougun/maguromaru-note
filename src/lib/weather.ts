@@ -13,8 +13,29 @@ interface WeatherRouteResponse {
   fetchedAt: string;
 }
 
+interface JmaForecastArea {
+  area?: {
+    name?: string;
+    code?: string;
+  };
+  weatherCodes?: string[];
+  weathers?: string[];
+  temps?: string[];
+}
+
+interface JmaForecastTimeSeries {
+  areas?: JmaForecastArea[];
+}
+
+type JmaForecastResponse = Array<{
+  timeSeries?: JmaForecastTimeSeries[];
+}>;
+
 const weatherEndpoint =
   "https://api.open-meteo.com/v1/forecast?latitude=34.6851&longitude=135.5006&current=temperature_2m,weather_code&timezone=Asia/Tokyo";
+const jmaForecastEndpoint = "https://www.jma.go.jp/bosai/forecast/data/forecast/270000.json";
+const jmaOsakaAreaCode = "270000";
+const jmaOsakaCityCode = "62078";
 const weatherTimeoutMs = 5000;
 const uiWeatherCacheMs = 10 * 60 * 1000;
 const fallbackWeather: WeatherSnapshot = {
@@ -77,6 +98,69 @@ export function parseWeatherResponse(data: {
   };
 }
 
+function normalizeJmaWeatherText(raw: string) {
+  return raw.replace(/　+/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function weatherLabelFromJmaText(raw: string): { icon: string; label: string } {
+  const text = normalizeJmaWeatherText(raw);
+
+  if (text.includes("雷") && text.includes("雨")) {
+    return { icon: "⛈️", label: "雷雨" };
+  }
+  if (text.includes("雪")) {
+    return { icon: "🌨️", label: "雪" };
+  }
+  if (text.includes("雨")) {
+    return { icon: "🌧️", label: text.includes("くもり") ? "くもり時々雨" : "雨" };
+  }
+  if (text.includes("霧")) {
+    return { icon: "🌫️", label: "霧" };
+  }
+  if (text.includes("晴") && text.includes("くもり")) {
+    return { icon: "⛅", label: "晴れ時々くもり" };
+  }
+  if (text.includes("晴")) {
+    return { icon: "☀️", label: "晴れ" };
+  }
+  if (text.includes("くもり")) {
+    return { icon: "⛅", label: "くもり" };
+  }
+
+  return { icon: "🌤️", label: text || "天気" };
+}
+
+export function parseJmaForecastResponse(data: JmaForecastResponse): WeatherSnapshot {
+  if (!Array.isArray(data) || data.length === 0) {
+    throw new Error("気象庁天気情報の形式が不正です。");
+  }
+
+  const primary = data[0];
+  const weatherSeries = primary?.timeSeries?.[0];
+  const tempSeries = primary?.timeSeries?.[2];
+
+  const weatherArea = weatherSeries?.areas?.find((area) => area.area?.code === jmaOsakaAreaCode);
+  const rawWeatherCode = weatherArea?.weatherCodes?.[0];
+  const rawWeatherText = weatherArea?.weathers?.[0];
+  const tempArea = tempSeries?.areas?.find((area) => area.area?.code === jmaOsakaCityCode);
+  const rawTemp = tempArea?.temps?.find((value) => /^-?\d+(?:\.\d+)?$/.test(value));
+
+  const code = Number(rawWeatherCode);
+  const temperature = rawTemp == null ? Number.NaN : Number(rawTemp);
+
+  if (!Number.isFinite(code) || !Number.isFinite(temperature) || typeof rawWeatherText !== "string") {
+    throw new Error("気象庁天気情報の形式が不正です。");
+  }
+
+  const label = weatherLabelFromJmaText(rawWeatherText);
+  return {
+    temperature,
+    code: 1000 + code,
+    icon: label.icon,
+    label: label.label,
+  };
+}
+
 function parseWeatherRouteResponse(payload: unknown): WeatherSnapshot {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     throw new Error("天気 API の形式が不正です。");
@@ -129,11 +213,35 @@ export async function fetchOsakaHonmachiWeather(): Promise<WeatherSnapshot> {
   }
 }
 
+async function fetchOsakaHonmachiWeatherFromJma(): Promise<WeatherSnapshot> {
+  const timeout = createTimeoutSignal(weatherTimeoutMs);
+
+  try {
+    const response = await fetch(jmaForecastEndpoint, {
+      cache: "no-store",
+      signal: timeout.signal,
+    });
+
+    if (!response.ok) {
+      throw new Error("気象庁天気情報の取得に失敗しました。");
+    }
+
+    const data = (await response.json()) as JmaForecastResponse;
+    return parseJmaForecastResponse(data);
+  } finally {
+    timeout.clear();
+  }
+}
+
 export async function fetchOsakaHonmachiWeatherSafe(): Promise<WeatherSnapshot> {
   try {
     return await fetchOsakaHonmachiWeather();
   } catch {
-    return getFallbackWeatherSnapshot();
+    try {
+      return await fetchOsakaHonmachiWeatherFromJma();
+    } catch {
+      return getFallbackWeatherSnapshot();
+    }
   }
 }
 
