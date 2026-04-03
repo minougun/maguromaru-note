@@ -142,7 +142,7 @@ export function HomeScreen() {
         <p className="ai-store-blurb-meta">日替わり豆知識 · {sideData.trivia.date}</p>
       </Card>
 
-      <SectionTitle subtitle="Easy goals" title="ミッション" />
+      <SectionTitle subtitle="Easy goals" title="ゆるく進める目標" />
       <Card className="casual-mission-card">
         <div className="casual-mission-card-head">
           <p className="casual-mission-card-title">ミッション</p>
