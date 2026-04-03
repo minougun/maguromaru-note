@@ -146,21 +146,23 @@ export function OnboardingTutorial({ onComplete }: OnboardingTutorialProps) {
       </button>
 
       <div className="onboarding-panel">
-        <div className="onboarding-art onboarding-art--mock" aria-hidden="true">
-          {step.screenshotSrc ? (
-            <>
-              {/* eslint-disable-next-line @next/next/no-img-element -- 引き継ぎ前どおり公開 WebP（publicPath で basePath 対応） */}
-              <img
-                alt=""
-                className="onboarding-screenshot-img"
-                decoding="async"
-                src={publicPath(step.screenshotSrc)}
-              />
-            </>
-          ) : (
-            <OnboardingDeviceMock screen={step.mockId} />
-          )}
-        </div>
+        {step.mockId !== "intro" ? (
+          <div className="onboarding-art onboarding-art--mock" aria-hidden="true">
+            {step.screenshotSrc ? (
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element -- 引き継ぎ前どおり公開 WebP（publicPath で basePath 対応） */}
+                <img
+                  alt=""
+                  className="onboarding-screenshot-img"
+                  decoding="async"
+                  src={publicPath(step.screenshotSrc)}
+                />
+              </>
+            ) : (
+              <OnboardingDeviceMock screen={step.mockId} />
+            )}
+          </div>
+        ) : null}
 
         <h2 className="onboarding-title" id="onboarding-title">
           {step.title}
