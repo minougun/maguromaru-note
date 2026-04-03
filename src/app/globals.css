@@ -1214,6 +1214,12 @@ body {
   color: var(--cream-dark);
 }
 
+.part-insight-global {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(27, 45, 79, 0.14);
+}
+
 .part-profile-block {
   margin-top: 10px;
   border-radius: 12px;

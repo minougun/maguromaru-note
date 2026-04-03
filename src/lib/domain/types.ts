@@ -141,6 +141,7 @@ export interface ZukanData {
   totalCount: number;
   isComplete: boolean;
   partInsights: Record<PartId, PartMenuInsight | undefined>;
+  globalPartInsights: Record<PartId, PartMenuInsight | undefined>;
   partProfiles: Record<PartId, PartDetailProfile | undefined>;
 }
 

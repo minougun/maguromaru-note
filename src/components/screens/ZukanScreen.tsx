@@ -87,6 +87,7 @@ export function ZukanScreen() {
       <SectionTitle subtitle="Tuna map" title="部位マップ" />
       <TunaMap
         collectedPartIds={snapshot.zukan.collectedPartIds}
+        globalPartInsights={snapshot.zukan.globalPartInsights}
         partInsights={snapshot.zukan.partInsights}
         partProfiles={snapshot.zukan.partProfiles}
         parts={snapshot.parts}
@@ -104,7 +105,12 @@ export function ZukanScreen() {
               </div>
               <div className="plist-desc">{collected ? part.description : "まだ食べていません"}</div>
               <PartDetailProfileBlock profile={snapshot.zukan.partProfiles[part.id]} />
-              {collected ? <PartMenuInsightBlock insight={snapshot.zukan.partInsights[part.id]} /> : null}
+              {collected ? (
+                <PartMenuInsightBlock
+                  globalInsight={snapshot.zukan.globalPartInsights[part.id]}
+                  insight={snapshot.zukan.partInsights[part.id]}
+                />
+              ) : null}
             </article>
           );
         })}

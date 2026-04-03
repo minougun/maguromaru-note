@@ -62,10 +62,11 @@ const MENU_ITEM_STATUS_COLUMNS = "menu_item_id, status, updated_at" as const;
 const MASTER_DATA_CACHE_MS = 5 * 60 * 1000;
 const STORE_STATUS_CACHE_MS = 15 * 1000;
 const MENU_STATUS_CACHE_MS = 15 * 1000;
+const GLOBAL_PART_INSIGHTS_CACHE_MS = 60 * 1000;
 import { filterTrackedParts, isTrackedPartId } from "@/lib/domain/tracked-parts";
 import { readCachedHomeSideDataServer, readFallbackHomeSideDataServer } from "@/lib/home-side-data-server";
 import { readBearerToken } from "@/lib/auth-bearer";
-import { getAdminEmail, getSupabaseEnv, getSupabaseServiceEnv, hasSupabaseEnv, isMockAllowed } from "@/lib/env";
+import { getAdminEmail, getSupabaseEnv, getSupabaseServiceEnv, hasSupabaseEnv, hasSupabaseServiceEnv, isMockAllowed } from "@/lib/env";
 import { createMockPhotoUrl, createMockViewerContext, mockMasterData, readMockState, writeMockState } from "@/lib/mock/store";
 import { QUIZ_SESSION_SIZE, createQuizSession, getStageNumberFromQuestionId, scoreQuizAnswers, toPublicQuizSession } from "@/lib/quiz";
 import { createEmptyQuizStageProgress, isQuizStageUnlocked } from "@/lib/quiz-stages";
@@ -108,6 +109,12 @@ const menuStatusCache: SharedCacheEntry<{
   inflight: null,
 };
 
+const globalPartInsightsCache: SharedCacheEntry<Record<PartId, PartMenuInsight | undefined>> = {
+  value: null,
+  expiresAt: 0,
+  inflight: null,
+};
+
 function cloneParts(parts: Part[]) {
   return parts.map((part) => ({ ...part }));
 }
@@ -128,6 +135,20 @@ function cloneMenuStatusBundle(bundle: {
     statuses: { ...bundle.statuses },
     lastUpdatedAt: bundle.lastUpdatedAt,
   };
+}
+
+function clonePartInsightsMap(value: Record<PartId, PartMenuInsight | undefined>) {
+  const cloned: Record<PartId, PartMenuInsight | undefined> = {};
+  for (const [key, insight] of Object.entries(value) as [PartId, PartMenuInsight | undefined][]) {
+    cloned[key] = insight
+      ? {
+          partId: insight.partId,
+          totalAppearances: insight.totalAppearances,
+          menuStats: insight.menuStats.map((stat) => ({ ...stat })),
+        }
+      : undefined;
+  }
+  return cloned;
 }
 
 async function readSharedCache<T>(
@@ -402,6 +423,41 @@ function buildPartDetailProfiles(parts: Part[], visitRecords: VisitRecord[]): Re
   return profiles;
 }
 
+async function getGlobalPartInsights(
+  parts: Part[],
+  menuItems: MenuItem[],
+  mockState?: Awaited<ReturnType<typeof readMockState>>,
+  serviceRoleClient?: SupabaseClient<Database> | null,
+): Promise<Record<PartId, PartMenuInsight | undefined>> {
+  if (mockState) {
+    const visitRecords = buildVisitRecords(parts, menuItems, mockState.visitLogs, mockState.visitLogParts);
+    return buildPartMenuInsights(parts, visitRecords);
+  }
+
+  if (!serviceRoleClient || !hasSupabaseServiceEnv()) {
+    const empty: Record<PartId, PartMenuInsight | undefined> = {};
+    for (const part of parts) {
+      empty[part.id] = {
+        partId: part.id,
+        totalAppearances: 0,
+        menuStats: [],
+      };
+    }
+    return empty;
+  }
+
+  return readSharedCache(
+    globalPartInsightsCache,
+    GLOBAL_PART_INSIGHTS_CACHE_MS,
+    async () => {
+      const { visitLogs, visitLogParts } = await listGlobalVisitData(serviceRoleClient);
+      const visitRecords = buildVisitRecords(parts, menuItems, visitLogs, visitLogParts);
+      return buildPartMenuInsights(parts, visitRecords);
+    },
+    clonePartInsightsMap,
+  );
+}
+
 async function getSupabaseViewer(client: SupabaseClient<Database>): Promise<ViewerContext> {
   return getSupabaseViewerFromToken(client);
 }
@@ -670,6 +726,35 @@ async function listVisitData(
   };
 }
 
+async function listGlobalVisitData(client: SupabaseClient<Database>) {
+  const { data: visitLogs, error: visitLogsError } = await fromAny(client, "visit_logs").select(VISIT_LOG_COLUMNS);
+  if (visitLogsError || !visitLogs) {
+    throw new AppServiceError(500, visitLogsError?.message ?? "全体の来店記録取得に失敗しました。");
+  }
+
+  const typedVisitLogs = visitLogs as Database["public"]["Tables"]["visit_logs"]["Row"][];
+  if (typedVisitLogs.length === 0) {
+    return {
+      visitLogs: [] as Database["public"]["Tables"]["visit_logs"]["Row"][],
+      visitLogParts: [] as Database["public"]["Tables"]["visit_log_parts"]["Row"][],
+    };
+  }
+
+  const visitLogIds = typedVisitLogs.map((entry) => entry.id);
+  const { data: visitLogParts, error: visitLogPartsError } = await fromAny(client, "visit_log_parts")
+    .select(VISIT_LOG_PART_COLUMNS)
+    .in("visit_log_id", visitLogIds);
+
+  if (visitLogPartsError || !visitLogParts) {
+    throw new AppServiceError(500, visitLogPartsError?.message ?? "全体の部位記録取得に失敗しました。");
+  }
+
+  return {
+    visitLogs: typedVisitLogs,
+    visitLogParts: visitLogParts as Database["public"]["Tables"]["visit_log_parts"]["Row"][],
+  };
+}
+
 async function getStoreStatus(client?: SupabaseClient<Database>) {
   if (!client) {
     const state = await readMockState();
@@ -764,6 +849,7 @@ type SnapshotFetchPlan = {
   quizSessions: boolean;
   shareBonus: boolean;
   visits: boolean;
+  globalInsights: boolean;
   /** ホーム「最近の記録」など、先頭 N 件だけでよいとき DB 側で LIMIT */
   visitFetchLimit?: number;
 };
@@ -779,6 +865,7 @@ const SNAPSHOT_FETCH_PLANS: Record<SnapshotScope, SnapshotFetchPlan> = {
     quizSessions: true,
     shareBonus: true,
     visits: true,
+    globalInsights: false,
   },
   home: {
     masterParts: true,
@@ -790,6 +877,7 @@ const SNAPSHOT_FETCH_PLANS: Record<SnapshotScope, SnapshotFetchPlan> = {
     quizSessions: false,
     shareBonus: true,
     visits: true,
+    globalInsights: false,
     visitFetchLimit: 3,
   },
   admin: {
@@ -802,6 +890,7 @@ const SNAPSHOT_FETCH_PLANS: Record<SnapshotScope, SnapshotFetchPlan> = {
     quizSessions: false,
     shareBonus: false,
     visits: false,
+    globalInsights: false,
   },
   history: {
     masterParts: true,
@@ -813,6 +902,7 @@ const SNAPSHOT_FETCH_PLANS: Record<SnapshotScope, SnapshotFetchPlan> = {
     quizSessions: true,
     shareBonus: true,
     visits: true,
+    globalInsights: false,
   },
   mypage: {
     masterParts: true,
@@ -824,6 +914,7 @@ const SNAPSHOT_FETCH_PLANS: Record<SnapshotScope, SnapshotFetchPlan> = {
     quizSessions: true,
     shareBonus: true,
     visits: true,
+    globalInsights: false,
   },
   zukan: {
     masterParts: true,
@@ -835,6 +926,7 @@ const SNAPSHOT_FETCH_PLANS: Record<SnapshotScope, SnapshotFetchPlan> = {
     quizSessions: false,
     shareBonus: false,
     visits: true,
+    globalInsights: true,
   },
   record: {
     masterParts: true,
@@ -846,6 +938,7 @@ const SNAPSHOT_FETCH_PLANS: Record<SnapshotScope, SnapshotFetchPlan> = {
     quizSessions: false,
     shareBonus: false,
     visits: false,
+    globalInsights: false,
   },
   quiz: {
     masterParts: true,
@@ -857,6 +950,7 @@ const SNAPSHOT_FETCH_PLANS: Record<SnapshotScope, SnapshotFetchPlan> = {
     quizSessions: true,
     shareBonus: true,
     visits: true,
+    globalInsights: false,
   },
 };
 
@@ -871,7 +965,7 @@ function defaultMenuStatusesBundle(): {
 }
 
 function snapshotPlanNeedsServiceRole(plan: SnapshotFetchPlan) {
-  return plan.quizSessions || plan.shareBonus;
+  return plan.quizSessions || plan.shareBonus || plan.globalInsights;
 }
 
 async function getQuizStats(client: SupabaseClient<Database> | undefined, userId: string) {
@@ -1007,6 +1101,7 @@ function buildSnapshotFromRecords(
   shareBonusEvents: ShareBonusEventRow[],
   visitLogs: Database["public"]["Tables"]["visit_logs"]["Row"][],
   visitLogParts: Database["public"]["Tables"]["visit_log_parts"]["Row"][],
+  globalPartInsights: Record<PartId, PartMenuInsight | undefined>,
   buildCtx: SnapshotBuildContext | undefined,
   homeSideData: HomeSideDataSnapshot,
   aiStoreBlurb: HomeAiStoreBlurb | null,
@@ -1091,6 +1186,7 @@ function buildSnapshotFromRecords(
       totalCount: trackedParts.length,
       isComplete: collectedPartIds.length === trackedParts.length,
       partInsights,
+      globalPartInsights,
       partProfiles,
     },
     canManageAdmin: viewer.role === "admin",
@@ -1248,6 +1344,9 @@ export async function getAppSnapshot(
 
     const menuBundle = plan.menuBundle ? await getMenuItemStatuses(undefined) : defaultMenuStatusesBundle();
     const storeStatus = plan.store ? state.storeStatus : seededStoreStatus;
+    const globalPartInsights = plan.globalInsights
+      ? await getGlobalPartInsights(parts, menuItems, state)
+      : {};
     return buildSnapshotFromRecords(
       viewer,
       parts,
@@ -1260,6 +1359,7 @@ export async function getAppSnapshot(
       shareBonusEvents,
       visitLogs,
       visitLogParts,
+      globalPartInsights,
       buildCtx,
       homeSideData,
       null,
@@ -1336,6 +1436,10 @@ export async function getAppSnapshot(
     }
   }
 
+  const globalPartInsights = plan.globalInsights
+    ? await getGlobalPartInsights(parts, menuItems, undefined, serviceRoleClient)
+    : {};
+
   return buildSnapshotFromRecords(
     viewer,
     parts,
@@ -1348,6 +1452,7 @@ export async function getAppSnapshot(
     shareBonusEvents,
     visitLogs,
     visitLogParts,
+    globalPartInsights,
     buildCtx,
     homeSideData,
     null,

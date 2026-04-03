@@ -149,6 +149,7 @@ interface TunaMapProps {
   parts: Part[];
   collectedPartIds: PartId[];
   partInsights: Record<PartId, PartMenuInsight | undefined>;
+  globalPartInsights: Record<PartId, PartMenuInsight | undefined>;
   partProfiles: Record<PartId, PartDetailProfile | undefined>;
 }
 
@@ -157,6 +158,7 @@ function tunaMapPropsEqual(prev: TunaMapProps, next: TunaMapProps): boolean {
     prev.parts === next.parts &&
     prev.collectedPartIds === next.collectedPartIds &&
     prev.partInsights === next.partInsights &&
+    prev.globalPartInsights === next.globalPartInsights &&
     prev.partProfiles === next.partProfiles
   ) {
     return true;
@@ -186,6 +188,30 @@ function tunaMapPropsEqual(prev: TunaMapProps, next: TunaMapProps): boolean {
   for (const key of prevKeys) {
     const left = prev.partInsights[key as PartId];
     const right = next.partInsights[key as PartId];
+    if (!left && !right) continue;
+    if (!left || !right) return false;
+    if (left.totalAppearances !== right.totalAppearances) return false;
+    if (left.menuStats.length !== right.menuStats.length) return false;
+    for (let i = 0; i < left.menuStats.length; i++) {
+      const a = left.menuStats[i]!;
+      const b = right.menuStats[i]!;
+      if (
+        a.menuItemId !== b.menuItemId ||
+        a.menuItemName !== b.menuItemName ||
+        a.appearances !== b.appearances ||
+        a.totalMenuVisits !== b.totalMenuVisits ||
+        a.appearanceRate !== b.appearanceRate
+      ) {
+        return false;
+      }
+    }
+  }
+  const prevGlobalKeys = Object.keys(prev.globalPartInsights);
+  const nextGlobalKeys = Object.keys(next.globalPartInsights);
+  if (prevGlobalKeys.length !== nextGlobalKeys.length) return false;
+  for (const key of prevGlobalKeys) {
+    const left = prev.globalPartInsights[key as PartId];
+    const right = next.globalPartInsights[key as PartId];
     if (!left && !right) continue;
     if (!left || !right) return false;
     if (left.totalAppearances !== right.totalAppearances) return false;
@@ -259,7 +285,7 @@ function selectionOutlineEl(r: MapRegionDef["shape"]) {
   return <path d={r.d} fill="none" stroke={stroke} strokeWidth="3" opacity="0.95" />;
 }
 
-function TunaMapInner({ parts, collectedPartIds, partInsights, partProfiles }: TunaMapProps) {
+function TunaMapInner({ parts, collectedPartIds, partInsights, globalPartInsights, partProfiles }: TunaMapProps) {
   const partsById = new Map(parts.map((part) => [part.id, part]));
   const collected = new Set(collectedPartIds);
   const [selectedRegionKey, setSelectedRegionKey] = useState<string | null>(null);
@@ -410,7 +436,10 @@ function TunaMapInner({ parts, collectedPartIds, partInsights, partProfiles }: T
               </div>
               <p className="map-detail-desc">{isCollected ? part.description : "まだ食べていません"}</p>
               <PartDetailProfileBlock profile={partProfiles[part.id]} />
-              <PartMenuInsightBlock insight={partInsights[part.id]} />
+              <PartMenuInsightBlock
+                globalInsight={globalPartInsights[part.id]}
+                insight={partInsights[part.id]}
+              />
               {isCollected ? (
                 <span className="badge badge-available">記録済み</span>
               ) : (
@@ -439,7 +468,10 @@ function TunaMapInner({ parts, collectedPartIds, partInsights, partProfiles }: T
                   </div>
                   <p className="map-detail-desc">{isCollected ? part.description : "まだ食べていません"}</p>
                   <PartDetailProfileBlock profile={partProfiles[part.id]} />
-                  <PartMenuInsightBlock insight={partInsights[part.id]} />
+                  <PartMenuInsightBlock
+                    globalInsight={globalPartInsights[part.id]}
+                    insight={partInsights[part.id]}
+                  />
                   {isCollected ? (
                     <span className="badge badge-available">記録済み</span>
                   ) : (

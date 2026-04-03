@@ -105,6 +105,7 @@ test("buildMyPageSummary marks unlocked and current titles from snapshot progres
       totalCount: seededParts.length,
       isComplete: false,
       partInsights: {},
+      globalPartInsights: {},
       partProfiles: {},
     },
     canManageAdmin: false,

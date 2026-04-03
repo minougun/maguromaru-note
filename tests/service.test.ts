@@ -246,6 +246,24 @@ test("zukan snapshot includes per-part menu appearance insights from personal hi
           photo_url: null,
           created_at: "2026-03-26T12:00:00.000Z",
         },
+        {
+          id: "10000000-0000-4000-8000-000000000108",
+          user_id: "00000000-0000-4000-8000-000000000099",
+          menu_item_id: "maguro_don",
+          visited_at: "2026-03-27",
+          memo: null,
+          photo_url: null,
+          created_at: "2026-03-27T12:00:00.000Z",
+        },
+        {
+          id: "10000000-0000-4000-8000-000000000109",
+          user_id: "00000000-0000-4000-8000-000000000099",
+          menu_item_id: "maguro_don",
+          visited_at: "2026-03-28",
+          memo: null,
+          photo_url: null,
+          created_at: "2026-03-28T12:00:00.000Z",
+        },
       ],
       visitLogParts: [
         { id: "20000000-0000-4000-8000-000000000101", visit_log_id: "10000000-0000-4000-8000-000000000101", part_id: "otoro" },
@@ -255,6 +273,8 @@ test("zukan snapshot includes per-part menu appearance insights from personal hi
         { id: "20000000-0000-4000-8000-000000000105", visit_log_id: "10000000-0000-4000-8000-000000000105", part_id: "akami" },
         { id: "20000000-0000-4000-8000-000000000106", visit_log_id: "10000000-0000-4000-8000-000000000106", part_id: "otoro" },
         { id: "20000000-0000-4000-8000-000000000107", visit_log_id: "10000000-0000-4000-8000-000000000107", part_id: "otoro" },
+        { id: "20000000-0000-4000-8000-000000000108", visit_log_id: "10000000-0000-4000-8000-000000000108", part_id: "otoro" },
+        { id: "20000000-0000-4000-8000-000000000109", visit_log_id: "10000000-0000-4000-8000-000000000109", part_id: "otoro" },
       ],
       storeStatus: { ...seededStoreStatus },
       quizStats: [{ ...seededQuizStats }],
@@ -263,6 +283,7 @@ test("zukan snapshot includes per-part menu appearance insights from personal hi
 
     const snapshot = await getAppSnapshot(undefined, "zukan");
     const otoroInsight = snapshot.zukan.partInsights.otoro;
+    const otoroGlobalInsight = snapshot.zukan.globalPartInsights.otoro;
     const meuraInsight = snapshot.zukan.partInsights.meura;
     const akamiProfile = snapshot.zukan.partProfiles.akami;
     const meuraProfile = snapshot.zukan.partProfiles.meura;
@@ -290,6 +311,29 @@ test("zukan snapshot includes per-part menu appearance insights from personal hi
         appearances: 1,
         totalMenuVisits: 3,
         appearanceRate: 33,
+      },
+    ]);
+    assert.deepEqual(otoroGlobalInsight?.menuStats.slice(0, 3), [
+      {
+        menuItemId: "tokujo_don",
+        menuItemName: "特上まぐろ丼（大とろ入り）",
+        appearances: 2,
+        totalMenuVisits: 2,
+        appearanceRate: 100,
+      },
+      {
+        menuItemId: "maguro_don",
+        menuItemName: "まぐろ丼",
+        appearances: 3,
+        totalMenuVisits: 5,
+        appearanceRate: 60,
+      },
+      {
+        menuItemId: "maguro_don_mini",
+        menuItemName: "まぐろ丼ミニ",
+        appearances: 1,
+        totalMenuVisits: 2,
+        appearanceRate: 50,
       },
     ]);
     assert.deepEqual(meuraInsight, {
