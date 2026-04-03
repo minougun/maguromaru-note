@@ -95,33 +95,33 @@ const MAP_REGIONS: MapRegionDef[] = [
     partIds: ["chutoro"],
     shape: {
       type: "path",
-      d: "M 820,503 L 855,473 L 924,454 L 951,459 L 945,481 L 861,506 Z",
+      d: "M 792,507 L 838,478 L 915,458 L 949,463 L 942,487 L 859,512 Z",
     },
     label: { x: 1008, y: 608, text: "中トロ（腹）" },
     labelWidth: 210,
-    lineTo: { x: 886, y: 478 },
+    lineTo: { x: 878, y: 482 },
   },
   {
     key: "belly-otoro-rear",
     partIds: ["otoro"],
     shape: {
       type: "path",
-      d: "M 560,552 L 568,480 L 611,469 L 678,463 L 739,464 L 790,473 L 784,489 L 760,510 L 727,527 L 694,540 L 652,548 L 612,553 Z",
+      d: "M 542,552 L 556,485 L 603,471 L 666,465 L 725,467 L 777,476 L 771,496 L 742,519 L 705,534 L 665,545 L 614,551 Z",
     },
     label: { x: 808, y: 628, text: "大トロ" },
     labelWidth: 132,
-    lineTo: { x: 676, y: 488 },
+    lineTo: { x: 670, y: 491 },
   },
   {
     key: "belly-otoro-front",
     partIds: ["otoro"],
     shape: {
       type: "path",
-      d: "M 366,540 L 389,470 L 432,456 L 486,456 L 539,469 L 550,485 L 537,511 L 510,534 L 474,546 L 435,547 L 395,542 Z",
+      d: "M 360,539 L 386,470 L 429,457 L 482,457 L 533,469 L 542,488 L 523,520 L 490,541 L 451,549 L 407,547 L 372,541 Z",
     },
     label: { x: 352, y: 692, text: "大トロ" },
     labelWidth: 132,
-    lineTo: { x: 466, y: 489 },
+    lineTo: { x: 458, y: 492 },
   },
 ];
 
