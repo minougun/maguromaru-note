@@ -44,7 +44,7 @@ const MAP_REGIONS: MapRegionDef[] = [
     partIds: ["noten"],
     shape: {
       type: "path",
-      d: "M 250,244 L 318,235 L 346,241 L 340,268 L 281,280 L 248,270 Z",
+      d: "M 245,246 L 309,236 L 346,243 L 341,269 L 286,279 L 252,271 Z",
     },
     label: { x: 228, y: 92 },
     lineTo: { x: 294, y: 254 },
@@ -54,7 +54,7 @@ const MAP_REGIONS: MapRegionDef[] = [
     partIds: ["meura"],
     shape: {
       type: "path",
-      d: "M 192,286 L 238,277 L 268,284 L 262,308 L 215,318 L 190,309 Z",
+      d: "M 190,289 L 234,281 L 265,286 L 258,308 L 214,317 L 188,308 Z",
     },
     label: { x: 155, y: 288 },
     lineTo: { x: 230, y: 298 },
@@ -64,17 +64,17 @@ const MAP_REGIONS: MapRegionDef[] = [
     partIds: ["hoho"],
     shape: {
       type: "path",
-      d: "M 222,401 L 236,448 L 284,474 L 319,469 L 345,445 L 349,413 L 338,380 L 315,366 L 276,377 L 238,391 Z",
+      d: "M 228,401 L 240,443 L 279,467 L 310,463 L 333,441 L 338,410 L 330,384 L 309,371 L 276,378 L 243,391 Z",
     },
     label: { x: 92, y: 486 },
-    lineTo: { x: 289, y: 421 },
+    lineTo: { x: 283, y: 419 },
   },
   {
     key: "chutoro-back",
     partIds: ["chutoro"],
     shape: {
       type: "path",
-      d: "M 354,229 L 424,219 L 503,214 L 580,214 L 645,219 L 700,227 L 729,239 L 720,288 L 650,286 L 575,282 L 497,282 L 425,287 L 372,293 L 355,279 Z",
+      d: "M 350,230 L 421,219 L 502,214 L 579,214 L 645,219 L 700,227 L 728,238 L 719,285 L 650,284 L 575,281 L 496,281 L 424,286 L 372,292 L 354,278 Z",
     },
     label: { x: 668, y: 82, text: "中トロ（背）" },
     labelWidth: 200,
@@ -85,43 +85,43 @@ const MAP_REGIONS: MapRegionDef[] = [
     partIds: ["akami"],
     shape: {
       type: "path",
-      d: "M 492,319 L 530,302 L 606,299 L 690,306 L 770,321 L 834,344 L 876,382 L 858,412 L 808,438 L 736,451 L 642,450 L 560,441 L 506,421 L 476,381 Z",
+      d: "M 507,322 L 549,304 L 621,302 L 699,309 L 774,323 L 832,344 L 861,377 L 842,411 L 791,436 L 721,449 L 639,447 L 570,439 L 525,421 L 494,383 Z",
     },
     label: { x: 1040, y: 336 },
-    lineTo: { x: 707, y: 381 },
+    lineTo: { x: 699, y: 380 },
   },
   {
     key: "belly-chutoro",
     partIds: ["chutoro"],
     shape: {
       type: "path",
-      d: "M 828,506 L 860,476 L 929,456 L 952,461 L 945,483 L 860,509 Z",
+      d: "M 820,503 L 855,473 L 924,454 L 951,459 L 945,481 L 861,506 Z",
     },
     label: { x: 1008, y: 608, text: "中トロ（腹）" },
     labelWidth: 210,
-    lineTo: { x: 891, y: 481 },
+    lineTo: { x: 886, y: 478 },
   },
   {
     key: "belly-otoro-rear",
     partIds: ["otoro"],
     shape: {
       type: "path",
-      d: "M 552,556 L 561,479 L 606,468 L 677,462 L 741,463 L 802,474 L 798,492 L 772,515 L 737,533 L 701,545 L 656,552 L 610,556 Z",
+      d: "M 560,552 L 568,480 L 611,469 L 678,463 L 739,464 L 790,473 L 784,489 L 760,510 L 727,527 L 694,540 L 652,548 L 612,553 Z",
     },
     label: { x: 808, y: 628, text: "大トロ" },
     labelWidth: 132,
-    lineTo: { x: 682, y: 492 },
+    lineTo: { x: 676, y: 488 },
   },
   {
     key: "belly-otoro-front",
     partIds: ["otoro"],
     shape: {
       type: "path",
-      d: "M 362,543 L 388,466 L 432,454 L 490,454 L 545,468 L 557,486 L 541,517 L 512,540 L 474,552 L 432,551 L 390,545 Z",
+      d: "M 366,540 L 389,470 L 432,456 L 486,456 L 539,469 L 550,485 L 537,511 L 510,534 L 474,546 L 435,547 L 395,542 Z",
     },
     label: { x: 352, y: 692, text: "大トロ" },
     labelWidth: 132,
-    lineTo: { x: 468, y: 492 },
+    lineTo: { x: 466, y: 489 },
   },
 ];
 
