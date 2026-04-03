@@ -172,16 +172,30 @@ function MockRecord() {
       </div>
       <MockSectionTitle subtitle="Parts" title="入っていた部位" />
       <div className="onboarding-mock-card onboarding-mock-mini-text">
-        特上まぐろ丼（大とろ入り） の標準部位を自動で選択しています。実際に入っていた内容に合わせて修正してください。
+        特上まぐろ丼（大とろ入り）の標準部位を自動で選択しています。実際に入っていた内容に合わせて修正してください。
       </div>
-      <div className="onboarding-mock-parts-mini">
-        <span className="onboarding-mock-part-chip onboarding-mock-part-chip--on">脳天</span>
-        <span className="onboarding-mock-part-chip onboarding-mock-part-chip--on">ほほ肉</span>
-        <span className="onboarding-mock-part-chip onboarding-mock-part-chip--on">大とろ</span>
-        <span className="onboarding-mock-part-chip onboarding-mock-part-chip--on">目裏</span>
-        <span className="onboarding-mock-part-chip onboarding-mock-part-chip--on">赤身</span>
+      <div className="onboarding-mock-parts-grid">
+        {[
+          ["大トロ", "腹部"],
+          ["中トロ", "背部・腹部"],
+          ["赤身", "背中"],
+          ["脳天", "頭頂"],
+          ["ほほ肉", "頭部"],
+          ["目裏", "頭部"],
+        ].map(([name, area]) => {
+          const selected = name !== "中トロ";
+          return (
+            <div className={`onboarding-mock-part-card${selected ? " onboarding-mock-part-card--on" : ""}`} key={name}>
+              <div className="onboarding-mock-part-card-head">
+                <span className="onboarding-mock-part-card-name">{name}</span>
+                {selected ? <span className="onboarding-mock-part-card-check">✓</span> : null}
+              </div>
+              <p className="onboarding-mock-part-card-area">{area}</p>
+              <p className="onboarding-mock-part-card-meta">レア度: ★★★</p>
+            </div>
+          );
+        })}
       </div>
-      <div className="onboarding-mock-memo-fake">感想を書く…「脳天とろけた！」</div>
       <div className="onboarding-mock-primary-fake">この内容で記録する</div>
     </>
   );
@@ -193,34 +207,34 @@ function MockZukan() {
       <MockNoren>まぐろ図鑑</MockNoren>
       <div className="onboarding-mock-card onboarding-mock-glow">
         <p className="onboarding-mock-progress-label">コンプリート進捗</p>
-        <div className="onboarding-mock-progress-big">44%</div>
+        <div className="onboarding-mock-progress-big">100%</div>
         <div className="onboarding-mock-pbar">
-          <div className="onboarding-mock-pbar-fill" style={{ width: "44%" }} />
+          <div className="onboarding-mock-pbar-fill onboarding-mock-pbar-fill--aka" style={{ width: "100%" }} />
         </div>
-        <p className="onboarding-mock-cap">4 / 9 部位</p>
+        <p className="onboarding-mock-cap">6 / 6 部位</p>
         <div className="onboarding-mock-outline-btn">図鑑の進捗をシェア</div>
       </div>
+      <div className="onboarding-mock-card onboarding-mock-complete-callout">全6部位コンプリートおめでとうございます🎉</div>
       <MockSectionTitle subtitle="Tuna map" title="部位マップ" />
       <div className="onboarding-mock-tuna-map" aria-hidden>
-        <div className="onboarding-mock-tuna-shape" />
-        <div className="onboarding-mock-tuna-dots">
-          <span />
-          <span data-on />
-          <span />
-          <span data-on />
-          <span />
-        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element -- モックの静的画像 */}
+        <img alt="" className="onboarding-mock-tuna-map-img" src={publicPath("/tuna-map.jpg")} />
       </div>
+      <p className="onboarding-mock-map-help">タップで部位の詳細を表示。記録済みの部位だけ色付きイラストが重なります</p>
       <MockSectionTitle subtitle="All parts" title="部位一覧" />
-      <div className="onboarding-mock-zukan-rows">
-        <div className="onboarding-mock-zukan-row">
-          <span>大トロ</span>
-          <span className="onboarding-mock-tag-ok">記録済</span>
-        </div>
-        <div className="onboarding-mock-zukan-row onboarding-mock-zukan-row--miss">
-          <span>脳天</span>
-          <span className="onboarding-mock-tag-miss">未食</span>
-        </div>
+      <div className="onboarding-mock-zukan-card-grid">
+        {[
+          ["大トロ", "腹部 / レア度: ★★★", "脂の王様"],
+          ["中トロ", "背部・腹部 / レア度: ★★★", "上品なバランス"],
+          ["赤身", "背中 / レア度: ★★☆", "旨味の王道"],
+          ["脳天", "頭頂 / レア度: ★★★", "大トロ級のとろける食感"],
+        ].map(([name, meta, desc]) => (
+          <div className="onboarding-mock-zukan-card" key={name}>
+            <p className="onboarding-mock-zukan-card-name">{name}</p>
+            <p className="onboarding-mock-zukan-card-meta">{meta}</p>
+            <p className="onboarding-mock-zukan-card-desc">{desc}</p>
+          </div>
+        ))}
       </div>
     </>
   );
@@ -230,20 +244,18 @@ function MockQuiz() {
   return (
     <>
       <MockNoren>まぐろクイズ</MockNoren>
-      <div className="onboarding-mock-card onboarding-mock-quiz-head">
-        <p className="onboarding-mock-quiz-label">現在のステージ</p>
-        <p className="onboarding-mock-quiz-stage">STAGE 1</p>
-        <p className="onboarding-mock-quiz-sub">入門 ─ 基礎</p>
+      <div className="onboarding-mock-share-bonus-wrap">
+        <ShareBonusCallout compact variant="quiz" />
       </div>
       <div className="onboarding-mock-card onboarding-mock-quiz-master">
+        <p className="onboarding-mock-quiz-label">👑 まぐろマスターへの道</p>
         <div className="onboarding-mock-quiz-master-h">
-          <span>👑 まぐろマスターへの道</span>
-          <span>12%</span>
+          <span>0%</span>
         </div>
         <div className="onboarding-mock-pbar">
-          <div className="onboarding-mock-pbar-fill onboarding-mock-pbar-fill--aka" style={{ width: "12%" }} />
+          <div className="onboarding-mock-pbar-fill onboarding-mock-pbar-fill--aka" style={{ width: "0%" }} />
         </div>
-        <p className="onboarding-mock-cap">正解済み24/200</p>
+        <p className="onboarding-mock-cap">正解済み0/1000</p>
       </div>
       <p className="onboarding-mock-quiz-hint">各ステージ10問。全ての問題に正解すると次のステージが解放</p>
       <div className="onboarding-mock-quiz-nav">
@@ -251,9 +263,25 @@ function MockQuiz() {
         <div className="onboarding-mock-quiz-stage-card">
           <span className="onboarding-mock-qsl">STAGE 1</span>
           <span className="onboarding-mock-qst">入門</span>
-          <span className="onboarding-mock-qsd">4択10問 ・ 正解済み3/10</span>
+          <span className="onboarding-mock-qsd">まぐろの部位を覚える10問 ・ 正解済み0/10</span>
         </div>
         <span className="onboarding-mock-nav-dot">▶</span>
+      </div>
+      <div className="onboarding-mock-card onboarding-mock-quiz-question-card">
+        <div className="onboarding-mock-quiz-progress">
+          <span>部位</span>
+          <span>1 / 10</span>
+        </div>
+        <p className="onboarding-mock-quiz-question">「赤身」のレア度はいくつ？</p>
+        <div className="onboarding-mock-quiz-options">
+          {["2", "3", "不明", "1"].map((label, index) => (
+            <div className="onboarding-mock-quiz-option" key={label}>
+              <span className="onboarding-mock-quiz-option-label">{String.fromCharCode(65 + index)}</span>
+              <span>{label}</span>
+            </div>
+          ))}
+        </div>
+        <div className="onboarding-mock-quiz-submit">この回答で判定</div>
       </div>
     </>
   );
@@ -267,17 +295,17 @@ function MockTitles() {
         <div className="onboarding-mock-hero-emblem">
           <span>🐟</span>
         </div>
-        <p className="onboarding-mock-hero-title">まぐろビギナー</p>
-        <p className="onboarding-mock-hero-sub">来店 3回 ・ 5部位コンプ</p>
+        <p className="onboarding-mock-hero-title">まぐろ入門者</p>
+        <p className="onboarding-mock-hero-sub">来店 1回 ・ 6部位コンプ</p>
       </div>
       <div className="onboarding-mock-stats-row">
         <div className="onboarding-mock-stat">
-          <span className="onboarding-mock-stat-num">3</span>
+          <span className="onboarding-mock-stat-num">1</span>
           <span className="onboarding-mock-stat-unit">回</span>
           <span className="onboarding-mock-stat-lbl">来店回数</span>
         </div>
         <div className="onboarding-mock-stat">
-          <span className="onboarding-mock-stat-num">5</span>
+          <span className="onboarding-mock-stat-num">6</span>
           <span className="onboarding-mock-stat-unit">種</span>
           <span className="onboarding-mock-stat-lbl">食べた部位</span>
         </div>
@@ -292,7 +320,7 @@ function MockTitles() {
         <div className="onboarding-mock-title-row">
           <span>🐟</span>
           <div>
-            <div className="onboarding-mock-tr-name">まぐろビギナー</div>
+            <div className="onboarding-mock-tr-name">まぐろ入門者</div>
             <div className="onboarding-mock-tr-meta">解放済み</div>
           </div>
           <span className="onboarding-mock-chip-use">使用中</span>
@@ -300,8 +328,29 @@ function MockTitles() {
         <div className="onboarding-mock-title-row onboarding-mock-title-row--locked">
           <span>🔒</span>
           <div>
+            <div className="onboarding-mock-tr-name">赤身の理解者</div>
+            <div className="onboarding-mock-tr-meta">来店3回・5部位・200問正解で解放</div>
+          </div>
+        </div>
+        <div className="onboarding-mock-title-row onboarding-mock-title-row--locked">
+          <span>🔒</span>
+          <div>
+            <div className="onboarding-mock-tr-name">中とろ通</div>
+            <div className="onboarding-mock-tr-meta">来店5回・5部位・500問正解で解放</div>
+          </div>
+        </div>
+        <div className="onboarding-mock-title-row onboarding-mock-title-row--locked">
+          <span>🔒</span>
+          <div>
+            <div className="onboarding-mock-tr-name">希少部位ハンター</div>
+            <div className="onboarding-mock-tr-meta">来店10回・6部位・750問正解で解放</div>
+          </div>
+        </div>
+        <div className="onboarding-mock-title-row onboarding-mock-title-row--locked">
+          <span>🔒</span>
+          <div>
             <div className="onboarding-mock-tr-name">まぐろマスター</div>
-            <div className="onboarding-mock-tr-meta">要・来店とクイズ</div>
+            <div className="onboarding-mock-tr-meta">来店20回・6部位・1000問正解で解放</div>
           </div>
         </div>
       </div>
@@ -364,17 +413,23 @@ export function OnboardingDeviceMock({ screen }: { screen: OnboardingMockId }) {
       <div className="onboarding-device-bezel">
         <header className="onboarding-mock-header">
           <div className="onboarding-mock-header-row">
-            {/* eslint-disable-next-line @next/next/no-img-element -- 縮小モック用に publicPath で静的参照 */}
-            <img
-              alt=""
-              className="onboarding-mock-brand-img"
-              height={26}
-              src={publicPath("/brand/maguromaru-mark.png")}
-              width={26}
-            />
-            <div className="onboarding-mock-header-text">
-              <p className="onboarding-mock-header-title">まぐろ丸ノート</p>
-              <p className="onboarding-mock-header-sub">海鮮丼まぐろ丸 ── 本町</p>
+            <div className="onboarding-mock-header-brand">
+              {/* eslint-disable-next-line @next/next/no-img-element -- 縮小モック用に publicPath で静的参照 */}
+              <img
+                alt=""
+                className="onboarding-mock-brand-img"
+                height={26}
+                src={publicPath("/brand/maguromaru-mark.png")}
+                width={26}
+              />
+              <div className="onboarding-mock-header-text">
+                <p className="onboarding-mock-header-title">まぐろ丸ノート</p>
+                <p className="onboarding-mock-header-sub">海鮮丼まぐろ丸 ── 本町</p>
+              </div>
+            </div>
+            <div className="onboarding-mock-header-link">
+              <span className="onboarding-mock-header-link-icon">⌁</span>
+              <span>アカウント連携</span>
             </div>
           </div>
           <div className="onboarding-mock-accent-line" />

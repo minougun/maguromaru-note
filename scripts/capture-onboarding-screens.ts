@@ -58,7 +58,7 @@ import path from "node:path";
 
 import { chromium, type Page } from "playwright";
 
-const ONBOARDING_DONE_KEY = "maguro_note_onboarding_v4_done";
+const ONBOARDING_DONE_KEY = "maguro_note_onboarding_v8_done";
 const LOCAL_SESSION_KEY = "maguro-note-local-session";
 
 function sleep(ms: number) {
@@ -624,7 +624,7 @@ async function captureMockTutorialScreens(page: Page, origin: string, outDir: st
 }
 
 async function main() {
-  const mockTutorial = process.env.CAPTURE_MOCK_TUTORIAL === "1";
+  const mockTutorial = process.env.CAPTURE_MOCK_TUTORIAL === "1" || process.argv.includes("--tutorial-mock");
   const rawOrigin = (process.env.CAPTURE_BASE_URL ?? "http://127.0.0.1:3000").replace(/\/$/, "");
   let origin = normalizeCaptureOrigin(rawOrigin);
   origin = maybeUseWslWindowsHost(origin);

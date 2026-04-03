@@ -2503,7 +2503,15 @@ body {
 .onboarding-mock-header-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.onboarding-mock-header-brand {
+  display: flex;
+  align-items: center;
   gap: 6px;
+  min-width: 0;
 }
 
 .onboarding-mock-brand-img {
@@ -2517,6 +2525,24 @@ body {
 
 .onboarding-mock-header-text {
   min-width: 0;
+}
+
+.onboarding-mock-header-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  flex-shrink: 0;
+  font-size: 6px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.88);
+  text-align: center;
+}
+
+.onboarding-mock-header-link-icon {
+  font-size: 10px;
+  line-height: 1;
+  opacity: 0.9;
 }
 
 .onboarding-mock-header-title {
@@ -3035,6 +3061,64 @@ body {
   margin-bottom: 6px;
 }
 
+.onboarding-mock-parts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.onboarding-mock-part-card {
+  border: 1px solid var(--wood-mid);
+  border-radius: 10px;
+  background: #fff;
+  padding: 5px 6px;
+}
+
+.onboarding-mock-part-card--on {
+  border-color: rgba(220, 81, 81, 0.5);
+  box-shadow: inset 0 0 0 1px rgba(220, 81, 81, 0.08);
+}
+
+.onboarding-mock-part-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.onboarding-mock-part-card-name {
+  font-size: 7px;
+  font-weight: 900;
+  color: var(--cream);
+}
+
+.onboarding-mock-part-card-check {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--navy);
+  color: #fff;
+  font-size: 7px;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.onboarding-mock-part-card-area {
+  margin: 2px 0 0;
+  font-size: 5px;
+  color: var(--cream-faint);
+  font-weight: 700;
+}
+
+.onboarding-mock-part-card-meta {
+  margin: 1px 0 0;
+  font-size: 5px;
+  color: var(--cream-dark);
+}
+
 .onboarding-mock-part-chip {
   font-size: 6px;
   font-weight: 700;
@@ -3121,48 +3205,35 @@ body {
   background: var(--wood-bg);
 }
 
+.onboarding-mock-complete-callout {
+  text-align: center;
+  font-size: 6px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
 .onboarding-mock-tuna-map {
   position: relative;
-  height: 44px;
+  height: 78px;
   border-radius: 8px;
-  background: linear-gradient(180deg, #e8eef5, #d4dce8);
+  background: #ffffff;
   border: 1px solid var(--wood-mid);
   margin-bottom: 6px;
   overflow: hidden;
 }
 
-.onboarding-mock-tuna-shape {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 72%;
-  height: 38%;
-  transform: translate(-50%, -50%) rotate(-8deg);
-  border-radius: 50% 60% 45% 55%;
-  background: linear-gradient(135deg, #5a6d82, #3d4d5c);
-  opacity: 0.35;
+.onboarding-mock-tuna-map-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-.onboarding-mock-tuna-dots {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-}
-
-.onboarding-mock-tuna-dots span {
-  width: 5px;
-  height: 5px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.5);
-  border: 1px solid rgba(27, 45, 79, 0.2);
-}
-
-.onboarding-mock-tuna-dots span[data-on] {
-  background: var(--aka-pale);
-  border-color: var(--aka-bold);
+.onboarding-mock-map-help {
+  margin: -1px 0 6px;
+  font-size: 5px;
+  line-height: 1.4;
+  color: var(--cream-faint);
+  text-align: center;
 }
 
 .onboarding-mock-zukan-rows {
@@ -3196,6 +3267,40 @@ body {
 .onboarding-mock-tag-miss {
   font-size: 6px;
   color: var(--cream-faint);
+}
+
+.onboarding-mock-zukan-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.onboarding-mock-zukan-card {
+  border: 1px solid var(--wood-mid);
+  border-radius: 10px;
+  background: #fff;
+  padding: 6px;
+}
+
+.onboarding-mock-zukan-card-name {
+  margin: 0;
+  font-size: 7px;
+  font-weight: 900;
+  color: var(--cream);
+}
+
+.onboarding-mock-zukan-card-meta {
+  margin: 2px 0 0;
+  font-size: 5px;
+  line-height: 1.35;
+  color: var(--cream-faint);
+}
+
+.onboarding-mock-zukan-card-desc {
+  margin: 2px 0 0;
+  font-size: 5px;
+  line-height: 1.35;
+  color: var(--cream-dark);
 }
 
 .onboarding-mock-quiz-head {
@@ -3249,6 +3354,7 @@ body {
   display: flex;
   align-items: center;
   gap: 5px;
+  margin-bottom: 6px;
 }
 
 .onboarding-mock-nav-dot {
@@ -3296,9 +3402,76 @@ body {
   line-height: 1.3;
 }
 
+.onboarding-mock-quiz-question-card {
+  padding: 6px;
+}
+
+.onboarding-mock-quiz-progress {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 5px;
+  color: var(--cream-faint);
+  font-weight: 700;
+}
+
+.onboarding-mock-quiz-question {
+  margin: 5px 0;
+  font-size: 8px;
+  line-height: 1.45;
+  font-weight: 900;
+  color: var(--cream);
+}
+
+.onboarding-mock-quiz-options {
+  display: grid;
+  gap: 4px;
+}
+
+.onboarding-mock-quiz-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+  padding: 0 7px;
+  border-radius: 9px;
+  border: 1px solid var(--wood-mid);
+  background: #fff;
+  font-size: 7px;
+  font-weight: 800;
+  color: var(--cream);
+}
+
+.onboarding-mock-quiz-option-label {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--navy);
+  color: #fff;
+  font-size: 8px;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.onboarding-mock-quiz-submit {
+  margin-top: 6px;
+  padding: 7px;
+  border-radius: 10px;
+  background: rgba(194, 186, 171, 0.6);
+  color: rgba(40, 44, 51, 0.5);
+  font-size: 7px;
+  font-weight: 900;
+  text-align: center;
+}
+
 .onboarding-mock-hero {
   text-align: center;
   padding: 8px 6px;
+  background: linear-gradient(165deg, #22355b 0%, #1b2d4f 60%, #182742 100%);
+  color: #fff;
 }
 
 .onboarding-mock-hero-emblem {
@@ -3306,8 +3479,8 @@ body {
   height: 36px;
   margin: 0 auto 4px;
   border-radius: 999px;
-  background: linear-gradient(145deg, #fff, #e8e4dc);
-  border: 2px solid var(--wood-mid);
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.18), rgba(112, 142, 204, 0.12));
+  border: 1px solid rgba(255, 255, 255, 0.12);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3318,14 +3491,14 @@ body {
   margin: 0;
   font-size: 11px;
   font-weight: 900;
-  color: var(--cream);
+  color: #fff;
   letter-spacing: 1px;
 }
 
 .onboarding-mock-hero-sub {
   margin: 3px 0 0;
   font-size: 6px;
-  color: var(--cream-dark);
+  color: rgba(255, 255, 255, 0.78);
 }
 
 .onboarding-mock-stats-row {
