@@ -81,6 +81,9 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ["@supabase/supabase-js", "@supabase/ssr", "zod", "clsx"],
   },
+  turbopack: {
+    root: projectDir,
+  },
   async headers() {
     return [
       {
