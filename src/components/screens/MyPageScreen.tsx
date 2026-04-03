@@ -119,7 +119,7 @@ export function MyPageScreen() {
 
   return (
     <>
-      <NorenBanner label="アカウント連携" />
+      <NorenBanner label="設定" />
 
       <Card className="settings-card">
         <div className="settings-card-head">

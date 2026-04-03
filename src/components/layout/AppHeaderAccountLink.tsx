@@ -10,6 +10,7 @@ export function AppHeaderAccountLink() {
   return (
     <Link
       aria-current={active ? "page" : undefined}
+      aria-label="設定"
       className="header-account-link"
       href="/mypage"
       prefetch={false}
@@ -39,7 +40,6 @@ export function AppHeaderAccountLink() {
           strokeWidth="1.7"
         />
       </svg>
-      <span className="header-account-link-text">アカウント連携</span>
     </Link>
   );
 }

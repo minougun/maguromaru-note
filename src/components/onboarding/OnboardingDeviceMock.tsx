@@ -483,7 +483,6 @@ export function OnboardingDeviceMock({ screen }: { screen: OnboardingMockId }) {
                   strokeWidth="1.7"
                 />
               </svg>
-              <span>アカウント連携</span>
             </div>
           </div>
           <div className="onboarding-mock-accent-line" />
