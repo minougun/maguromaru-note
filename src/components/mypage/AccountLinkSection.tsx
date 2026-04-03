@@ -187,7 +187,7 @@ export function AccountLinkSection({
                 </span>
                 <span className="account-link-row-label">メールアドレス</span>
                 <span className="account-link-row-status">
-                  {isSignIn ? "メールでサインイン" : emailOn ? "連携済み" : "このアカウントに未連携"}
+                  {isSignIn ? "メールでサインイン" : emailOn ? "連携済み" : "未連携"}
                 </span>
                 <Chevron />
               </button>
