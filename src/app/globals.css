@@ -789,13 +789,13 @@ body {
   margin: 0;
   font-size: 15px;
   font-weight: 900;
-  color: var(--ink);
+  color: var(--cream);
 }
 
 .casual-mission-card-count {
   font-size: 12px;
   font-weight: 800;
-  color: var(--ink);
+  color: var(--cream);
 }
 
 .casual-mission-list {
@@ -822,13 +822,13 @@ body {
 .casual-mission-label {
   font-size: 14px;
   font-weight: 800;
-  color: var(--ink);
+  color: var(--cream);
 }
 
 .casual-mission-progress {
   margin-top: 2px;
   font-size: 12px;
-  color: var(--ink);
+  color: var(--cream-dark);
 }
 
 .ai-store-blurb-label {
