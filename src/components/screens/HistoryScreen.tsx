@@ -9,7 +9,7 @@ import { ShareModalDynamic } from "@/components/share/ShareModalDynamic";
 import { Card } from "@/components/ui/Card";
 import { NorenBanner } from "@/components/ui/NorenBanner";
 import { ScreenState } from "@/components/ui/ScreenState";
-import type { AppSnapshot, VisitRecord } from "@/lib/domain/types";
+import type { HistoryVisitLogsResponse, VisitRecord } from "@/lib/domain/types";
 import { useAppSnapshot } from "@/lib/hooks/use-app-snapshot";
 import { FetchJsonError, fetchJsonWithAuth } from "@/lib/http/fetch-json";
 import { withAppBasePath } from "@/lib/public-path";
@@ -52,11 +52,10 @@ export function HistoryScreen() {
     setLoadMoreError(null);
     try {
       const params = new URLSearchParams();
-      params.set("scope", "history");
-      params.set("history_visit_page", String(nextHistoryPage));
-      params.set("history_visit_page_size", String(pageMeta.pageSize));
-      const url = `${withAppBasePath("/api/app-snapshot")}?${params.toString()}`;
-      const data = await fetchJsonWithAuth<AppSnapshot>(
+      params.set("page", String(nextHistoryPage));
+      params.set("page_size", String(pageMeta.pageSize));
+      const url = `${withAppBasePath("/api/history-logs")}?${params.toString()}`;
+      const data = await fetchJsonWithAuth<HistoryVisitLogsResponse>(
         url,
         { method: "GET", cache: "no-store" },
         { usingSupabase: auth.usingSupabase, accessToken: auth.accessToken },
@@ -64,14 +63,14 @@ export function HistoryScreen() {
       setExtraLogs((prev) => {
         const ids = new Set([...baseLogs, ...prev].map((entry) => entry.id));
         const merged = [...prev];
-        for (const log of data.history.logs) {
+        for (const log of data.logs) {
           if (!ids.has(log.id)) {
             merged.push(log);
           }
         }
         return merged;
       });
-      setNextHistoryPage((p) => p + 1);
+      setNextHistoryPage(data.page.page + 1);
     } catch (err) {
       setLoadMoreError(err instanceof FetchJsonError ? err.message : "追加の履歴を読み込めませんでした。");
     } finally {

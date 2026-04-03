@@ -18,6 +18,7 @@ import type {
   AppSnapshot,
   HomeAiStoreBlurb,
   HomeSideDataSnapshot,
+  HistoryVisitLogsResponse,
   PartDetailProfile,
   MenuItem,
   MenuItemId,
@@ -120,6 +121,18 @@ const globalPartInsightsCache: SharedCacheEntry<Record<PartId, PartMenuInsight |
   inflight: null,
 };
 
+type GlobalPartInsightAggregate = {
+  totalMenuVisits: Partial<Record<MenuItemId, number>>;
+  totalPartAppearances: Partial<Record<PartId, number>>;
+  partMenuAppearances: Partial<Record<PartId, Partial<Record<MenuItemId, number>>>>;
+};
+
+const globalPartInsightAggregateCache: SharedCacheEntry<GlobalPartInsightAggregate> = {
+  value: null,
+  expiresAt: 0,
+  inflight: null,
+};
+
 function cloneParts(parts: Part[]) {
   return parts.map((part) => ({ ...part }));
 }
@@ -156,6 +169,23 @@ function clonePartInsightsMap(value: Record<PartId, PartMenuInsight | undefined>
   return cloned;
 }
 
+function cloneGlobalPartInsightAggregate(value: GlobalPartInsightAggregate): GlobalPartInsightAggregate {
+  const clonedPartMenuAppearances: GlobalPartInsightAggregate["partMenuAppearances"] = {};
+
+  for (const [partId, byMenu] of Object.entries(value.partMenuAppearances) as [
+    PartId,
+    Partial<Record<MenuItemId, number>> | undefined,
+  ][]) {
+    clonedPartMenuAppearances[partId] = byMenu ? { ...byMenu } : {};
+  }
+
+  return {
+    totalMenuVisits: { ...value.totalMenuVisits },
+    totalPartAppearances: { ...value.totalPartAppearances },
+    partMenuAppearances: clonedPartMenuAppearances,
+  };
+}
+
 async function readSharedCache<T>(
   cache: SharedCacheEntry<T>,
   ttlMs: number,
@@ -189,6 +219,15 @@ function invalidateStoreSnapshotCaches() {
   menuStatusCache.value = null;
   menuStatusCache.expiresAt = 0;
   menuStatusCache.inflight = null;
+}
+
+function invalidateGlobalPartInsightCaches() {
+  globalPartInsightsCache.value = null;
+  globalPartInsightsCache.expiresAt = 0;
+  globalPartInsightsCache.inflight = null;
+  globalPartInsightAggregateCache.value = null;
+  globalPartInsightAggregateCache.expiresAt = 0;
+  globalPartInsightAggregateCache.inflight = null;
 }
 
 function isMissingShareBonusSchemaError(message: string | undefined) {
@@ -406,6 +445,11 @@ function buildCollectedPartIds(parts: Part[], visitLogParts: Database["public"][
   );
 }
 
+function sortPartIdsByMasterOrder(parts: Part[], partIds: readonly PartId[]) {
+  const orderMap = new Map(parts.map((part) => [part.id, part.sort_order]));
+  return [...partIds].sort((left, right) => (orderMap.get(left) ?? 999) - (orderMap.get(right) ?? 999));
+}
+
 function buildPartMenuInsights(parts: Part[], visitRecords: VisitRecord[]): Record<PartId, PartMenuInsight | undefined> {
   const menuItemNameById = new Map<MenuItemId, string>();
   const totalMenuVisits = new Map<MenuItemId, number>();
@@ -590,8 +634,7 @@ async function getGlobalPartInsights(
   serviceRoleClient?: SupabaseClient<Database> | null,
 ): Promise<Record<PartId, PartMenuInsight | undefined>> {
   if (mockState) {
-    const visitRecords = buildVisitRecords(parts, menuItems, mockState.visitLogs, mockState.visitLogParts);
-    return buildPartMenuInsights(parts, visitRecords);
+    return buildGlobalPartMenuInsights(parts, menuItems, mockState.visitLogs, mockState.visitLogParts);
   }
 
   if (!serviceRoleClient || !hasSupabaseServiceEnv()) {
@@ -606,13 +649,20 @@ async function getGlobalPartInsights(
     return empty;
   }
 
-  return readSharedCache(
-    globalPartInsightsCache,
+  const aggregate = await readSharedCache(
+    globalPartInsightAggregateCache,
     GLOBAL_PART_INSIGHTS_CACHE_MS,
     async () => {
       const { visitLogs, visitLogParts } = await listGlobalVisitData(serviceRoleClient);
-      return buildGlobalPartMenuInsights(parts, menuItems, visitLogs, visitLogParts);
+      return buildGlobalPartInsightAggregate(visitLogs, visitLogParts);
     },
+    cloneGlobalPartInsightAggregate,
+  );
+
+  return readSharedCache(
+    globalPartInsightsCache,
+    GLOBAL_PART_INSIGHTS_CACHE_MS,
+    async () => materializeGlobalPartInsights(parts, menuItems, aggregate),
     clonePartInsightsMap,
   );
 }
@@ -778,10 +828,10 @@ async function countVisitLogsForUser(client: SupabaseClient<Database>, userId: s
   return count ?? 0;
 }
 
-async function listAllVisitLogPartsForUser(
+async function listCollectedTrackedPartIdsForUser(
   client: SupabaseClient<Database>,
   userId: string,
-): Promise<Database["public"]["Tables"]["visit_log_parts"]["Row"][]> {
+): Promise<PartId[]> {
   const { data: idRows, error: idError } = await fromAny(client, "visit_logs").select("id").eq("user_id", userId);
 
   if (idError) {
@@ -794,27 +844,26 @@ async function listAllVisitLogPartsForUser(
   }
 
   const chunkSize = 200;
-  const chunks: Database["public"]["Tables"]["visit_log_parts"]["Row"][] = [];
+  const collected = new Set<PartId>();
 
   for (let i = 0; i < ids.length; i += chunkSize) {
     const slice = ids.slice(i, i + chunkSize);
-    const rows = await selectVisitLogPartsWithLegacyFallback(
-      async (columns) => {
-        const result = await fromAny(client, "visit_log_parts")
-          .select(columns)
-          .in("visit_log_id", slice);
-        return {
-          data: (result.data as LegacyVisitLogPartRow[] | null) ?? null,
-          error: result.error ? { message: result.error.message } : null,
-        };
-      },
-      "部位記録の取得に失敗しました。",
-    );
+    const { data, error } = await fromAny(client, "visit_log_parts")
+      .select("part_id")
+      .in("visit_log_id", slice);
 
-    chunks.push(...rows);
+    if (error || !data) {
+      throw new AppServiceError(500, error?.message ?? "部位記録の取得に失敗しました。");
+    }
+
+    for (const row of data as Array<Pick<Database["public"]["Tables"]["visit_log_parts"]["Row"], "part_id">>) {
+      if (isTrackedPartId(row.part_id)) {
+        collected.add(row.part_id);
+      }
+    }
   }
 
-  return chunks;
+  return [...collected];
 }
 
 type ListVisitDataOptions = {
@@ -938,16 +987,26 @@ function buildGlobalPartMenuInsights(
   visitLogs: ReadonlyArray<Pick<Database["public"]["Tables"]["visit_logs"]["Row"], "id" | "menu_item_id">>,
   visitLogParts: ReadonlyArray<Pick<Database["public"]["Tables"]["visit_log_parts"]["Row"], "visit_log_id" | "part_id">>,
 ): Record<PartId, PartMenuInsight | undefined> {
-  const menuItemNameById = new Map<MenuItemId, string>(menuItems.map((menuItem) => [menuItem.id, menuItem.name]));
-  const totalMenuVisits = new Map<MenuItemId, number>();
+  return materializeGlobalPartInsights(
+    parts,
+    menuItems,
+    buildGlobalPartInsightAggregate(visitLogs, visitLogParts),
+  );
+}
+
+function buildGlobalPartInsightAggregate(
+  visitLogs: ReadonlyArray<Pick<Database["public"]["Tables"]["visit_logs"]["Row"], "id" | "menu_item_id">>,
+  visitLogParts: ReadonlyArray<Pick<Database["public"]["Tables"]["visit_log_parts"]["Row"], "visit_log_id" | "part_id">>,
+): GlobalPartInsightAggregate {
   const menuByVisitId = new Map<string, MenuItemId>();
-  const partMenuAppearances = new Map<PartId, Map<MenuItemId, number>>();
-  const totalPartAppearances = new Map<PartId, number>();
+  const totalMenuVisits: GlobalPartInsightAggregate["totalMenuVisits"] = {};
+  const totalPartAppearances: GlobalPartInsightAggregate["totalPartAppearances"] = {};
+  const partMenuAppearances: GlobalPartInsightAggregate["partMenuAppearances"] = {};
 
   for (const visitLog of visitLogs) {
     const menuItemId = visitLog.menu_item_id as MenuItemId;
     menuByVisitId.set(visitLog.id, menuItemId);
-    totalMenuVisits.set(menuItemId, (totalMenuVisits.get(menuItemId) ?? 0) + 1);
+    totalMenuVisits[menuItemId] = (totalMenuVisits[menuItemId] ?? 0) + 1;
   }
 
   for (const entry of visitLogParts) {
@@ -957,15 +1016,29 @@ function buildGlobalPartMenuInsights(
       continue;
     }
 
-    totalPartAppearances.set(partId, (totalPartAppearances.get(partId) ?? 0) + 1);
-    const byMenu = partMenuAppearances.get(partId) ?? new Map<MenuItemId, number>();
-    byMenu.set(menuItemId, (byMenu.get(menuItemId) ?? 0) + 1);
-    partMenuAppearances.set(partId, byMenu);
+    totalPartAppearances[partId] = (totalPartAppearances[partId] ?? 0) + 1;
+    const byMenu = partMenuAppearances[partId] ?? {};
+    byMenu[menuItemId] = (byMenu[menuItemId] ?? 0) + 1;
+    partMenuAppearances[partId] = byMenu;
   }
 
+  return {
+    totalMenuVisits,
+    totalPartAppearances,
+    partMenuAppearances,
+  };
+}
+
+function materializeGlobalPartInsights(
+  parts: Part[],
+  menuItems: MenuItem[],
+  aggregate: GlobalPartInsightAggregate,
+): Record<PartId, PartMenuInsight | undefined> {
+  const menuItemNameById = new Map<MenuItemId, string>(menuItems.map((menuItem) => [menuItem.id, menuItem.name]));
   const insights: Record<PartId, PartMenuInsight | undefined> = {};
+
   for (const part of parts) {
-    const byMenu = partMenuAppearances.get(part.id);
+    const byMenu = aggregate.partMenuAppearances[part.id];
     if (!byMenu) {
       insights[part.id] = {
         partId: part.id,
@@ -975,9 +1048,9 @@ function buildGlobalPartMenuInsights(
       continue;
     }
 
-    const menuStats = [...byMenu.entries()]
+    const menuStats = (Object.entries(byMenu) as [MenuItemId, number][])
       .map(([menuItemId, appearances]) => {
-        const totalVisitsForMenu = totalMenuVisits.get(menuItemId) ?? 0;
+        const totalVisitsForMenu = aggregate.totalMenuVisits[menuItemId] ?? 0;
         return {
           menuItemId,
           menuItemName: menuItemNameById.get(menuItemId) ?? menuItemId,
@@ -998,7 +1071,7 @@ function buildGlobalPartMenuInsights(
 
     insights[part.id] = {
       partId: part.id,
-      totalAppearances: totalPartAppearances.get(part.id) ?? 0,
+      totalAppearances: aggregate.totalPartAppearances[part.id] ?? 0,
       menuStats,
     };
   }
@@ -1101,6 +1174,8 @@ type SnapshotFetchPlan = {
   shareBonus: boolean;
   visits: boolean;
   globalInsights: boolean;
+  /** 図鑑詳細（部位インサイト / 主観メモ / みんなの記録）を組み立てるのは zukan/full のみ */
+  zukanDetails: boolean;
   /** ホーム「最近の記録」など、先頭 N 件だけでよいとき DB 側で LIMIT */
   visitFetchLimit?: number;
 };
@@ -1117,6 +1192,7 @@ const SNAPSHOT_FETCH_PLANS: Record<SnapshotScope, SnapshotFetchPlan> = {
     shareBonus: true,
     visits: true,
     globalInsights: false,
+    zukanDetails: true,
   },
   home: {
     masterParts: true,
@@ -1129,6 +1205,7 @@ const SNAPSHOT_FETCH_PLANS: Record<SnapshotScope, SnapshotFetchPlan> = {
     shareBonus: true,
     visits: true,
     globalInsights: false,
+    zukanDetails: false,
     visitFetchLimit: 3,
   },
   admin: {
@@ -1142,6 +1219,7 @@ const SNAPSHOT_FETCH_PLANS: Record<SnapshotScope, SnapshotFetchPlan> = {
     shareBonus: false,
     visits: false,
     globalInsights: false,
+    zukanDetails: false,
   },
   history: {
     masterParts: true,
@@ -1154,6 +1232,7 @@ const SNAPSHOT_FETCH_PLANS: Record<SnapshotScope, SnapshotFetchPlan> = {
     shareBonus: true,
     visits: true,
     globalInsights: false,
+    zukanDetails: false,
   },
   mypage: {
     masterParts: true,
@@ -1166,6 +1245,7 @@ const SNAPSHOT_FETCH_PLANS: Record<SnapshotScope, SnapshotFetchPlan> = {
     shareBonus: true,
     visits: true,
     globalInsights: false,
+    zukanDetails: false,
   },
   zukan: {
     masterParts: true,
@@ -1178,6 +1258,7 @@ const SNAPSHOT_FETCH_PLANS: Record<SnapshotScope, SnapshotFetchPlan> = {
     shareBonus: false,
     visits: true,
     globalInsights: true,
+    zukanDetails: true,
   },
   record: {
     masterParts: true,
@@ -1190,6 +1271,7 @@ const SNAPSHOT_FETCH_PLANS: Record<SnapshotScope, SnapshotFetchPlan> = {
     shareBonus: false,
     visits: false,
     globalInsights: false,
+    zukanDetails: false,
   },
   quiz: {
     masterParts: true,
@@ -1202,6 +1284,7 @@ const SNAPSHOT_FETCH_PLANS: Record<SnapshotScope, SnapshotFetchPlan> = {
     shareBonus: true,
     visits: true,
     globalInsights: false,
+    zukanDetails: false,
   },
 };
 
@@ -1334,8 +1417,11 @@ function buildQuizStageProgressSummary(quizSessions: QuizSessionRow[]) {
 type SnapshotBuildContext = {
   /** ページングやホーム用 LIMIT 時の「実来店件数」。未指定時は `visitLogs` の件数を使う */
   totalVisitLogCount?: number;
-  /** 図鑑集計用。未指定時は `visitLogParts`（＝今回ロードした来店に紐づく部位）を使う */
-  visitLogPartsForCollection?: Database["public"]["Tables"]["visit_log_parts"]["Row"][];
+  /** 図鑑集計用。home/history など限定読み込みスコープで、全履歴ベースの収集数だけ別集計する */
+  collectedPartIds?: PartId[];
+  collectedCount?: number;
+  /** true のときだけ partInsights / partProfiles / globalPartInsights を構築して返す */
+  zukanDetails?: boolean;
   /** 履歴スコープのページ情報（1-based） */
   visitLogsPage?: { page: number; pageSize: number; totalCount: number };
 };
@@ -1379,13 +1465,17 @@ function buildSnapshotFromRecords(
     new Set(shareBonus.sharedVisitLogIds),
   );
   const trackedParts = filterTrackedParts(parts);
-  const partInsights = buildPartMenuInsights(trackedParts, visitRecords);
-  const partProfiles = buildPartDetailProfiles(trackedParts, menuItems, visitLogs, visitLogParts);
-  const partsForCollection = buildCtx?.visitLogPartsForCollection ?? visitLogParts;
-  const collectedPartIds = buildCollectedPartIds(
-    trackedParts,
-    partsForCollection.filter((entry) => isTrackedPartId(entry.part_id)),
-  );
+  const zukanDetails = buildCtx?.zukanDetails ?? true;
+  const collectedPartIds =
+    buildCtx?.collectedPartIds != null
+      ? sortPartIdsByMasterOrder(trackedParts, buildCtx.collectedPartIds)
+      : buildCollectedPartIds(
+          trackedParts,
+          visitLogParts.filter((entry) => isTrackedPartId(entry.part_id)),
+        );
+  const collectedCount = buildCtx?.collectedCount ?? collectedPartIds.length;
+  const partInsights = zukanDetails ? buildPartMenuInsights(trackedParts, visitRecords) : {};
+  const partProfiles = zukanDetails ? buildPartDetailProfiles(trackedParts, menuItems, visitLogs, visitLogParts) : {};
   const baseQuizStats = toQuizStatsSummary(quizStatsRow);
   const quizStats = {
     ...baseQuizStats,
@@ -1395,7 +1485,7 @@ function buildSnapshotFromRecords(
   const boostedVisitCount = rawVisitTotal + shareBonus.bonusVisitCount;
   const currentTitle = getCurrentTitle(
     boostedVisitCount,
-    collectedPartIds.length,
+    collectedCount,
     quizStats.totalCorrectAnswers,
   );
 
@@ -1432,12 +1522,12 @@ function buildSnapshotFromRecords(
       ...(visitLogsPage ? { visitLogsPage } : {}),
     },
     zukan: {
-      collectedPartIds,
-      collectedCount: collectedPartIds.length,
+      collectedPartIds: zukanDetails ? collectedPartIds : [],
+      collectedCount,
       totalCount: trackedParts.length,
-      isComplete: collectedPartIds.length === trackedParts.length,
+      isComplete: collectedCount === trackedParts.length,
       partInsights,
-      globalPartInsights,
+      globalPartInsights: zukanDetails ? globalPartInsights : {},
       partProfiles,
     },
     canManageAdmin: viewer.role === "admin",
@@ -1559,7 +1649,7 @@ export async function getAppSnapshot(
       : [];
 
     let visitLogParts: Database["public"]["Tables"]["visit_log_parts"]["Row"][] = [];
-    let buildCtx: SnapshotBuildContext | undefined;
+    let buildCtx: SnapshotBuildContext | undefined = { zukanDetails: plan.zukanDetails };
 
     if (plan.visits && scope === "history") {
       const pageSize = Math.min(
@@ -1570,11 +1660,19 @@ export async function getAppSnapshot(
       const totalCount = visitLogs.length;
       const offset = (page - 1) * pageSize;
       const pageSlice = visitLogs.slice(offset, offset + pageSize);
+      const allIds = new Set(visitLogs.map((entry) => entry.id));
       const pageIds = new Set(pageSlice.map((entry) => entry.id));
+      const allCollectedPartIds = buildCollectedPartIds(
+        filterTrackedParts(parts),
+        state.visitLogParts.filter((entry) => allIds.has(entry.visit_log_id) && isTrackedPartId(entry.part_id)),
+      );
       visitLogs = pageSlice;
       visitLogParts = state.visitLogParts.filter((entry) => pageIds.has(entry.visit_log_id));
       buildCtx = {
         totalVisitLogCount: totalCount,
+        collectedPartIds: allCollectedPartIds,
+        collectedCount: allCollectedPartIds.length,
+        zukanDetails: plan.zukanDetails,
         visitLogsPage: { page, pageSize, totalCount },
       };
     } else if (plan.visits && plan.visitFetchLimit != null) {
@@ -1582,11 +1680,17 @@ export async function getAppSnapshot(
       const allIds = new Set(visitLogs.map((entry) => entry.id));
       const limited = visitLogs.slice(0, plan.visitFetchLimit);
       const limitedIds = new Set(limited.map((entry) => entry.id));
+      const allCollectedPartIds = buildCollectedPartIds(
+        filterTrackedParts(parts),
+        state.visitLogParts.filter((entry) => allIds.has(entry.visit_log_id) && isTrackedPartId(entry.part_id)),
+      );
       visitLogs = limited;
       visitLogParts = state.visitLogParts.filter((entry) => limitedIds.has(entry.visit_log_id));
       buildCtx = {
         totalVisitLogCount: totalCount,
-        visitLogPartsForCollection: state.visitLogParts.filter((entry) => allIds.has(entry.visit_log_id)),
+        collectedPartIds: allCollectedPartIds,
+        collectedCount: allCollectedPartIds.length,
+        zukanDetails: plan.zukanDetails,
       };
     } else if (plan.visits) {
       const visitLogIds = new Set(visitLogs.map((entry) => entry.id));
@@ -1646,7 +1750,7 @@ export async function getAppSnapshot(
 
   let visitLogs: Database["public"]["Tables"]["visit_logs"]["Row"][] = [];
   let visitLogParts: Database["public"]["Tables"]["visit_log_parts"]["Row"][] = [];
-  let buildCtx: SnapshotBuildContext | undefined;
+  let buildCtx: SnapshotBuildContext | undefined = { zukanDetails: plan.zukanDetails };
 
   if (plan.visits) {
     if (scope === "history") {
@@ -1656,29 +1760,37 @@ export async function getAppSnapshot(
       );
       const page = Math.max(1, options?.historyVisitPage ?? 1);
       const offset = (page - 1) * pageSize;
-      const bundle = await listVisitData(client, viewer.userId, {
-        limit: pageSize,
-        offset,
-        includeTotalCount: true,
-      });
+      const [bundle, allCollectedPartIds] = await Promise.all([
+        listVisitData(client, viewer.userId, {
+          limit: pageSize,
+          offset,
+          includeTotalCount: true,
+        }),
+        listCollectedTrackedPartIdsForUser(client, viewer.userId),
+      ]);
       visitLogs = bundle.visitLogs;
       visitLogParts = bundle.visitLogParts;
       const totalCount = bundle.totalCount ?? 0;
       buildCtx = {
         totalVisitLogCount: totalCount,
+        collectedPartIds: allCollectedPartIds,
+        collectedCount: allCollectedPartIds.length,
+        zukanDetails: plan.zukanDetails,
         visitLogsPage: { page, pageSize, totalCount },
       };
     } else if (plan.visitFetchLimit != null) {
-      const [limitedBundle, totalCount, allParts] = await Promise.all([
+      const [limitedBundle, totalCount, allCollectedPartIds] = await Promise.all([
         listVisitData(client, viewer.userId, { limit: plan.visitFetchLimit }),
         countVisitLogsForUser(client, viewer.userId),
-        listAllVisitLogPartsForUser(client, viewer.userId),
+        listCollectedTrackedPartIdsForUser(client, viewer.userId),
       ]);
       visitLogs = limitedBundle.visitLogs;
       visitLogParts = limitedBundle.visitLogParts;
       buildCtx = {
         totalVisitLogCount: totalCount,
-        visitLogPartsForCollection: allParts,
+        collectedPartIds: allCollectedPartIds,
+        collectedCount: allCollectedPartIds.length,
+        zukanDetails: plan.zukanDetails,
       };
     } else {
       const full = await listVisitData(client, viewer.userId);
@@ -1708,6 +1820,76 @@ export async function getAppSnapshot(
     homeSideData,
     null,
   );
+}
+
+export async function getHistoryVisitLogsPage(
+  accessToken?: string,
+  options?: AppSnapshotLoadOptions,
+): Promise<HistoryVisitLogsResponse> {
+  const pageSize = Math.min(
+    options?.historyVisitPageSize ?? HISTORY_SNAPSHOT_DEFAULT_PAGE_SIZE,
+    HISTORY_SNAPSHOT_MAX_PAGE_SIZE,
+  );
+  const page = Math.max(1, options?.historyVisitPage ?? 1);
+  const offset = (page - 1) * pageSize;
+
+  if (shouldUseMockBackend()) {
+    const viewer = createMockViewerContext();
+    const state = await readMockState();
+    const visitLogs = state.visitLogs
+      .filter((visitLog) => visitLog.user_id === viewer.userId)
+      .sort((left, right) => {
+        const byDate = right.visited_at.localeCompare(left.visited_at);
+        return byDate !== 0 ? byDate : right.created_at.localeCompare(left.created_at);
+      });
+    const totalCount = visitLogs.length;
+    const pageSlice = visitLogs.slice(offset, offset + pageSize);
+    const pageIds = new Set(pageSlice.map((entry) => entry.id));
+    const visitLogParts = state.visitLogParts.filter((entry) => pageIds.has(entry.visit_log_id));
+    const shareBonusEvents = state.shareBonusEvents.filter((entry) => entry.user_id === viewer.userId);
+    const { parts, menuItems } = await listMasterDataPartial(undefined, true, true);
+
+    return {
+      logs: buildVisitRecords(parts, menuItems, pageSlice, visitLogParts, new Set(buildShareBonusSummary(shareBonusEvents).sharedVisitLogIds)),
+      page: {
+        page,
+        pageSize,
+        totalCount,
+        hasMore: page * pageSize < totalCount,
+      },
+    };
+  }
+
+  const { client, viewer } = accessToken
+    ? await getSupabaseContextFromAccessToken(accessToken)
+    : await getSupabaseContext();
+  const serviceRoleClient = createServiceRoleClient();
+  const [{ parts, menuItems }, bundle, shareBonusEvents] = await Promise.all([
+    listMasterDataPartial(client, true, true),
+    listVisitData(client, viewer.userId, {
+      limit: pageSize,
+      offset,
+      includeTotalCount: true,
+    }),
+    getShareBonusEvents(serviceRoleClient, viewer.userId),
+  ]);
+  const totalCount = bundle.totalCount ?? 0;
+
+  return {
+    logs: buildVisitRecords(
+      parts,
+      menuItems,
+      bundle.visitLogs,
+      bundle.visitLogParts,
+      new Set(buildShareBonusSummary(shareBonusEvents).sharedVisitLogIds),
+    ),
+    page: {
+      page,
+      pageSize,
+      totalCount,
+      hasMore: page * pageSize < totalCount,
+    },
+  };
 }
 
 export async function recordVisit(input: unknown, accessToken?: string) {
@@ -1746,6 +1928,7 @@ export async function recordVisit(input: unknown, accessToken?: string) {
     }
 
     await writeMockState(state);
+    invalidateGlobalPartInsightCaches();
     const { parts, menuItems } = mockMasterData;
     const record = await buildRecordedVisit(parts, menuItems, {
       id: visitId,
@@ -1837,6 +2020,7 @@ export async function recordVisit(input: unknown, accessToken?: string) {
     partIds: parsed.partIds,
   });
 
+  invalidateGlobalPartInsightCaches();
   return { id: visitId, record };
 }
 
@@ -1857,6 +2041,7 @@ export async function deleteVisit(visitLogId: unknown, accessToken?: string) {
       (entry) => !(entry.target_type === "visit_log" && entry.target_id === id && entry.user_id === viewer.userId),
     );
     await writeMockState(state);
+    invalidateGlobalPartInsightCaches();
     return { ok: true };
   }
 
@@ -1888,6 +2073,7 @@ export async function deleteVisit(visitLogId: unknown, accessToken?: string) {
     .eq("user_id", viewer.userId)
     .eq("target_type", "visit_log")
     .eq("target_id", id);
+  invalidateGlobalPartInsightCaches();
   return { ok: true };
 }
 

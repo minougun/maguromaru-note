@@ -112,6 +112,11 @@ export interface HistoryData {
   visitLogsPage?: HistoryVisitLogsPage;
 }
 
+export interface HistoryVisitLogsResponse {
+  logs: VisitRecord[];
+  page: HistoryVisitLogsPage;
+}
+
 export interface PartMenuAppearanceStat {
   menuItemId: MenuItemId;
   menuItemName: string;

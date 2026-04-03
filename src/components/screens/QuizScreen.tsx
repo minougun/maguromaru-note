@@ -50,6 +50,7 @@ const QUIZ_RESULT_REFRESH_SCOPES = ["quiz", "history", "mypage"] as const;
 export function QuizScreen() {
   const auth = useAuthState();
   const { snapshot, loading, error, refresh } = useAppSnapshot();
+  const viewerId = snapshot?.viewer.userId ?? null;
   const [stageNumber, setStageNumber] = useState(1);
   const [sessionVersion, setSessionVersion] = useState(1);
   const [session, setSession] = useState<QuizSessionPayload | null>(null);
@@ -67,7 +68,7 @@ export function QuizScreen() {
   const [sharePayload, setSharePayload] = useState<SharePayload | null>(null);
 
   useEffect(() => {
-    if (loading || error || !snapshot || result) {
+    if (loading || error || !viewerId) {
       return;
     }
 
@@ -124,7 +125,7 @@ export function QuizScreen() {
     return () => {
       cancelled = true;
     };
-  }, [auth.accessToken, auth.usingSupabase, error, loading, refresh, result, sessionVersion, snapshot, stageNumber]);
+  }, [auth.accessToken, auth.usingSupabase, error, loading, sessionVersion, stageNumber, viewerId]);
 
   useEffect(() => {
     if (!session || result || sessionError || currentIndex < session.questions.length) {

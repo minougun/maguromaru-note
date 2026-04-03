@@ -22,6 +22,7 @@ import {
   createQuizSessionForViewer,
   deleteVisit,
   getAppSnapshot,
+  getHistoryVisitLogsPage,
   isMissingVisitLogPartSubjectiveColumnsError,
   normalizeVisitLogPartRows,
   recordVisit,
@@ -223,6 +224,16 @@ test("home snapshot embeds side data for first paint", async () => {
   assert.ok(snapshot.home.recentLogs.length <= 3);
 });
 
+test("home snapshot keeps collected count while omitting heavy zukan detail payload", async () => {
+  const homeSnapshot = await getAppSnapshot(undefined, "home");
+  const zukanSnapshot = await getAppSnapshot(undefined, "zukan");
+
+  assert.equal(homeSnapshot.zukan.collectedCount, zukanSnapshot.zukan.collectedCount);
+  assert.deepEqual(homeSnapshot.zukan.collectedPartIds, []);
+  assert.deepEqual(homeSnapshot.zukan.partInsights, {});
+  assert.deepEqual(homeSnapshot.zukan.partProfiles, {});
+});
+
 test("home scope skips global part insights while zukan scope keeps them", async () => {
   resetHomeSideDataServerCacheForTest();
 
@@ -231,6 +242,36 @@ test("home scope skips global part insights while zukan scope keeps them", async
 
   assert.deepEqual(homeSnapshot.zukan.globalPartInsights, {});
   assert.ok(Array.isArray(zukanSnapshot.zukan.globalPartInsights.otoro?.menuStats));
+});
+
+test("history snapshot keeps overall title progress even when logs are paginated", async () => {
+  const mypageSnapshot = await getAppSnapshot(undefined, "mypage");
+  const historySnapshot = await getAppSnapshot(undefined, "history", {
+    historyVisitPage: 1,
+    historyVisitPageSize: 1,
+  });
+
+  assert.equal(historySnapshot.history.logs.length, 1);
+  assert.equal(historySnapshot.zukan.collectedCount, mypageSnapshot.zukan.collectedCount);
+  assert.deepEqual(historySnapshot.zukan.collectedPartIds, []);
+  assert.equal(historySnapshot.history.currentTitle?.id, mypageSnapshot.history.currentTitle?.id);
+});
+
+test("getHistoryVisitLogsPage returns only the requested page of logs", async () => {
+  const fullSnapshot = await getAppSnapshot(undefined, "history", {
+    historyVisitPage: 1,
+    historyVisitPageSize: 5,
+  });
+  const secondPage = await getHistoryVisitLogsPage(undefined, {
+    historyVisitPage: 2,
+    historyVisitPageSize: 1,
+  });
+
+  assert.equal(secondPage.logs.length, 1);
+  assert.equal(secondPage.logs[0]?.id, fullSnapshot.history.logs[1]?.id);
+  assert.equal(secondPage.page.page, 2);
+  assert.equal(secondPage.page.pageSize, 1);
+  assert.ok(secondPage.page.totalCount >= 2);
 });
 
 test("recordVisit stores per-part subjective tasting notes", async () => {

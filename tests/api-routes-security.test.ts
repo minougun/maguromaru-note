@@ -13,6 +13,7 @@ import { POST as adminStatusPost } from "@/app/api/admin/status/route";
 import { GET as appSnapshotGet } from "@/app/api/app-snapshot/route";
 import { POST as anonymousCompletePost } from "@/app/api/auth/anonymous-link/complete/route";
 import { POST as anonymousPreparePost } from "@/app/api/auth/anonymous-link/prepare/route";
+import { GET as historyLogsGet } from "@/app/api/history-logs/route";
 import { POST as quizAnswerCheckPost } from "@/app/api/quiz-answer-check/route";
 import { POST as quizResultsPost } from "@/app/api/quiz-results/route";
 import { POST as quizSessionsPost } from "@/app/api/quiz-sessions/route";
@@ -187,6 +188,18 @@ test("GET /api/app-snapshot?scope=invalid: 400", async () => {
 test("GET /api/app-snapshot?scope=home: ハンドラが応答する（401 またはモック時 200）", async () => {
   const res = await appSnapshotGet(new Request(api("/api/app-snapshot?scope=home")));
   assert.ok(res.status === 401 || res.status === 200, `unexpected status ${res.status}`);
+});
+
+test("GET /api/history-logs: ハンドラが応答する（401 またはモック時 200）", async () => {
+  const res = await historyLogsGet(new Request(api("/api/history-logs?page=1&page_size=10")));
+  assert.ok(res.status === 401 || res.status === 200, `unexpected status ${res.status}`);
+});
+
+test("GET /api/history-logs: 不正な page_size は 400", async () => {
+  const res = await historyLogsGet(new Request(api("/api/history-logs?page=1&page_size=99999")));
+  assert.equal(res.status, 400);
+  const body = (await res.json()) as { error?: string };
+  assert.match(body.error ?? "", /page|page_size|履歴/);
 });
 
 test("GET /api/app-snapshot: history のページ指定は scope=history のときのみ", async () => {

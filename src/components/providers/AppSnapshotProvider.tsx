@@ -43,6 +43,7 @@ function readSnapshotStaleMs(): number {
 const SNAPSHOT_STALE_MS = readSnapshotStaleMs();
 const SNAPSHOT_FETCH_MAX_ATTEMPTS = 3;
 const SNAPSHOT_FETCH_RETRY_BASE_MS = 400;
+const AUTO_REVALIDATE_SCOPES = new Set<SnapshotScope>(["home", "admin"]);
 
 async function fetchWithNetworkRetry(url: string, init: RequestInit): Promise<Response> {
   let lastError: unknown;
@@ -70,6 +71,13 @@ function buildSnapshotRequestUrl(scope: SnapshotScope): string {
 
 function isFreshEntry(entry: SnapshotCacheEntry): boolean {
   return Date.now() - entry.fetchedAt < SNAPSHOT_STALE_MS;
+}
+
+function nextRevalidateDelayMs(entry: SnapshotCacheEntry | undefined): number {
+  if (!entry) {
+    return SNAPSHOT_STALE_MS;
+  }
+  return Math.max(1_000, SNAPSHOT_STALE_MS - (Date.now() - entry.fetchedAt));
 }
 
 function normalizedRefreshTarget(
@@ -159,6 +167,24 @@ export function AppSnapshotProvider({ children }: { children: React.ReactNode })
     window.addEventListener(APP_SNAPSHOT_REFRESH_EVENT, handler);
     return () => window.removeEventListener(APP_SNAPSHOT_REFRESH_EVENT, handler);
   }, [currentScope]);
+
+  useEffect(() => {
+    if (!AUTO_REVALIDATE_SCOPES.has(currentScope)) {
+      return;
+    }
+    if (!auth.ready || !auth.signedIn) {
+      return;
+    }
+    if (auth.usingSupabase && !auth.accessToken) {
+      return;
+    }
+
+    const timerId = window.setTimeout(() => {
+      setRefreshToken((current) => current + 1);
+    }, nextRevalidateDelayMs(snapshotCacheRef.current.get(currentScope)));
+
+    return () => window.clearTimeout(timerId);
+  }, [auth.accessToken, auth.ready, auth.signedIn, auth.usingSupabase, currentScope, refreshToken]);
 
   useEffect(() => {
     if (!auth.ready) {
