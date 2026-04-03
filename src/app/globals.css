@@ -795,7 +795,7 @@ body {
 .casual-mission-card-count {
   font-size: 12px;
   font-weight: 800;
-  color: var(--navy);
+  color: var(--ink);
 }
 
 .casual-mission-list {
@@ -828,7 +828,7 @@ body {
 .casual-mission-progress {
   margin-top: 2px;
   font-size: 12px;
-  color: var(--cream-dark);
+  color: var(--ink);
 }
 
 .ai-store-blurb-label {
