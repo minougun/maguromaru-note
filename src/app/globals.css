@@ -2385,7 +2385,7 @@ body {
   max-height: 100vh;
   max-height: 100dvh;
   overflow: hidden;
-  background: #121212;
+  background: #ffffff;
   box-shadow: none;
   padding-bottom: var(--safe-bottom);
 }
@@ -2413,8 +2413,8 @@ body {
   justify-content: center;
   min-height: 0;
   padding: 4px 6px calc(16px + var(--safe-bottom));
-  background: #121212;
-  color: #f5f5f5;
+  background: #ffffff;
+  color: var(--ink);
 }
 
 /* ロゴ＋ボタンをまとめて縦方向の中央よりやや上へ */
@@ -2437,8 +2437,8 @@ body {
   margin: 0;
   font-size: clamp(2.15rem, 7.8vw, 2.95rem);
   line-height: 1.22;
-  color: #f5f5f5;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.08);
+  color: var(--navy);
+  text-shadow: none;
 }
 
 .login-launch-icon-stage {
@@ -2457,7 +2457,7 @@ body {
   width: min(100vw - 12px, 100%);
   height: min(48dvh, 88vw, 480px);
   margin: 0 auto;
-  filter: drop-shadow(0 10px 28px rgba(0, 0, 0, 0.42));
+  filter: drop-shadow(0 10px 28px rgba(27, 45, 79, 0.18));
 }
 
 .login-launch-mark-img {
@@ -2495,7 +2495,7 @@ body {
   text-align: center;
   font-size: 12px;
   line-height: 1.5;
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--ink-soft);
 }
 
 .login-launch-flash--error {
@@ -2554,8 +2554,8 @@ body {
 .login-signin {
   flex: 1;
   padding: 20px 20px calc(24px + var(--safe-bottom));
-  background: #121212;
-  color: #f0f0f0;
+  background: #ffffff;
+  color: var(--ink);
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -2567,7 +2567,7 @@ body {
   padding: 6px 4px;
   border: none;
   background: none;
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--ink-soft);
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
@@ -2583,29 +2583,29 @@ body {
   font-size: 20px;
   font-weight: 900;
   letter-spacing: 0.08em;
-  color: #fff;
+  color: var(--navy);
 }
 
 .login-signin-lead {
   margin: 0;
   font-size: 13px;
   line-height: 1.55;
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--ink-soft);
 }
 
 .login-signin-code {
   font-size: 11px;
   padding: 2px 6px;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.85);
+  background: rgba(27, 45, 79, 0.08);
+  color: var(--navy);
 }
 
 .login-signin-section-label {
   margin: 8px 0 0;
   font-size: 12px;
   font-weight: 800;
-  color: rgba(255, 255, 255, 0.45);
+  color: rgba(27, 45, 79, 0.5);
   letter-spacing: 0.06em;
 }
 
