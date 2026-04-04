@@ -27,10 +27,10 @@ export const seededParts: Part[] = [
 ];
 
 export const seededMenuItems: MenuItem[] = [
-  { id: "maguro_don", name: "まぐろ丼", price: 2000, sort_order: 1 },
-  { id: "maguro_don_mini", name: "まぐろ丼ミニ", price: 1500, sort_order: 2 },
-  { id: "tokujo_don", name: "特上まぐろ丼（大とろ入り）", price: 3000, sort_order: 3 },
-  { id: "tokujo_don_mini", name: "特上まぐろ丼ミニ", price: 2500, sort_order: 4 },
+  { id: "maguro_don", name: "鉄火丼", price: 750, sort_order: 1 },
+  { id: "maguro_don_mini", name: "中とろブツ盛り丼", price: 900, sort_order: 2 },
+  { id: "tokujo_don", name: "特上まぐろ丼", price: 1600, sort_order: 3 },
+  { id: "tokujo_don_mini", name: "鉄人巻き", price: 1400, sort_order: 4 },
 ];
 
 export const seededStoreStatus: StoreStatus = {
@@ -61,16 +61,16 @@ export const seededVisitLogs: VisitLog[] = [
     user_id: MOCK_USER_ID,
     menu_item_id: "maguro_don",
     visited_at: "2026-03-28",
-    memo: "脳天とろけた！",
+    memo: "赤身の切れ味がよかった！",
     photo_url: null,
     created_at: "2026-03-28T12:34:00.000Z",
   },
   {
     id: "10000000-0000-4000-8000-000000000002",
     user_id: MOCK_USER_ID,
-    menu_item_id: "maguro_don",
+    menu_item_id: "maguro_don_mini",
     visited_at: "2026-03-22",
-    memo: "脂のバランス最高",
+    memo: "中とろがしっかり乗っていた",
     photo_url: null,
     created_at: "2026-03-22T11:12:00.000Z",
   },

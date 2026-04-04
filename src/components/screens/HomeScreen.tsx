@@ -10,7 +10,7 @@ import { NorenBanner } from "@/components/ui/NorenBanner";
 import { ScreenState } from "@/components/ui/ScreenState";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import { clearAuthCallbackQueryParams } from "@/lib/auth-callback-ui";
-import { menuStockLabels, type MenuStockStatus } from "@/lib/domain/constants";
+import { APP_INFO, menuStockLabels, type MenuStockStatus } from "@/lib/domain/constants";
 import type { VisitRecord } from "@/lib/domain/types";
 import { useAppSnapshot } from "@/lib/hooks/use-app-snapshot";
 import { buildCasualMissions, buildMyPageSummary, buildNextTitleProgress } from "@/lib/mypage";
@@ -136,8 +136,8 @@ export function HomeScreen() {
         </>
       ) : null}
 
-      <Card aria-label="まぐろ丸Botの日替わり豆知識" className="ai-store-blurb-card">
-        <p className="ai-store-blurb-label">まぐろ丸Bot 今日の豆知識</p>
+      <Card aria-label={`${APP_INFO.botName}の日替わり豆知識`} className="ai-store-blurb-card">
+        <p className="ai-store-blurb-label">{APP_INFO.botName} 今日の豆知識</p>
         <p className="ai-store-blurb-body">{sideData.trivia.trivia}</p>
         <p className="ai-store-blurb-meta">日替わり豆知識 · {sideData.trivia.date}</p>
       </Card>
@@ -164,11 +164,11 @@ export function HomeScreen() {
           ))}
         </div>
       </Card>
-      <NorenBanner label="本日の入荷状況" />
+      <NorenBanner label={APP_INFO.inventoryTitle} />
       <Card className="stock-card">
         <div className="stock-card-head">
           <div className="stock-store-mark" aria-hidden="true">
-            丼
+            {APP_INFO.inventoryMark}
           </div>
           {snapshot.home.showStaffUpdateTimestamps && snapshot.home.menuStockUpdatedAt ? (
             <div className="stock-updated-chip">最終更新時間 {formatHm(snapshot.home.menuStockUpdatedAt)}</div>
@@ -201,7 +201,7 @@ export function HomeScreen() {
         </div>
       ) : (
         <Card>
-          <p className="helper-text">まだ記録がありません。今日の丼を記録するとここに並びます。</p>
+          <p className="helper-text">まだ記録がありません。今日のメニューを記録するとここに並びます。</p>
         </Card>
       )}
 

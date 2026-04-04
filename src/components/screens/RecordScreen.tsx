@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/Card";
 import { NorenBanner } from "@/components/ui/NorenBanner";
 import { ScreenState } from "@/components/ui/ScreenState";
 import { SectionTitle } from "@/components/ui/SectionTitle";
+import { APP_INFO } from "@/lib/domain/constants";
 import { getDefaultPartIdsForMenuItem } from "@/lib/domain/menu-part-defaults";
 import type { MenuItemId, PartId, VisitRecord } from "@/lib/domain/types";
 import {
@@ -216,12 +217,12 @@ export function RecordScreen() {
 
   return (
     <>
-      <NorenBanner label="今日の丼を記録" />
+      <NorenBanner label={APP_INFO.recordTitle} />
       <ShareBonusCallout variant="visit" />
       <label className={`photo-zone ${previewUrl ? "has-img" : ""}`} htmlFor="don-photo">
         <input accept="image/*" capture="environment" hidden id="don-photo" onChange={handleFileChange} type="file" />
         {previewUrl ? (
-          <Image alt="丼のプレビュー" height={220} src={previewUrl} unoptimized width={380} />
+          <Image alt="メニュー写真のプレビュー" height={220} src={previewUrl} unoptimized width={380} />
         ) : (
           <span className="photo-hint">
             タップでカメラ / ギャラリー
@@ -265,7 +266,7 @@ export function RecordScreen() {
             ))}
           </div>
         ) : null}
-        <p className="helper-text">トビコなど部位以外の具材は、自動セットに含めていません。</p>
+        <p className="helper-text">薬味や海苔など部位以外の添え物は、自動セットに含めていません。</p>
         {selectedMenuItem ? (
           <div className="record-assist-actions">
             <button className="button-outline record-assist-button" onClick={() => setShowPartEditor((value) => !value)} type="button">

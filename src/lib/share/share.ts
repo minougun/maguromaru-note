@@ -1,3 +1,4 @@
+import { APP_INFO } from "@/lib/domain/constants";
 import type { Part, Title, VisitRecord } from "@/lib/domain/types";
 
 export type ShareKind = "record" | "log" | "zukan" | "quiz";
@@ -36,7 +37,7 @@ export function buildRecordShare(record: VisitRecord) {
     text:
       `今日の${record.menuItem.name}🐟\n` +
       `${partSummary(record.parts)}！${rareTag(record.parts)}\n\n` +
-      "#まぐろ丸ノート #海鮮丼まぐろ丸 #本町グルメ",
+      APP_INFO.shareTags,
     bonusTarget: {
       targetType: "visit_log" as const,
       targetId: record.id,
@@ -55,7 +56,7 @@ export function buildPastLogShare(visitRecord: VisitRecord) {
       `${visitRecord.visitedAt}の${visitRecord.menuItem.name}🐟\n` +
       `${partSummary(visitRecord.parts)}！${rareTag(visitRecord.parts)}` +
       `${memoLine}\n\n` +
-      "#まぐろ丸ノート #海鮮丼まぐろ丸 #本町グルメ",
+      APP_INFO.shareTags,
     bonusTarget: {
       targetType: "visit_log" as const,
       targetId: visitRecord.id,
@@ -75,7 +76,7 @@ export function buildZukanShare(collectedParts: Part[], totalCount: number) {
       `まぐろ図鑑 ${percent}% 達成！🐟\n` +
       `${collectedParts.length}/${totalCount}部位コンプリート\n` +
       `食べた部位: ${names}\n\n` +
-      "#まぐろ丸ノート #海鮮丼まぐろ丸 #本町グルメ",
+      APP_INFO.shareTags,
   };
 }
 
@@ -94,7 +95,7 @@ export function buildQuizResultShare(input: {
     text:
       `まぐろクイズで ${input.score}/${input.questionCount} 問正解！ (${percent}%)\n` +
       `${titleLine}` +
-      "\n#まぐろ丸ノート #海鮮丼まぐろ丸 #本町グルメ",
+      `\n${APP_INFO.shareTags}`,
     bonusTarget: {
       targetType: "quiz_session" as const,
       targetId: input.sessionId,

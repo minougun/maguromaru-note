@@ -19,6 +19,7 @@ import {
   startGoogleSignInFlow,
   verifyEmailSignInOtp,
 } from "@/lib/supabase/browser";
+import { APP_INFO } from "@/lib/domain/constants";
 
 function authErrorMessage(error: unknown) {
   if (error instanceof ZodError) {
@@ -112,7 +113,7 @@ export function LoginScreen({
       <div className="login-launch">
         <div className="login-launch-body">
           <div className={`login-launch-title-wrap login-reveal ${revealed ? "login-reveal--visible" : ""}`}>
-            <h1 className="header-title login-launch-title">まぐろ丸ノート</h1>
+            <h1 className="header-title login-launch-title">{APP_INFO.appName}</h1>
           </div>
           <div className="login-launch-icon-stage">
             <div className="login-launch-mark-frame">

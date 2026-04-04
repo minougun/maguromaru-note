@@ -11,13 +11,13 @@ import {
   buildStockSnapshotForAi,
 } from "@/lib/services/store-ai-blurb";
 
-test("closingBlurbJstDate: 21時台は当日の締め日付", () => {
-  const d = new Date("2026-03-31T12:00:00.000Z"); // 21:00 JST
+test("closingBlurbJstDate: 22時半以降は当日の締め日付", () => {
+  const d = new Date("2026-03-31T13:30:00.000Z"); // 22:30 JST
   assert.equal(closingBlurbJstDate(d), "2026-03-31");
 });
 
-test("closingBlurbJstDate: 朝は前日の営業日", () => {
-  const d = new Date("2026-03-31T01:00:00.000Z"); // 10:00 JST
+test("closingBlurbJstDate: 夕方前は前日の営業日", () => {
+  const d = new Date("2026-03-31T07:00:00.000Z"); // 16:00 JST
   assert.equal(closingBlurbJstDate(d), "2026-03-30");
 });
 
@@ -34,9 +34,9 @@ test("fingerprintStockSnapshot は同一データで安定", () => {
   assert.equal(a.length, 64);
 });
 
-test("formatSnapshotForPrompt に丼行が含まれる", () => {
+test("formatSnapshotForPrompt にメニュー行が含まれる", () => {
   const snap = buildStockSnapshotForAi(seededStoreStatus, seededMenuItems, defaultMenuStockById);
   const text = formatSnapshotForPrompt(snap);
-  assert.match(text, /丼の入荷状況/);
+  assert.match(text, /メニューの提供状況/);
   assert.ok(text.includes(seededMenuItems[0].name));
 });

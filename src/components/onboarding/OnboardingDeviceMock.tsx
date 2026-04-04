@@ -3,6 +3,7 @@
 import { ShareBonusCallout } from "@/components/share/ShareBonusCallout";
 import { SettingsGearIcon } from "@/components/ui/SettingsGearIcon";
 import { TabIcon } from "@/components/ui/TabIcon";
+import { APP_INFO } from "@/lib/domain/constants";
 import { MAIN_NAV_TABS } from "@/lib/main-tabs";
 import { publicPath } from "@/lib/public-path";
 
@@ -82,7 +83,7 @@ function MockHome() {
         <p className="onboarding-mock-status-note">混雑状況や売り切れ情報はここに表示されます。</p>
       </div>
       <div className="onboarding-mock-card onboarding-mock-bot-card">
-        <p className="onboarding-mock-bot-label">まぐろ丸Bot 今日の豆知識</p>
+        <p className="onboarding-mock-bot-label">{APP_INFO.botName} 今日の豆知識</p>
         <p className="onboarding-mock-bot-body">本マグロの赤身は、脂だけではなく鉄っぽい香りと旨みの重なりでも評価されます。</p>
         <p className="onboarding-mock-bot-meta">日替わり豆知識 · 2026-04-03</p>
       </div>
@@ -113,37 +114,37 @@ function MockHome() {
           </div>
         ))}
       </div>
-      <MockNoren>本日の入荷状況</MockNoren>
+      <MockNoren>{APP_INFO.inventoryTitle}</MockNoren>
       <div className="onboarding-mock-card onboarding-mock-stock-card">
         <div className="onboarding-mock-stock-head">
-          <span className="onboarding-mock-stock-mark">丼</span>
+          <span className="onboarding-mock-stock-mark">{APP_INFO.inventoryMark}</span>
           <span className="onboarding-mock-stock-chip">最終更新時間 12:30</span>
         </div>
         <div className="onboarding-mock-stock-row">
           <div className="onboarding-mock-stock-name-block">
-            <span className="onboarding-mock-stock-name">まぐろ丼</span>
-            <span className="onboarding-mock-stock-price">¥2,000</span>
+            <span className="onboarding-mock-stock-name">鉄火丼</span>
+            <span className="onboarding-mock-stock-price">¥750</span>
           </div>
           <span className="onboarding-mock-stock-ok">◎ あり</span>
         </div>
         <div className="onboarding-mock-stock-row">
           <div className="onboarding-mock-stock-name-block">
-            <span className="onboarding-mock-stock-name">まぐろ丼ミニ</span>
-            <span className="onboarding-mock-stock-price">¥1,500</span>
+            <span className="onboarding-mock-stock-name">中とろブツ盛り丼</span>
+            <span className="onboarding-mock-stock-price">¥900</span>
           </div>
           <span className="onboarding-mock-stock-ok">◎ あり</span>
         </div>
         <div className="onboarding-mock-stock-row">
           <div className="onboarding-mock-stock-name-block">
-            <span className="onboarding-mock-stock-name">特上まぐろ丼（大とろ入り）</span>
-            <span className="onboarding-mock-stock-price">¥3,000</span>
+            <span className="onboarding-mock-stock-name">特上まぐろ丼</span>
+            <span className="onboarding-mock-stock-price">¥1,600</span>
           </div>
           <span className="onboarding-mock-stock-warn">△ 残りわずか</span>
         </div>
         <div className="onboarding-mock-stock-row">
           <div className="onboarding-mock-stock-name-block">
-            <span className="onboarding-mock-stock-name">特上まぐろ丼ミニ</span>
-            <span className="onboarding-mock-stock-price">¥2,500</span>
+            <span className="onboarding-mock-stock-name">鉄人巻き</span>
+            <span className="onboarding-mock-stock-price">¥1,400</span>
           </div>
           <span className="onboarding-mock-stock-out">✕ 終了</span>
         </div>
@@ -156,7 +157,7 @@ function MockHome() {
 function MockRecord() {
   return (
     <>
-      <MockNoren>今日の丼を記録</MockNoren>
+      <MockNoren>{APP_INFO.recordTitle}</MockNoren>
       <div className="onboarding-mock-share-bonus-wrap">
         <ShareBonusCallout compact variant="visit" />
       </div>
@@ -170,26 +171,26 @@ function MockRecord() {
       <MockSectionTitle subtitle="Menu" title="食べたメニュー" />
       <div className="menu-choice-grid onboarding-mock-menu-choice-grid">
         <div className="menu-choice">
-          <strong>まぐろ丼</strong>
-          <span>2,000円</span>
+          <strong>鉄火丼</strong>
+          <span>750円</span>
         </div>
         <div className="menu-choice">
-          <strong>まぐろ丼ミニ</strong>
-          <span>1,500円</span>
+          <strong>中とろブツ盛り丼</strong>
+          <span>900円</span>
         </div>
         <div className="menu-choice active">
-          <strong>特上まぐろ丼（大とろ入り）</strong>
-          <span>3,000円</span>
+          <strong>特上まぐろ丼</strong>
+          <span>1,600円</span>
         </div>
         <div className="menu-choice">
-          <strong>特上まぐろ丼ミニ</strong>
-          <span>2,500円</span>
+          <strong>鉄人巻き</strong>
+          <span>1,400円</span>
         </div>
       </div>
       <MockSectionTitle subtitle="Quick record" title="かんたん記録" />
       <div className="onboarding-mock-card onboarding-mock-quick-card">
         <p className="onboarding-mock-mini-text">
-          特上まぐろ丼（大とろ入り）の標準部位を自動でセットしました。わからなければ、このまま保存でOKです。
+          特上まぐろ丼の標準部位を自動でセットしました。わからなければ、このまま保存でOKです。
         </p>
         <div className="onboarding-mock-parts-mini">
           {["大トロ", "中トロ", "赤身", "脳天", "ほほ肉", "目裏"].map((name) => (
@@ -198,7 +199,7 @@ function MockRecord() {
             </span>
           ))}
         </div>
-        <p className="onboarding-mock-quick-help">トビウオと目立つ外見は、前もって自動では入れていません。</p>
+        <p className="onboarding-mock-quick-help">薬味や海苔などの添え物は、自動では入れていません。</p>
         <div className="onboarding-mock-quick-actions">
           <div className="onboarding-mock-outline-fake">部位調整を閉じる</div>
           <div className="onboarding-mock-outline-fake">味のメモも残す</div>
@@ -483,8 +484,8 @@ export function OnboardingDeviceMock({ screen }: { screen: OnboardingMockId }) {
                 width={26}
               />
               <div className="onboarding-mock-header-text">
-                <p className="onboarding-mock-header-title">まぐろ丸ノート</p>
-                <p className="onboarding-mock-header-sub">海鮮丼まぐろ丸 ── 本町</p>
+                <p className="onboarding-mock-header-title">{APP_INFO.appName}</p>
+                <p className="onboarding-mock-header-sub">{APP_INFO.subtitle}</p>
               </div>
             </div>
             <div className="onboarding-mock-header-link">

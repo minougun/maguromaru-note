@@ -79,16 +79,16 @@ export function PartMenuInsightBlock({
     <div className="part-insight-block">
       {contrastSummary ? <p className="part-insight-compare">{contrastSummary}</p> : null}
       <PartMenuInsightSection
-        emptyText="まだデータ不足です。記録が増えると、どの丼で出やすいかが分かります。"
+        emptyText="まだデータ不足です。記録が増えると、どのメニューで出やすいかが分かります。"
         insight={insight}
-        title="あなたの記録では出やすい丼"
+        title="あなたの記録では出やすいメニュー"
       />
       {globalInsight ? (
         <div className="part-insight-global">
           <PartMenuInsightSection
             emptyText="全体傾向はまだ集計中です。"
             insight={globalInsight}
-            title="みんなの記録では出やすい丼"
+            title="みんなの記録では出やすいメニュー"
           />
         </div>
       ) : null}
