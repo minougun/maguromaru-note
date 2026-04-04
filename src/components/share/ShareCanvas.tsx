@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from "react";
 
-import { APP_INFO } from "@/lib/domain/constants";
 import type { SharePayload } from "@/lib/share/share";
 
 const BRAND_MARK_PATH = "/brand/maguromaru-mark.png";
@@ -52,10 +51,10 @@ function drawShareCanvas(
   context.textAlign = "left";
   context.fillStyle = "#f5e6c8";
   context.font = '900 22px "Noto Sans JP", sans-serif';
-    context.fillText(APP_INFO.appName, 88, 42);
+  context.fillText("まぐろ丸ノート", 88, 42);
   context.fillStyle = "#c4a878";
   context.font = '400 11px "Noto Sans JP", sans-serif';
-  context.fillText(APP_INFO.subtitle, 88, 58);
+  context.fillText("海鮮丼まぐろ丸（本町）", 88, 58);
 
   context.strokeStyle = "#cc2222";
   context.lineWidth = 1;
@@ -80,7 +79,7 @@ function drawShareCanvas(
   context.fillStyle = "#c4a878";
   context.font = '400 13px "Noto Sans JP", sans-serif';
   context.textAlign = "center";
-  context.fillText(`🐟 ${APP_INFO.appName} ─ ${APP_INFO.subtitle}`, width / 2, height - 22);
+  context.fillText("🐟 まぐろ丸ノート ─ 海鮮丼まぐろ丸（本町）", width / 2, height - 22);
 }
 
 export function ShareCanvas({ payload }: { payload: SharePayload }) {

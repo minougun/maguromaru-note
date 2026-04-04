@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { type OnboardingMockId, OnboardingDeviceMock } from "@/components/onboarding/OnboardingDeviceMock";
-import { APP_INFO } from "@/lib/domain/constants";
+import { publicPath } from "@/lib/public-path";
 
 type Step = {
   mockId: OnboardingMockId;
@@ -16,41 +16,49 @@ type Step = {
   screenshotSrc?: string;
 };
 
+const TUTORIAL_SCREENSHOT_REV = "20260404-6";
+
 const STEPS: Step[] = [
   {
     mockId: "intro",
-    title: `${APP_INFO.appName}へようこそ`,
-    body: "まぐろの鉄人の公式アプリです。\n次のスライドから、ホーム・記録・図鑑・クイズ・称号・設定でできることを順番に紹介します。",
+    title: "まぐろ丸ノートへようこそ",
+    body: "海鮮丼まぐろ丸の公式アプリです。\n次のスライドから、ホーム・記録・図鑑・クイズ・称号・設定でできることを順番に紹介します。",
   },
   {
     mockId: "home",
     title: "ホーム",
-    body: `営業状況と天気、${APP_INFO.botName}の豆知識、${APP_INFO.inventoryTitle}、最近の記録をまとめて確認できます。\n来店頻度が少なくても進めやすい「ゆるく進める目標」と、「常連メリット」もここで見られます。`,
+    body: "営業状況と天気、まぐろ丸Botの豆知識、本日の入荷状況、最近の記録をまとめて確認できます。\n来店頻度が少なくても進めやすい「ゆるく進める目標」と、「常連メリット」もここで見られます。",
+    screenshotSrc: `/onboarding/tutorial/home.png?v=${TUTORIAL_SCREENSHOT_REV}`,
   },
   {
     mockId: "record",
     title: "記録",
-    body: "今日食べたメニューを選ぶと、標準の部位が自動で入る「かんたん記録」で素早く保存できます。\n部位の調整、写真、メモ、脂感や食感などの主観記録も追加できます。",
+    body: "今日食べた丼を選ぶと、標準の部位が自動で入る「かんたん記録」で素早く保存できます。\n部位の調整、写真、メモ、脂感や食感などの主観記録も追加できます。",
+    screenshotSrc: `/onboarding/tutorial/record.png?v=${TUTORIAL_SCREENSHOT_REV}`,
   },
   {
     mockId: "zukan",
     title: "図鑑",
-    body: "記録した部位が図鑑に反映され、コンプリート進捗や部位マップから詳しく見られます。\nかんたん表示では一覧をシンプルに、詳細表示では出やすいメニューや主観記録まで深く確認できます。",
+    body: "記録した部位が図鑑に反映され、コンプリート進捗や部位マップから詳しく見られます。\nかんたん表示では一覧をシンプルに、詳細表示では出やすい丼や主観記録まで深く確認できます。",
+    screenshotSrc: `/onboarding/tutorial/zukan.png?v=${TUTORIAL_SCREENSHOT_REV}`,
   },
   {
     mockId: "quiz",
     title: "クイズ",
     body: "まぐろの4択クイズにステージごとに挑戦できます。\n各ステージは10問で、全部正解すると次のステージが解放されます。\nクイズの進捗は称号やミッションにもつながります。",
+    screenshotSrc: `/onboarding/tutorial/quiz.png?v=${TUTORIAL_SCREENSHOT_REV}`,
   },
   {
     mockId: "titles",
     title: "称号",
     body: "来店回数・図鑑・クイズ成績に応じて称号が解放されます。\nいま使っている称号と、次に目指す条件をこの画面で確認できます。\n晴れて最後の称号、「まぐろマスター」まで獲得できた暁には、なにか良いことがあるかも！？",
+    screenshotSrc: `/onboarding/tutorial/titles.png?v=${TUTORIAL_SCREENSHOT_REV}`,
   },
   {
     mockId: "account",
     title: "設定",
     body: "設定では、かんたん表示 / 詳細表示や文字サイズを切り替えられます。\nApple・Google・メールを連携しておくと、機種変更や再インストール後もデータを引き継ぎやすくなります。",
+    screenshotSrc: `/onboarding/tutorial/account.png?v=${TUTORIAL_SCREENSHOT_REV}`,
   },
 ];
 
@@ -146,7 +154,15 @@ export function OnboardingTutorial({ onComplete }: OnboardingTutorialProps) {
             aria-hidden="true"
           >
             {step.screenshotSrc ? (
-              <></>
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element -- 引き継ぎ前どおり公開 WebP（publicPath で basePath 対応） */}
+                <img
+                  alt=""
+                  className="onboarding-screenshot-img"
+                  decoding="async"
+                  src={publicPath(step.screenshotSrc)}
+                />
+              </>
             ) : (
               <OnboardingDeviceMock screen={step.mockId} />
             )}

@@ -6,11 +6,10 @@ import { AppShellRouter } from "@/components/layout/AppShellRouter";
 import { AppSnapshotProvider } from "@/components/providers/AppSnapshotProvider";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { UiPreferencesProvider } from "@/components/providers/UiPreferencesProvider";
-import { APP_INFO } from "@/lib/domain/constants";
 
 export const metadata: Metadata = {
-  title: APP_INFO.appName,
-  description: APP_INFO.description,
+  title: "まぐろ丸ノート",
+  description: "海鮮丼まぐろ丸の公式Webアプリ",
   icons: {
     icon: [{ url: "/brand/maguromaru-mark.png", type: "image/png" }],
     apple: "/brand/maguromaru-mark.png",

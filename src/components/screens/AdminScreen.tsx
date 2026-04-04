@@ -6,7 +6,6 @@ import { useAuthState } from "@/components/providers/AuthProvider";
 import { Card } from "@/components/ui/Card";
 import { NorenBanner } from "@/components/ui/NorenBanner";
 import { ScreenState } from "@/components/ui/ScreenState";
-import { APP_INFO } from "@/lib/domain/constants";
 import type { MenuStockStatus } from "@/lib/domain/constants";
 import type { StoreStatus } from "@/lib/domain/types";
 import { useAppSnapshot } from "@/lib/hooks/use-app-snapshot";
@@ -169,7 +168,7 @@ export function AdminScreen() {
           />
         </label>
         <div className="form-label">
-          {APP_INFO.inventoryTitle}
+          本日の入荷状況
           <div className="stack-list">
             {snapshot.menuItems.map((item) => (
               <Card className="part-list-card" key={item.id}>

@@ -1,6 +1,5 @@
 import { AppHeaderAccountLink } from "@/components/layout/AppHeaderAccountLink";
 import { BrandMark } from "@/components/ui/BrandMark";
-import { APP_INFO } from "@/lib/domain/constants";
 
 export function AppHeader() {
   return (
@@ -9,8 +8,8 @@ export function AppHeader() {
         <div className="header-brand">
           <BrandMark className="logo-mark" />
           <div>
-            <h1 className="header-title">{APP_INFO.appName}</h1>
-            <p className="header-subtitle">{APP_INFO.subtitle}</p>
+            <h1 className="header-title">まぐろ丸ノート</h1>
+            <p className="header-subtitle">海鮮丼まぐろ丸 ── 本町</p>
           </div>
         </div>
         <AppHeaderAccountLink />

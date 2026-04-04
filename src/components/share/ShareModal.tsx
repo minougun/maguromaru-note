@@ -4,7 +4,6 @@ import { useRef, useState } from "react";
 
 import { ShareCanvas } from "@/components/share/ShareCanvas";
 import { ShareBonusCallout } from "@/components/share/ShareBonusCallout";
-import { APP_INFO } from "@/lib/domain/constants";
 import { createLineShareUrl, createXShareUrl, type ShareChannel, type SharePayload } from "@/lib/share/share";
 
 export function ShareModal({
@@ -37,7 +36,7 @@ export function ShareModal({
   }
 
   async function handleInstagram() {
-    const tags = APP_INFO.shareTags;
+    const tags = "#まぐろ丸ノート #海鮮丼まぐろ丸 #本町グルメ";
     try {
       await navigator.clipboard.writeText(tags);
       window.alert("画像を保存して Instagram に投稿してください。\nハッシュタグをコピーしました。");
@@ -53,7 +52,7 @@ export function ShareModal({
     }
 
     const anchor = document.createElement("a");
-    anchor.download = APP_INFO.shareImageFileName;
+    anchor.download = "maguromaru-note-share.png";
     anchor.href = canvas.toDataURL("image/png");
     anchor.click();
   }

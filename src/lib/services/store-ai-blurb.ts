@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/lib/database.types";
-import { STORE_INFO, menuStockLabels, type MenuStockStatus } from "@/lib/domain/constants";
+import { menuStockLabels, type MenuStockStatus } from "@/lib/domain/constants";
 import {
   calendarDateJst,
   isWithinStoreBusinessHoursJst,
@@ -16,8 +16,8 @@ export type StoreAiBlurbKind = "intraday" | "closing_summary";
 
 export type StoreAiBlurbRow = Database["public"]["Tables"]["store_ai_blurbs"]["Row"];
 
-const OPEN_MINUTES_JST = 17 * 60;
-const CLOSE_MINUTES_JST = 22 * 60 + 30;
+const OPEN_MINUTES_JST = 11 * 60;
+const CLOSE_MINUTES_JST = 21 * 60;
 
 export function addCalendarDaysJst(ymd: string, deltaDays: number): string {
   const anchor = new Date(`${ymd}T12:00:00+09:00`);
@@ -27,8 +27,8 @@ export function addCalendarDaysJst(ymd: string, deltaDays: number): string {
 
 /**
  * 締め「まとめ 1 行」を紐づける営業日（JST）。
- * - 22:30〜23:59 … 当日の営業終了後
- * - 0:00〜16:59 … 直前に終わったのは前日の営業日
+ * - 21:00〜23:59 … 当日の営業終了後
+ * - 0:00〜10:59 … 直前に終わったのは前日の営業日
  */
 export function closingBlurbJstDate(now: Date): string {
   const today = calendarDateJst(now);
@@ -97,7 +97,7 @@ export function formatSnapshotForPrompt(snap: StockSnapshotForAi): string {
     snap.store.status_note ? `店舗メモ: ${snap.store.status_note}` : null,
     snap.store.recommendation ? `おすすめ: ${snap.store.recommendation}` : null,
     snap.store.weather_comment ? `天気コメント: ${snap.store.weather_comment}` : null,
-    "メニューの提供状況:",
+    "丼の入荷状況:",
     ...snap.menuLines.map((row) => `  - ${row.name}: ${menuStockLabels[row.status].text}`),
   ].filter(Boolean);
   return lines.join("\n");
@@ -255,14 +255,14 @@ export async function fetchStoreAiBlurbForHome(
   return { body: row.body, createdAt: row.created_at, kind: "closing_summary" };
 }
 
-const INTRADAY_SYSTEM = `あなたは「${STORE_INFO.name}」の公式アプリに表示する短い実況コメントを書く担当です。
+const INTRADAY_SYSTEM = `あなたは海鮮丼店「まぐろ丸」の公式アプリに表示する短い実況コメントを書く担当です。
 ルール:
 - 与えられたデータに書いてある事実だけを使う。数値・在庫状況を捏造しない。
 - 1〜2文、合計 90 文字以内。口調は温かくフレンドリーな「店の仲間」。
 - 絵文字は最大1個まで。敬体（です・ます）。
 - 出力は本文のみ（引用符や「Bot」などのメタ文は禁止）。`;
 
-const CLOSING_SYSTEM = `あなたは「${STORE_INFO.name}」の公式アプリ用に、その日の営業を締める一言サマリーを書きます。
+const CLOSING_SYSTEM = `あなたは海鮮丼店「まぐろ丸」の公式アプリ用に、その日の営業を締める一言サマリーを書きます。
 ルール:
 - 与えられたデータの事実のみ。捏造禁止。
 - 厳密に 1 行・70 文字以内。感謝や明日への期待を軽く含めてよい。

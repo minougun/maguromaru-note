@@ -150,7 +150,7 @@ test("updateStoreStatus rejects unauthorized mutation in mock mode by default", 
     await assert.rejects(
       () =>
         updateStoreStatus({
-          recommendation: "今日は鉄火丼がおすすめ",
+          recommendation: "今日はまぐろ丼がおすすめ",
           status: "busy",
           statusNote: "少し並びます",
           weatherComment: "雨なので足元注意",
@@ -193,7 +193,7 @@ test("updateStoreStatus succeeds in mock mode only when explicitly enabled", asy
 
   try {
     const result = await updateStoreStatus({
-      recommendation: "今日は鉄火丼がおすすめ",
+      recommendation: "今日はまぐろ丼がおすすめ",
       status: "busy",
       statusNote: "少し並びます",
       weatherComment: "雨なので足元注意",
@@ -441,21 +441,21 @@ test("zukan snapshot includes per-part menu appearance insights from personal hi
     assert.deepEqual(otoroInsight.menuStats.slice(0, 3), [
       {
         menuItemId: "tokujo_don",
-        menuItemName: "特上まぐろ丼",
+        menuItemName: "特上まぐろ丼（大とろ入り）",
         appearances: 2,
         totalMenuVisits: 2,
         appearanceRate: 100,
       },
       {
         menuItemId: "maguro_don_mini",
-        menuItemName: "中とろブツ盛り丼",
+        menuItemName: "まぐろ丼ミニ",
         appearances: 1,
         totalMenuVisits: 2,
         appearanceRate: 50,
       },
       {
         menuItemId: "maguro_don",
-        menuItemName: "鉄火丼",
+        menuItemName: "まぐろ丼",
         appearances: 1,
         totalMenuVisits: 3,
         appearanceRate: 33,
@@ -464,21 +464,21 @@ test("zukan snapshot includes per-part menu appearance insights from personal hi
     assert.deepEqual(otoroGlobalInsight?.menuStats.slice(0, 3), [
       {
         menuItemId: "tokujo_don",
-        menuItemName: "特上まぐろ丼",
+        menuItemName: "特上まぐろ丼（大とろ入り）",
         appearances: 2,
         totalMenuVisits: 2,
         appearanceRate: 100,
       },
       {
         menuItemId: "maguro_don",
-        menuItemName: "鉄火丼",
+        menuItemName: "まぐろ丼",
         appearances: 3,
         totalMenuVisits: 5,
         appearanceRate: 60,
       },
       {
         menuItemId: "maguro_don_mini",
-        menuItemName: "中とろブツ盛り丼",
+        menuItemName: "まぐろ丼ミニ",
         appearances: 1,
         totalMenuVisits: 2,
         appearanceRate: 50,
@@ -506,7 +506,7 @@ test("zukan snapshot includes per-part menu appearance insights from personal hi
       recentTastings: [
         {
           visitedAt: "2026-03-24",
-          menuItemName: "中とろブツ盛り丼",
+          menuItemName: "まぐろ丼ミニ",
           fatLevelLabel: "ちょうどいい",
           textureLevelLabel: "なめらか",
           satisfaction: 4,
@@ -514,7 +514,7 @@ test("zukan snapshot includes per-part menu appearance insights from personal hi
         },
         {
           visitedAt: "2026-03-22",
-          menuItemName: "鉄火丼",
+          menuItemName: "まぐろ丼",
           fatLevelLabel: "あっさり",
           textureLevelLabel: "弾力あり",
           satisfaction: 4,
@@ -522,7 +522,7 @@ test("zukan snapshot includes per-part menu appearance insights from personal hi
         },
         {
           visitedAt: "2026-03-21",
-          menuItemName: "鉄火丼",
+          menuItemName: "まぐろ丼",
           fatLevelLabel: "あっさり",
           textureLevelLabel: "弾力あり",
           satisfaction: 3,

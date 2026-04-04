@@ -47,18 +47,6 @@ export const quizQuestionsPerStage = 10;
 export const quizStageCount = 100;
 export const quizStagesPerTier = 20;
 
-export const APP_INFO = {
-  appName: "まぐろの鉄人ノート",
-  description: "まぐろの鉄人の公式Webアプリ",
-  subtitle: "まぐろの鉄人 ── 南堀江",
-  botName: "鉄人Bot",
-  shareTags: "#まぐろの鉄人ノート #まぐろの鉄人 #南堀江グルメ",
-  shareImageFileName: "maguro-tetsujin-note-share.png",
-  inventoryTitle: "本日のメニュー状況",
-  recordTitle: "今日のメニューを記録",
-  inventoryMark: "鮪",
-} as const;
-
 export const TITLES = [
   { id: "kozou", name: "まぐろ小僧", icon: "🐟", requiredVisits: 5, requiredCollectedParts: 0, requiredQuizCorrect: 10 },
   { id: "beginner", name: "まぐろ入門者", icon: "🎣", requiredVisits: 10, requiredCollectedParts: 0, requiredQuizCorrect: 100 },
@@ -69,14 +57,12 @@ export const TITLES = [
 ] as const;
 
 export const STORE_INFO = {
-  name: "まぐろの鉄人",
-  shopLabel: "1号店",
-  facility: "単独路面店",
-  concept: "まぐろ卸問屋直営店",
-  region: "大阪・南堀江",
-  address: "大阪府大阪市西区南堀江4-31-21",
-  phone: "06-6535-0567",
-  hours: "17:00〜22:30（L.O.22:00）",
-  regularHoliday: "月曜日（祝日の場合は翌日平日）",
-  latestHoursNoticeDate: "2026-03-30",
+  name: "海鮮丼まぐろ丸",
+  facility: "HUB KITCHEN内",
+  address: "大阪府大阪市中央区久太郎町3-1-27 ヒグチビル 1F",
+  access: "大阪メトロ本町駅12番出口 徒歩1-2分",
+  hours: "11:00〜21:00（売り切れ次第終了）",
+  instagram: "@maguromaru_honten",
+  lat: 34.6851,
+  lng: 135.5006,
 } as const;
