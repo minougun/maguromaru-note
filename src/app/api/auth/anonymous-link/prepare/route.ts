@@ -4,12 +4,9 @@ import { setAnonLinkNonceCookie } from "@/lib/anonymous-link-cookie";
 import { hasSupabaseServiceEnv, verifyCsrfOrigin } from "@/lib/env";
 import { checkHttpRateLimit } from "@/lib/http-rate-limit";
 import { mutationRateLimits } from "@/lib/rate-limit";
+import { toRouteError } from "@/lib/route-error";
 import { prepareAnonymousLinkNonce } from "@/lib/services/anonymous-link-service";
-import {
-  getAccessTokenFromRequest,
-  getVerifiedUserIdForRateLimit,
-  toRouteError,
-} from "@/lib/services/app-service";
+import { getAccessTokenFromRequest, getVerifiedUserIdForRateLimit } from "@/lib/services/app-service";
 
 export async function POST(request: Request) {
   try {
@@ -52,7 +49,7 @@ export async function POST(request: Request) {
     setAnonLinkNonceCookie(res, nonce);
     return res;
   } catch (error) {
-    const routeError = toRouteError(error);
+    const routeError = toRouteError(error, "auth/anonymous-link/prepare");
     return jsonWithSecurityHeaders({ error: routeError.message }, { status: routeError.status });
   }
 }

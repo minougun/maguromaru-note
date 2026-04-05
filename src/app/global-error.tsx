@@ -17,8 +17,12 @@ export default function GlobalError({
   }, [error]);
 
   const description =
-    error.message?.trim() ||
-    (error.digest ? `参照: ${error.digest}` : "予期しない問題が発生しました。");
+    process.env.NODE_ENV === "production"
+      ? error.digest
+        ? `参照: ${error.digest}`
+        : "予期しない問題が発生しました。"
+      : error.message?.trim() ||
+        (error.digest ? `参照: ${error.digest}` : "予期しない問題が発生しました。");
 
   return (
     <html lang="ja">

@@ -2,12 +2,12 @@ import { jsonWithSecurityHeaders } from "@/lib/response";
 
 import { verifyCsrfOrigin } from "@/lib/env";
 import { checkHttpRateLimit } from "@/lib/http-rate-limit";
+import { toRouteError } from "@/lib/route-error";
 import { mutationRateLimits } from "@/lib/rate-limit";
 import {
   getAccessTokenFromRequest,
   getVerifiedUserIdForRateLimit,
   recordVisit,
-  toRouteError,
 } from "@/lib/services/app-service";
 
 export async function POST(request: Request) {
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     const result = await recordVisit(payload, accessToken);
     return jsonWithSecurityHeaders(result, { status: 201 });
   } catch (error) {
-    const routeError = toRouteError(error);
+    const routeError = toRouteError(error, "visit-logs");
     return jsonWithSecurityHeaders({ error: routeError.message }, { status: routeError.status });
   }
 }

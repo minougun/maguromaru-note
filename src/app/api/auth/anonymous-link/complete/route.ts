@@ -3,12 +3,9 @@ import { jsonWithSecurityHeaders } from "@/lib/response";
 import { hasSupabaseServiceEnv, verifyCsrfOrigin } from "@/lib/env";
 import { checkHttpRateLimit } from "@/lib/http-rate-limit";
 import { mutationRateLimits } from "@/lib/rate-limit";
+import { toRouteError } from "@/lib/route-error";
 import { completeAnonymousLinkMigration } from "@/lib/services/anonymous-link-service";
-import {
-  getAccessTokenFromRequest,
-  getVerifiedUserIdForRateLimit,
-  toRouteError,
-} from "@/lib/services/app-service";
+import { getAccessTokenFromRequest, getVerifiedUserIdForRateLimit } from "@/lib/services/app-service";
 
 export async function POST(request: Request) {
   try {
@@ -47,7 +44,7 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    const routeError = toRouteError(error);
+    const routeError = toRouteError(error, "auth/anonymous-link/complete");
     return jsonWithSecurityHeaders({ error: routeError.message }, { status: routeError.status });
   }
 }

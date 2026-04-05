@@ -2,12 +2,12 @@ import { jsonWithSecurityHeaders } from "@/lib/response";
 
 import { verifyCsrfOrigin } from "@/lib/env";
 import { checkHttpRateLimit } from "@/lib/http-rate-limit";
+import { toRouteError } from "@/lib/route-error";
 import { mutationRateLimits } from "@/lib/rate-limit";
 import {
   deleteVisit,
   getAccessTokenFromRequest,
   getVerifiedUserIdForRateLimit,
-  toRouteError,
 } from "@/lib/services/app-service";
 
 export async function DELETE(request: Request, context: { params: Promise<{ id: string }> }) {
@@ -36,7 +36,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
     const result = await deleteVisit(id, accessToken);
     return jsonWithSecurityHeaders(result);
   } catch (error) {
-    const routeError = toRouteError(error);
+    const routeError = toRouteError(error, "visit-logs-delete");
     return jsonWithSecurityHeaders({ error: routeError.message }, { status: routeError.status });
   }
 }

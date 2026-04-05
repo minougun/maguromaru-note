@@ -2,8 +2,6 @@ import { Buffer } from "node:buffer";
 import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID } from "node:crypto";
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { ZodError } from "zod";
-
 import type { Database } from "@/lib/database.types";
 import {
   checkQuizAnswerInputSchema,
@@ -45,13 +43,11 @@ import { applyCustomerFacingStoreAndStock } from "@/lib/domain/store-business-ho
 import {
   HISTORY_SNAPSHOT_DEFAULT_PAGE_SIZE,
   HISTORY_SNAPSHOT_MAX_PAGE_SIZE,
+  type AppSnapshotLoadOptions,
   type SnapshotScope,
 } from "@/lib/domain/snapshot-scope";
 
-export type AppSnapshotLoadOptions = {
-  historyVisitPage?: number;
-  historyVisitPageSize?: number;
-};
+export type { AppSnapshotLoadOptions };
 
 const VISIT_LOG_COLUMNS =
   "id, user_id, visited_at, created_at, memo, photo_url, menu_item_id" as const;
@@ -78,15 +74,9 @@ import { QUIZ_SESSION_SIZE, createQuizSession, getStageNumberFromQuestionId, sco
 import { createEmptyQuizStageProgress, isQuizStageUnlocked } from "@/lib/quiz-stages";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getCurrentTitle } from "@/lib/titles";
+import { AppServiceError } from "@/lib/services/app-service-error";
 
-export class AppServiceError extends Error {
-  status: number;
-
-  constructor(status: number, message: string) {
-    super(message);
-    this.status = status;
-  }
-}
+export { AppServiceError };
 
 type SharedCacheEntry<T> = {
   value: T | null;
@@ -2774,24 +2764,4 @@ export async function updateStoreStatus(input: unknown, accessToken?: string) {
 
 export function getAccessTokenFromRequest(request: Request) {
   return readBearerToken(request.headers.get("authorization"));
-}
-
-export function toRouteError(error: unknown) {
-  if (error instanceof AppServiceError) {
-    return { status: error.status, message: error.message };
-  }
-
-  if (error instanceof ZodError) {
-    return { status: 400, message: error.issues[0]?.message ?? "入力が不正です。" };
-  }
-
-  if (error instanceof SyntaxError) {
-    return { status: 400, message: "リクエスト本文の形式が不正です。" };
-  }
-
-  if (error instanceof Error) {
-    return { status: 500, message: error.message };
-  }
-
-  return { status: 500, message: "予期しないエラーが発生しました。" };
 }

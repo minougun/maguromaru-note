@@ -89,8 +89,9 @@ test("verifyCsrfOrigin: 許可オリジンのみ true", () => {
 });
 
 test("verifyCsrfOrigin: production では loopback alias を許可しない", () => {
-  const original = process.env.NODE_ENV;
-  process.env.NODE_ENV = "production";
+  const env = process.env as Record<string, string | undefined>;
+  const original = env.NODE_ENV;
+  env.NODE_ENV = "production";
   try {
     assert.equal(
       verifyCsrfOrigin(
@@ -99,7 +100,7 @@ test("verifyCsrfOrigin: production では loopback alias を許可しない", ()
       false,
     );
   } finally {
-    process.env.NODE_ENV = original;
+    env.NODE_ENV = original;
   }
 });
 

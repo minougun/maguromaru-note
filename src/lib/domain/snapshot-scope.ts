@@ -2,6 +2,12 @@
 export const HISTORY_SNAPSHOT_DEFAULT_PAGE_SIZE = 30;
 export const HISTORY_SNAPSHOT_MAX_PAGE_SIZE = 100;
 
+/** `getAppSnapshot` / `getHistoryVisitLogsPage` に渡す履歴ページング */
+export type AppSnapshotLoadOptions = {
+  historyVisitPage?: number;
+  historyVisitPageSize?: number;
+};
+
 export const SNAPSHOT_SCOPES = ["full", "home", "history", "zukan", "record", "quiz", "mypage", "admin"] as const;
 
 export type SnapshotScope = (typeof SNAPSHOT_SCOPES)[number];

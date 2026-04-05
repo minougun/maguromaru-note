@@ -2,12 +2,12 @@ import { jsonWithSecurityHeaders } from "@/lib/response";
 
 import { verifyCsrfOrigin } from "@/lib/env";
 import { checkHttpRateLimit } from "@/lib/http-rate-limit";
+import { toRouteError } from "@/lib/route-error";
 import { mutationRateLimits } from "@/lib/rate-limit";
 import {
   checkQuizAnswer,
   getAccessTokenFromRequest,
   getVerifiedUserIdForRateLimit,
-  toRouteError,
 } from "@/lib/services/app-service";
 
 export async function POST(request: Request) {
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     const result = await checkQuizAnswer(payload, accessToken);
     return jsonWithSecurityHeaders(result, { status: 200 });
   } catch (error) {
-    const routeError = toRouteError(error);
+    const routeError = toRouteError(error, "quiz-answer-check");
     return jsonWithSecurityHeaders({ error: routeError.message }, { status: routeError.status });
   }
 }

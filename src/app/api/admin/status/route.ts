@@ -2,11 +2,11 @@ import { jsonWithSecurityHeaders } from "@/lib/response";
 
 import { verifyCsrfOrigin } from "@/lib/env";
 import { checkHttpRateLimit } from "@/lib/http-rate-limit";
+import { toRouteError } from "@/lib/route-error";
 import { mutationRateLimits } from "@/lib/rate-limit";
 import {
   getAccessTokenFromRequest,
   getVerifiedUserIdForRateLimit,
-  toRouteError,
   updateStoreStatus,
 } from "@/lib/services/app-service";
 
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     const result = await updateStoreStatus(payload, accessToken);
     return jsonWithSecurityHeaders(result);
   } catch (error) {
-    const routeError = toRouteError(error);
+    const routeError = toRouteError(error, "admin/status");
     return jsonWithSecurityHeaders({ error: routeError.message }, { status: routeError.status });
   }
 }
