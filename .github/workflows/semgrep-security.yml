@@ -1,0 +1,39 @@
+# Semgrep Security Scan — LLM生成コードの脆弱性チェック
+# 検出対象: SQLインジェクション, パストラバーサル, ハードコード鍵, etc.
+#
+# 使い方: このファイルを対象リポジトリの .github/workflows/semgrep-security.yml にコピー
+# カスタムルール: semgrep/ ディレクトリにYAMLルールを配置すると自動で読み込む
+
+name: Semgrep Security Scan
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+jobs:
+  semgrep:
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Semgrep (built-in + custom rules)
+        run: |
+          set -eu
+          if [ -d semgrep ] && find semgrep -maxdepth 1 \( -name '*.yml' -o -name '*.yaml' \) -print -quit | grep -q .; then
+            semgrep --config "p/security-audit" --config semgrep/ --error --json -o semgrep-results.json
+          else
+            semgrep --config "p/security-audit" --error --json -o semgrep-results.json
+          fi
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-results
+          path: semgrep-results.json

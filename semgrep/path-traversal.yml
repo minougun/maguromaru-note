@@ -1,0 +1,78 @@
+rules:
+  # Python: request input → os.path.join
+  - id: python-path-traversal-join
+    languages: [python]
+    severity: ERROR
+    mode: taint
+    message: >
+      User input reaches os.path.join() — path traversal risk (CWE-22).
+      Fix: validate filename and confirm resolved path stays under base directory.
+    metadata:
+      cwe: "CWE-22"
+      category: security
+    pattern-sources:
+      - pattern-either:
+          - pattern: request.args.get(...)
+          - pattern: request.args[...]
+          - pattern: request.form.get(...)
+          - pattern: request.form[...]
+          - pattern: request.json.get(...)
+          - pattern: request.GET.get(...)
+          - pattern: request.GET[...]
+          - pattern: request.POST.get(...)
+          - pattern: request.POST[...]
+          - pattern: request.query_params[...]
+          - pattern: request.data.get(...)
+    pattern-sinks:
+      - pattern: os.path.join(...)
+
+  # Python: request input → open()
+  - id: python-path-traversal-open
+    languages: [python]
+    severity: ERROR
+    mode: taint
+    message: >
+      User input reaches open() — path traversal risk (CWE-22).
+      Fix: use ID-to-path mapping or validate resolved path is under allowed directory.
+    metadata:
+      cwe: "CWE-22"
+      category: security
+    pattern-sources:
+      - pattern-either:
+          - pattern: request.args.get(...)
+          - pattern: request.form.get(...)
+          - pattern: request.json.get(...)
+          - pattern: request.GET.get(...)
+          - pattern: request.POST.get(...)
+          - pattern: request.query_params[...]
+    pattern-sinks:
+      - pattern-either:
+          - pattern: open(...)
+          - pattern: os.open(...)
+
+  # Node/TS: req.params/body → path.join/resolve
+  - id: node-path-traversal-join
+    languages: [javascript, typescript]
+    severity: ERROR
+    mode: taint
+    message: >
+      Express request data reaches path.join()/path.resolve() — path traversal risk (CWE-22).
+      Fix: sanitize input, resolve path, and verify it stays under base directory.
+    metadata:
+      cwe: "CWE-22"
+      category: security
+    pattern-sources:
+      - pattern-either:
+          - pattern: req.params.$X
+          - pattern: req.params[...]
+          - pattern: req.body.$X
+          - pattern: req.body[...]
+          - pattern: req.query.$X
+          - pattern: req.query[...]
+    pattern-sinks:
+      - pattern-either:
+          - pattern: path.join(...)
+          - pattern: path.resolve(...)
+          - pattern: fs.readFile(...)
+          - pattern: fs.readFileSync(...)
+          - pattern: fs.createReadStream(...)
