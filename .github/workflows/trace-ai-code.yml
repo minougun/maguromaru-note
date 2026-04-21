@@ -1,0 +1,33 @@
+name: AI Code Guardrails - Trace
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+
+jobs:
+  trace:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - id: filelist
+        shell: bash
+        run: |
+          mapfile -d '' files < <(git ls-files -z -- '*.py' '*.js' '*.jsx' '*.ts' '*.tsx')
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "has_files=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          printf '%s\0' "${files[@]}" > trace-files.txt
+          echo "has_files=true" >> "$GITHUB_OUTPUT"
+      - name: Run Trace
+        if: steps.filelist.outputs.has_files == 'true'
+        continue-on-error: true
+        shell: bash
+        run: |
+          mapfile -d '' files < trace-files.txt
+          npx --yes trace-core "${files[@]}"
+          echo "Trace exited non-zero. This workflow is non-blocking for Node or mixed repos because current Trace OSS often flags TS path aliases like @/ as missing packages."

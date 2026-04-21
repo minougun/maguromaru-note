@@ -2092,6 +2092,8 @@ type QuizAnswerProofPayload = {
   expiresAt: string;
 };
 
+const QUIZ_ANSWER_PROOF_TAG_LENGTH = 16;
+
 function toBase64Url(value: Buffer) {
   return value.toString("base64url");
 }
@@ -2115,7 +2117,9 @@ function getQuizAnswerProofKey() {
 
 function createQuizAnswerProof(payload: QuizAnswerProofPayload) {
   const iv = randomBytes(12);
-  const cipher = createCipheriv("aes-256-gcm", getQuizAnswerProofKey(), iv);
+  const cipher = createCipheriv("aes-256-gcm", getQuizAnswerProofKey(), iv, {
+    authTagLength: QUIZ_ANSWER_PROOF_TAG_LENGTH,
+  });
   const ciphertext = Buffer.concat([cipher.update(JSON.stringify(payload), "utf8"), cipher.final()]);
   const tag = cipher.getAuthTag();
   return `${toBase64Url(iv)}.${toBase64Url(tag)}.${toBase64Url(ciphertext)}`;
@@ -2128,8 +2132,14 @@ function parseQuizAnswerProof(proof: string): QuizAnswerProofPayload {
   }
 
   try {
-    const decipher = createDecipheriv("aes-256-gcm", getQuizAnswerProofKey(), fromBase64Url(ivText));
-    decipher.setAuthTag(fromBase64Url(tagText));
+    const tag = fromBase64Url(tagText);
+    if (tag.length !== QUIZ_ANSWER_PROOF_TAG_LENGTH) {
+      throw new AppServiceError(400, "回答の判定トークンが不正です。");
+    }
+    const decipher = createDecipheriv("aes-256-gcm", getQuizAnswerProofKey(), fromBase64Url(ivText), {
+      authTagLength: QUIZ_ANSWER_PROOF_TAG_LENGTH,
+    });
+    decipher.setAuthTag(tag);
     const plaintext = Buffer.concat([
       decipher.update(fromBase64Url(ciphertextText)),
       decipher.final(),
