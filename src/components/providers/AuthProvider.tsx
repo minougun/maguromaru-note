@@ -10,6 +10,7 @@ export interface AuthContextValue {
   ready: boolean;
   usingSupabase: boolean;
   signedIn: boolean;
+  userId: string | null;
   error: string | null;
   accessToken: string | null;
   /** Supabase 未設定のとき「今すぐはじめる」でローカル利用を開始する */
@@ -28,6 +29,7 @@ const AuthContext = createContext<AuthContextValue>({
   ready: false,
   usingSupabase: SUPABASE_CONFIGURED,
   signedIn: false,
+  userId: null,
   error: null,
   accessToken: null,
   acknowledgeLocalSession: () => {},
@@ -48,21 +50,21 @@ function hasUsableSession(session: { access_token?: string | null; expires_at?: 
 
 async function resolveInitialSupabaseSession(
   client: NonNullable<ReturnType<typeof getSupabaseBrowserClient>>,
-): Promise<{ accessToken: string | null; signedIn: boolean }> {
+): Promise<{ accessToken: string | null; signedIn: boolean; userId: string | null }> {
   const {
     data: { session },
   } = await client.auth.getSession();
 
   if (!hasUsableSession(session)) {
-    return { accessToken: null, signedIn: false };
+    return { accessToken: null, signedIn: false, userId: null };
   }
 
   const accessToken = session?.access_token ?? null;
   if (!accessToken) {
-    return { accessToken: null, signedIn: false };
+    return { accessToken: null, signedIn: false, userId: null };
   }
 
-  return { accessToken, signedIn: true };
+  return { accessToken, signedIn: true, userId: session?.user?.id ?? null };
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -70,6 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     ready: false,
     usingSupabase: SUPABASE_CONFIGURED,
     signedIn: false,
+    userId: null,
     error: null,
     accessToken: null,
   });
@@ -82,6 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       ready: true,
       usingSupabase: false,
       signedIn: true,
+      userId: null,
       error: null,
       accessToken: null,
     });
@@ -95,6 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       ready: true,
       usingSupabase: false,
       signedIn: false,
+      userId: null,
       error: null,
       accessToken: null,
     });
@@ -112,6 +117,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           ready: true,
           usingSupabase: false,
           signedIn: hasLocal,
+          userId: null,
           error: null,
           accessToken: null,
         });
@@ -123,6 +129,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           ready: true,
           usingSupabase: true,
           signedIn: false,
+          userId: null,
           error: "Supabase クライアントを初期化できませんでした。",
           accessToken: null,
         });
@@ -130,7 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        const { accessToken, signedIn } = await resolveInitialSupabaseSession(client);
+        const { accessToken, signedIn, userId } = await resolveInitialSupabaseSession(client);
         if (cancelled) {
           return;
         }
@@ -139,6 +146,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           ready: true,
           usingSupabase: true,
           signedIn,
+          userId,
           error: null,
           accessToken,
         });
@@ -151,6 +159,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           ready: true,
           usingSupabase: true,
           signedIn: false,
+          userId: null,
           error: `認証初期化に失敗しました: ${msg}`,
           accessToken: null,
         });
@@ -173,6 +182,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             ready: true,
             usingSupabase: true,
             signedIn: false,
+            userId: null,
             error: null,
             accessToken: null,
           }));
@@ -186,6 +196,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             ready: true,
             usingSupabase: true,
             signedIn: false,
+            userId: null,
             error: null,
             accessToken: null,
           }));
@@ -197,6 +208,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           ready: true,
           usingSupabase: true,
           signedIn: true,
+          userId: session?.user?.id ?? null,
           accessToken,
           error: null,
         }));

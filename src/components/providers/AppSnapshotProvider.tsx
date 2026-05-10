@@ -140,6 +140,7 @@ export function AppSnapshotProvider({ children }: { children: React.ReactNode })
 
   const snapshotCacheRef = useRef<Map<SnapshotScope, SnapshotCacheEntry>>(new Map());
   const snapshotRef = useRef<AppSnapshot | null>(null);
+  const authCacheKeyRef = useRef<string | null>(null);
 
   const [snapshot, setSnapshot] = useState<AppSnapshot | null>(null);
   const [loading, setLoading] = useState(false);
@@ -149,6 +150,24 @@ export function AppSnapshotProvider({ children }: { children: React.ReactNode })
   useEffect(() => {
     snapshotRef.current = snapshot;
   }, [snapshot]);
+
+  useEffect(() => {
+    if (!auth.ready) {
+      return;
+    }
+
+    const authCacheKey = auth.usingSupabase && auth.signedIn ? auth.userId : null;
+    if (authCacheKeyRef.current === authCacheKey) {
+      return;
+    }
+
+    authCacheKeyRef.current = authCacheKey;
+    snapshotCacheRef.current.clear();
+    setSnapshot(null);
+    setError(null);
+    setLoading(false);
+    setRefreshToken((current) => current + 1);
+  }, [auth.ready, auth.signedIn, auth.userId, auth.usingSupabase]);
 
   const refresh = useCallback(
     (target: SnapshotRefreshTarget = "current") => {

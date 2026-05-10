@@ -17,6 +17,26 @@ export function useTabBarScrollVisibility(scrollRoot: HTMLElement | null, pathna
   const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const syncReducedMotion = () => {
+      if (mediaQuery.matches) {
+        setVisible(true);
+      }
+    };
+
+    syncReducedMotion();
+    mediaQuery.addEventListener("change", syncReducedMotion);
+
+    return () => {
+      mediaQuery.removeEventListener("change", syncReducedMotion);
+    };
+  }, []);
+
+  useEffect(() => {
     const frame = requestAnimationFrame(() => {
       setVisible(true);
     });
