@@ -28,6 +28,9 @@ function parsePositiveInt(raw: string | null, fallback: number, max?: number): n
   if (raw === null || raw === "") {
     return fallback;
   }
+  if (!/^[1-9]\d*$/.test(raw)) {
+    return null;
+  }
   const n = Number.parseInt(raw, 10);
   if (!Number.isFinite(n) || n < 1) {
     return null;
